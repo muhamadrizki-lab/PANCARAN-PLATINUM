@@ -799,7 +799,7 @@ export default function AdminAssets({
       metalEstimatedWeight: asset.metalEstimatedWeight || '',
       metalCondition: asset.metalCondition || '',
       metalHandlingFacility: asset.metalHandlingFacility || 'Pemenang Lelang wajib potong dan angkut sendiri',
-      model: asset.model || '',
+      model: asset.model || asset.name || '',
       series: asset.series || '440',
       axels: asset.axels || '',
       vehicleColour: asset.vehicleColour || 'White',
@@ -984,13 +984,23 @@ export default function AdminAssets({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get final asset name (uses explicit name if entered, otherwise brand + model)
-    let finalName = formData.name ? formData.name.trim() : '';
-    if (!finalName) {
-      finalName = `${formData.brand} ${formData.model}`.trim();
-    }
-    if (!finalName) {
-      finalName = formData.category || 'Unit';
+    // Get final asset name (automatically follows model / spec, with brand prefix if applicable)
+    let finalName = '';
+    const trimmedModel = (formData.model || '').trim();
+    const trimmedBrand = (formData.brand || '').trim();
+
+    if (trimmedModel) {
+      if (trimmedBrand && trimmedBrand !== 'Lainnya' && trimmedBrand !== 'Tanpa Merek' && !trimmedModel.toLowerCase().includes(trimmedBrand.toLowerCase())) {
+        finalName = `${trimmedBrand} ${trimmedModel}`;
+      } else {
+        finalName = trimmedModel;
+      }
+    } else if (formData.name && formData.name.trim()) {
+      finalName = formData.name.trim();
+    } else if (trimmedBrand && trimmedBrand !== 'Lainnya') {
+      finalName = trimmedBrand;
+    } else {
+      finalName = formData.category || 'Unit Lelang';
     }
 
     if (!finalName || !formData.startingPrice || !formData.location || !formData.category) {
@@ -2503,27 +2513,6 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                        {/* Name Input for Non-Vehicle Categories */}
-                        {!isVehicle && (
-                          <div className="space-y-1.5 md:col-span-2">
-                            <label className="text-xs font-bold text-slate-600 uppercase">
-                              {t('Nama / Judul Aset Lelang *')}
-                            </label>
-                            <input
-                              type="text"
-                              required={!isVehicle}
-                              placeholder={
-                                isUsedPart ? t('Contoh: Engine Assy Hino E13C 440HP / Transmission ZF') :
-                                isProperty ? t('Contoh: Gudang & Lahan Depo Marunda 1.200 m²') :
-                                t('Contoh: Genset Caterpillar 500 kVA / Heavy Equipment Tool')
-                              }
-                              value={formData.name}
-                              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800"
-                            />
-                          </div>
-                        )}
-
                         {/* Brand (Only for Vehicle / non-UsedPart, non-Property, non-Misc) */}
                         {!isProperty && !isUsedPart && !isMisc && (
                           <div className="space-y-1.5">
@@ -2555,26 +2544,25 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                           </div>
                         )}
 
-                        {/* Model / Type */}
-                        {!isProperty && (
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-600 uppercase">
-                              {isVehicle ? `${t('Model')} *` : t('Model / Tipe / Spec')}
-                            </label>
-                            <input
-                              type="text"
-                              required={isVehicle}
-                              placeholder={
-                                isVehicle ? t('Contoh: FMX, Ranger, Giga, 440') :
-                                isUsedPart ? t('Contoh: Part No. 12345-E001, E13C') :
-                                t('Contoh: CAT-500KVA, Model 2021')
-                              }
-                              value={formData.model}
-                              onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
-                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            />
-                          </div>
-                        )}
+                        {/* Model / Type / Spec / Title */}
+                        <div className={`space-y-1.5 ${isProperty || isUsedPart || isMisc ? 'md:col-span-2' : ''}`}>
+                          <label className="text-xs font-bold text-slate-600 uppercase">
+                            {isVehicle ? `${t('Model')} *` : isProperty ? `${t('Nama / Judul / Spec Properti')} *` : `${t('Model / Tipe / Spec')} *`}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder={
+                              isVehicle ? t('Contoh: FMX, Ranger, Giga, 440') :
+                              isUsedPart ? t('Contoh: Engine Assy Hino E13C 440HP / Transmission ZF') :
+                              isProperty ? t('Contoh: Gudang & Lahan Depo Marunda 1.200 m²') :
+                              t('Contoh: Genset Caterpillar 500 kVA / Heavy Equipment Tool')
+                            }
+                            value={formData.model}
+                            onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
+                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800"
+                          />
+                        </div>
 
                         {/* Model Year */}
                         {!isProperty && (

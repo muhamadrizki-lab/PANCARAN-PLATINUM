@@ -731,28 +731,47 @@ export default function CatalogView({
             </div>
           )}
 
-          {/* Box 2: Cara Ikut Lelang Card - Only visible when user is logged in */}
-          {isUserLoggedIn && (
-            <div 
-              onClick={() => onOpenGuideModal?.('ikut')}
-              className="bg-white text-slate-900 rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex-1 sm:w-56 flex flex-col items-center p-3 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
-            >
-              <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm tracking-tight text-center mb-1.5">
-                {t('Syarat & Ketentuan Akses Bidding')}
-              </h3>
-              <div className="w-full h-28 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
-                <img 
-                  src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
-                  alt={t('Syarat & Ketentuan Akses Bidding')}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  referrerPolicy="no-referrer"
-                />
+          {/* Box 2: Cara Ikut Lelang Card - Only visible for Digital Solution account when logged in */}
+          {(() => {
+            const isDigitalSolutionAccount = Boolean(
+              isUserLoggedIn && (
+                (loggedInUserEmail && (
+                  loggedInUserEmail.toLowerCase().includes('digital.solution') ||
+                  loggedInUserEmail.toLowerCase().includes('digitalsolution') ||
+                  loggedInUserEmail.toLowerCase().includes('digital_solution')
+                )) ||
+                (loggedInUserName && (
+                  loggedInUserName.toLowerCase().includes('digital solution') ||
+                  loggedInUserName.toLowerCase().includes('digital.solution') ||
+                  loggedInUserName.toLowerCase().includes('digitalsolution')
+                ))
+              )
+            );
+
+            if (!isUserLoggedIn || !isDigitalSolutionAccount) return null;
+
+            return (
+              <div 
+                onClick={() => onOpenGuideModal?.('ikut')}
+                className="bg-white text-slate-900 rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex-1 sm:w-56 flex flex-col items-center p-3 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
+              >
+                <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm tracking-tight text-center mb-1.5">
+                  {t('Syarat & Ketentuan Akses Bidding')}
+                </h3>
+                <div className="w-full h-28 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
+                  <img 
+                    src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
+                    alt={t('Syarat & Ketentuan Akses Bidding')}
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <p className="text-blue-950 font-medium text-[10px] leading-snug pt-2 text-center">
+                  {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
+                </p>
               </div>
-              <p className="text-blue-950 font-medium text-[10px] leading-snug pt-2 text-center">
-                {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
-              </p>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 

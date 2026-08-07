@@ -550,7 +550,7 @@ export default function LoginModal({
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: Budi Santoso"
+                    placeholder={t('Contoh: Budi Santoso')}
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
@@ -566,7 +566,7 @@ export default function LoginModal({
                   <input
                     type="tel"
                     required
-                    placeholder="Contoh: 081234567890"
+                    placeholder={t('Contoh: 081234567890')}
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
@@ -582,7 +582,7 @@ export default function LoginModal({
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: PT Pancaran Logistics atau Pribadi"
+                    placeholder={t('Contoh: PT Pancaran Logistics atau Pribadi')}
                     value={regCompany}
                     onChange={(e) => setRegCompany(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
@@ -598,7 +598,7 @@ export default function LoginModal({
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: Jl. Raya Cilincing No. 12, Jakarta Utara"
+                    placeholder={t('Contoh: Jl. Raya Cilincing No. 12, Jakarta Utara')}
                     value={regAddress}
                     onChange={(e) => setRegAddress(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
