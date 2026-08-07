@@ -1850,61 +1850,63 @@ export default function App() {
 
         </div>
       ) : (
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 w-full py-8">
           {role === 'external' ? (
-            <div className="space-y-6">
+            <div className="space-y-6 w-full">
               {/* Desktop Sub-navigation for Logged In External Users */}
               {(isUserLoggedIn || isAdminLoggedIn) && (
-                <div className="flex border border-slate-200 bg-white p-1 rounded-2xl shadow-sm max-w-md mx-auto" id="external-navigation-tabs">
-                  <button
-                    onClick={() => setExternalTab('catalog')}
-                    className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                      externalTab === 'catalog'
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span>{t('Katalog')}</span>
-                  </button>
-                  <button
-                    onClick={() => setExternalTab('notifications')}
-                    className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
-                      externalTab === 'notifications'
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    <span>{t('Notifikasi')}</span>
-                    {externalNotificationsCount > 0 && (
-                      <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none">
-                        {externalNotificationsCount}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setExternalTab('inbox')}
-                    className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
-                      externalTab === 'inbox'
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span>{t('Inbox')}</span>
-                    {externalInboxCount > 0 && (
-                      <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none animate-pulse">
-                        {externalInboxCount}
-                      </span>
-                    )}
-                  </button>
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex border border-slate-200 bg-white p-1 rounded-2xl shadow-sm max-w-md mx-auto" id="external-navigation-tabs">
+                    <button
+                      onClick={() => setExternalTab('catalog')}
+                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        externalTab === 'catalog'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <span>{t('Katalog')}</span>
+                    </button>
+                    <button
+                      onClick={() => setExternalTab('notifications')}
+                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
+                        externalTab === 'notifications'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      <span>{t('Notifikasi')}</span>
+                      {externalNotificationsCount > 0 && (
+                        <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none">
+                          {externalNotificationsCount}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setExternalTab('inbox')}
+                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
+                        externalTab === 'inbox'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      <span>{t('Inbox')}</span>
+                      {externalInboxCount > 0 && (
+                        <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none animate-pulse">
+                          {externalInboxCount}
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1932,34 +1934,40 @@ export default function App() {
                   }
                 />
               ) : externalTab === 'notifications' ? (
-                <ExternalNotificationsView
-                  assets={assets}
-                  userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
-                  userName={isUserLoggedIn ? loggedInUserName : adminName}
-                  userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
-                />
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+                  <ExternalNotificationsView
+                    assets={assets}
+                    userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
+                    userName={isUserLoggedIn ? loggedInUserName : adminName}
+                    userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
+                  />
+                </div>
               ) : (
-                <ExternalInboxView
-                  assets={assets}
-                  userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
-                  userName={isUserLoggedIn ? loggedInUserName : adminName}
-                  userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
-                />
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+                  <ExternalInboxView
+                    assets={assets}
+                    userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
+                    userName={isUserLoggedIn ? loggedInUserName : adminName}
+                    userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
+                  />
+                </div>
               )}
             </div>
           ) : (
-            <div className="py-24 text-center max-w-md mx-auto space-y-4">
-              <Shield className="w-16 h-16 text-blue-500 mx-auto" />
-              <h2 className="text-xl font-bold text-slate-800">{t('Otorisasi Diperlukan')}</h2>
-              <p className="text-sm text-slate-500 leading-normal">
-                {t('Halaman internal manajemen Pancaran Lelang dilindungi enkripsi. Silakan masuk menggunakan akun kredensial Anda.')}
-              </p>
-              <button
-                onClick={() => setIsLoginModalOpen(true)}
-                className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all"
-              >
-                {t('Masuk Sekarang')}
-              </button>
+            <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="py-24 text-center max-w-md mx-auto space-y-4">
+                <Shield className="w-16 h-16 text-blue-500 mx-auto" />
+                <h2 className="text-xl font-bold text-slate-800">{t('Otorisasi Diperlukan')}</h2>
+                <p className="text-sm text-slate-500 leading-normal">
+                  {t('Halaman internal manajemen Pancaran Lelang dilindungi enkripsi. Silakan masuk menggunakan akun kredensial Anda.')}
+                </p>
+                <button
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all"
+                >
+                  {t('Masuk Sekarang')}
+                </button>
+              </div>
             </div>
           )}
         </main>

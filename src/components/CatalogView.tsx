@@ -679,7 +679,7 @@ export default function CatalogView({
       
 
       {/* Premium Hero Banner for Public Bidders */}
-      <div className="relative rounded-3xl overflow-hidden bg-slate-950 text-white p-6 md:p-8 shadow-xl border border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-6 min-h-[305px]">
+      <div className="relative w-full overflow-hidden bg-slate-950 text-white py-8 md:py-12 border-y border-slate-800 min-h-[305px]">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/30 via-slate-950/70 to-slate-950/80 opacity-80 z-0"></div>
         
         {/* Banner Background Image */}
@@ -690,92 +690,96 @@ export default function CatalogView({
           }}
         ></div>
 
-        <div className="space-y-4 lg:max-w-xl xl:max-w-2xl z-10 relative">
-          <span className="text-[10px] uppercase tracking-wider bg-blue-500/20 text-blue-300 font-bold px-3 py-1.5 rounded-full border border-blue-500/30">
-            {t('Portal Penawaran Umum (External)')}
-          </span>
-          <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight leading-tight text-white flex flex-col gap-1">
-            <span className="flex items-center gap-2">
-              <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(255,255,255,0.55)] font-black">PLATINUM</span>
+        {/* Content Container (Centered to match the site width) */}
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="space-y-4 lg:max-w-xl xl:max-w-2xl">
+            <span className="text-[10px] uppercase tracking-wider bg-blue-500/20 text-blue-300 font-bold px-3 py-1.5 rounded-full border border-blue-500/30">
+              {t('Portal Penawaran Umum (External)')}
             </span>
-            <span className="text-xs md:text-sm font-semibold text-slate-300 tracking-wide mt-0.5 opacity-90 leading-normal max-w-lg block">
-              ( Pancaran Lelang Angkutan Truk, Industri, & Niaga Utama Modern )
-            </span>
-            <span className="bg-gradient-to-r from-blue-400 to-blue-200 bg-clip-text text-transparent">
-              {t('Truck & Heavy Equipment')}
-            </span>
-          </h1>
-          <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
-            {t('Dapatkan truk tangki, wingbox, trailer, cargo van, dan alat berat kualitas terbaik langsung dari ekosistem operasional Pancaran Logistics. Transparan, terpercaya, dan aman dengan jadwal survei fisik mandiri.')}
-          </p>
-          <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-300 font-medium">
-            <span className="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
-              <CheckCircle className="w-4 h-4 text-emerald-400" /> {t('KIR & STNK Lengkap')}
-            </span>
-            <span className="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
-              <CalendarCheck className="w-4 h-4 text-blue-400" /> {t('Bebas Atur Waktu Inspeksi')}
-            </span>
-          </div>
-        </div>
-
-        {/* Right Side: How It Works & Cara Ikut Lelang Side-by-Side */}
-        <div className="flex flex-col sm:flex-row items-stretch gap-4 z-10 relative shrink-0 w-full lg:w-auto">
-          {/* Box 1: Bagaimana Cara Kerja? - Only visible when NOT logged in */}
-          {!isUserLoggedIn && (
-            <div className="bg-transparent border border-white/25 p-5 rounded-2xl flex-1 sm:w-56 text-center flex flex-col justify-center items-center shadow-lg">
-              <Truck className="w-10 h-10 text-blue-400 mx-auto mb-2 drop-shadow-md" />
-              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-md">{t('Bagaimana Cara Kerja?')}</h3>
-              <p className="text-slate-200 text-[11px] mt-1.5 leading-normal drop-shadow-sm font-medium">
-                {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
-              </p>
+            <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight leading-tight text-white flex flex-col gap-1">
+              <span className="flex items-center gap-2">
+                <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(255,255,255,0.55)] font-black">PLATINUM</span>
+              </span>
+              <span className="text-xs md:text-sm font-semibold text-slate-300 tracking-wide mt-0.5 opacity-90 leading-normal max-w-lg block">
+                ( Pancaran Lelang Angkutan Truk, Industri, & Niaga Utama Modern )
+              </span>
+              <span className="bg-gradient-to-r from-blue-400 to-blue-200 bg-clip-text text-transparent">
+                {t('Truck & Heavy Equipment')}
+              </span>
+            </h1>
+            <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
+              {t('Dapatkan truk tangki, wingbox, trailer, cargo van, dan alat berat kualitas terbaik langsung dari ekosistem operasional Pancaran Logistics. Transparan, terpercaya, dan aman dengan jadwal survei fisik mandiri.')}
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-300 font-medium">
+              <span className="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
+                <CheckCircle className="w-4 h-4 text-emerald-400" /> {t('KIR & STNK Lengkap')}
+              </span>
+              <span className="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
+                <CalendarCheck className="w-4 h-4 text-blue-400" /> {t('Bebas Atur Waktu Inspeksi')}
+              </span>
             </div>
-          )}
+          </div>
 
-          {/* Box 2: Cara Ikut Lelang Card - Only visible for Digital Solution account when logged in */}
-          {(() => {
-            const isDigitalSolutionAccount = Boolean(
-              isUserLoggedIn && (
-                (loggedInUserEmail && (
-                  loggedInUserEmail.toLowerCase().includes('digital.solution') ||
-                  loggedInUserEmail.toLowerCase().includes('digitalsolution') ||
-                  loggedInUserEmail.toLowerCase().includes('digital_solution')
-                )) ||
-                (loggedInUserName && (
-                  loggedInUserName.toLowerCase().includes('digital solution') ||
-                  loggedInUserName.toLowerCase().includes('digital.solution') ||
-                  loggedInUserName.toLowerCase().includes('digitalsolution')
-                ))
-              )
-            );
-
-            if (!isUserLoggedIn || !isDigitalSolutionAccount) return null;
-
-            return (
-              <div 
-                onClick={() => onOpenGuideModal?.('ikut')}
-                className="bg-white text-slate-900 rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex-1 sm:w-56 flex flex-col items-center p-3 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
-              >
-                <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm tracking-tight text-center mb-1.5">
-                  {t('Syarat & Ketentuan Akses Bidding')}
-                </h3>
-                <div className="w-full h-28 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
-                  <img 
-                    src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
-                    alt={t('Syarat & Ketentuan Akses Bidding')}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <p className="text-blue-950 font-medium text-[10px] leading-snug pt-2 text-center">
-                  {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
+          {/* Right Side: How It Works & Cara Ikut Lelang Side-by-Side */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-4 shrink-0 w-full lg:w-auto">
+            {/* Box 1: Bagaimana Cara Kerja? - Only visible when NOT logged in */}
+            {!isUserLoggedIn && (
+              <div className="bg-transparent border border-white/25 p-5 rounded-2xl flex-1 sm:w-56 text-center flex flex-col justify-center items-center shadow-lg">
+                <Truck className="w-10 h-10 text-blue-400 mx-auto mb-2 drop-shadow-md" />
+                <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-md">{t('Bagaimana Cara Kerja?')}</h3>
+                <p className="text-slate-200 text-[11px] mt-1.5 leading-normal drop-shadow-sm font-medium">
+                  {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
                 </p>
               </div>
-            );
-          })()}
+            )}
+
+            {/* Box 2: Cara Ikut Lelang Card - Only visible for Digital Solution account when logged in */}
+            {(() => {
+              const isDigitalSolutionAccount = Boolean(
+                isUserLoggedIn && (
+                  (loggedInUserEmail && (
+                    loggedInUserEmail.toLowerCase().includes('digital.solution') ||
+                    loggedInUserEmail.toLowerCase().includes('digitalsolution') ||
+                    loggedInUserEmail.toLowerCase().includes('digital_solution')
+                  )) ||
+                  (loggedInUserName && (
+                    loggedInUserName.toLowerCase().includes('digital solution') ||
+                    loggedInUserName.toLowerCase().includes('digital.solution') ||
+                    loggedInUserName.toLowerCase().includes('digitalsolution')
+                  ))
+                )
+              );
+
+              if (!isUserLoggedIn || !isDigitalSolutionAccount) return null;
+
+              return (
+                <div 
+                  onClick={() => onOpenGuideModal?.('ikut')}
+                  className="bg-white text-slate-900 rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex-1 sm:w-56 flex flex-col items-center py-3 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
+                >
+                  <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm tracking-tight text-center px-3 mb-1.5">
+                    {t('Syarat & Ketentuan Akses Bidding')}
+                  </h3>
+                  <div className="w-full h-28 bg-slate-50 overflow-hidden flex items-center justify-center">
+                    <img 
+                      src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
+                      alt={t('Syarat & Ketentuan Akses Bidding')}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <p className="text-blue-950 font-medium text-[10px] leading-snug pt-2 px-3 text-center">
+                    {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
         {/* Left Side: Public Catalog Grid */}
         <div className="space-y-6 lg:col-span-3" id="public-catalog-catalog-col">
@@ -859,6 +863,7 @@ export default function CatalogView({
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Right Side Overlay: OLX-inspired Beautiful Detail Page View */}
