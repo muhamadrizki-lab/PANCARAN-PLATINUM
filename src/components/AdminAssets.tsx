@@ -3033,17 +3033,14 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                         )}
 
                         {/* Dimensi Unit / Catatan Luas Opsional */}
-                        {!isProperty && (
+                        {!isProperty && !isUsedPart && (
                           <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-600 uppercase">
                               {t('Dimensi Unit (Opsional)')}
                             </label>
                             <input
                               type="text"
-                              placeholder={
-                                isUsedPart ? t('Contoh: 1.2 x 0.8 x 0.9 m, 350 kg') :
-                                t('Contoh: 12.0 x 2.5 x 3.7 m')
-                              }
+                              placeholder={t('Contoh: 12.0 x 2.5 x 3.7 m')}
                               value={formData.dimensions}
                               onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
                               className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"

@@ -680,13 +680,13 @@ export default function CatalogView({
 
       {/* Premium Hero Banner for Public Bidders */}
       <div className="relative rounded-3xl overflow-hidden bg-slate-950 text-white p-6 md:p-8 shadow-xl border border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-6 min-h-[305px]">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/50 via-slate-950 to-slate-950 opacity-90 z-0"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/30 via-slate-950/70 to-slate-950/80 opacity-80 z-0"></div>
         
         {/* Banner Background Image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-55 md:opacity-40 z-0"
+          className="absolute inset-0 bg-cover bg-center opacity-75 md:opacity-65 z-0"
           style={{ 
-            backgroundImage: "url('https://lh3.googleusercontent.com/d/1ZKGlebZp5PDwYSnvPXBLyjqRT3bo929R')",
+            backgroundImage: "url('https://lh3.googleusercontent.com/d/1QsGItLvspUKwE2au0ayEtT86r1sR-FX4')",
           }}
         ></div>
 
@@ -721,34 +721,36 @@ export default function CatalogView({
         {/* Right Side: How It Works & Cara Ikut Lelang Side-by-Side */}
         <div className="flex flex-col sm:flex-row items-stretch gap-4 z-10 relative shrink-0 w-full lg:w-auto">
           {/* Box 1: Bagaimana Cara Kerja? */}
-          <div className="bg-slate-900/85 backdrop-blur-md p-5 rounded-2xl border border-slate-800 flex-1 sm:w-56 text-center flex flex-col justify-center items-center">
-            <Truck className="w-10 h-10 text-blue-400 mx-auto mb-2" />
-            <h3 className="font-bold text-xs sm:text-sm text-slate-100">{t('Bagaimana Cara Kerja?')}</h3>
-            <p className="text-slate-400 text-[11px] mt-1.5 leading-normal">
+          <div className="bg-transparent border border-white/25 p-5 rounded-2xl flex-1 sm:w-56 text-center flex flex-col justify-center items-center shadow-lg">
+            <Truck className="w-10 h-10 text-blue-400 mx-auto mb-2 drop-shadow-md" />
+            <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-md">{t('Bagaimana Cara Kerja?')}</h3>
+            <p className="text-slate-200 text-[11px] mt-1.5 leading-normal drop-shadow-sm font-medium">
               {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
             </p>
           </div>
 
-          {/* Box 2: Cara Ikut Lelang Card */}
-          <div 
-            onClick={() => onOpenGuideModal?.('ikut')}
-            className="bg-white text-slate-900 rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex-1 sm:w-56 flex flex-col items-center p-3 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
-          >
-            <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm tracking-tight text-center mb-1.5">
-              {t('Syarat & Ketentuan Akses Bidding')}
-            </h3>
-            <div className="w-full h-28 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
-              <img 
-                src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
-                alt={t('Syarat & Ketentuan Akses Bidding')}
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                referrerPolicy="no-referrer"
-              />
+          {/* Box 2: Cara Ikut Lelang Card - Only visible when user is logged in */}
+          {isUserLoggedIn && (
+            <div 
+              onClick={() => onOpenGuideModal?.('ikut')}
+              className="bg-white text-slate-900 rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex-1 sm:w-56 flex flex-col items-center p-3 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
+            >
+              <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm tracking-tight text-center mb-1.5">
+                {t('Syarat & Ketentuan Akses Bidding')}
+              </h3>
+              <div className="w-full h-28 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
+                <img 
+                  src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
+                  alt={t('Syarat & Ketentuan Akses Bidding')}
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <p className="text-blue-950 font-medium text-[10px] leading-snug pt-2 text-center">
+                {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
+              </p>
             </div>
-            <p className="text-blue-950 font-medium text-[10px] leading-snug pt-2 text-center">
-              {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
-            </p>
-          </div>
+          )}
         </div>
       </div>
 
