@@ -1998,7 +1998,6 @@ export default function App() {
         </main>
       )}
 
-      {/* Footer */}
       <footer className="relative overflow-hidden text-xs" id="main-application-footer">
         {/* Top Dark Section */}
         <div 
@@ -2007,12 +2006,15 @@ export default function App() {
             backgroundImage: "linear-gradient(to bottom, rgba(15, 23, 42, 0.96), rgba(3, 7, 18, 0.98)), url('https://lh3.googleusercontent.com/d/1mhiKxfRXG4nzn8A5TRCDVd4WUZCiZ388')" 
           }}
         >
+          {/* Soft white gradient fade overlay at the top to merge seamlessly with the page background */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-slate-50 via-slate-50/10 to-transparent pointer-events-none z-5"></div>
+
           {/* Soft ambient glowing accents */}
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none"></div>
           <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-500/5 rounded-full blur-[80px] pointer-events-none"></div>
           
-          {/* Glow Top Border Line */}
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
+          {/* Curb (Trotoar) Yellow-Black Strip Accent Line */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-[repeating-linear-gradient(to_right,#fbbf24,#fbbf24_40px,#18181b_40px,#18181b_80px)] z-10 shadow-sm"></div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             {/* Main Footer Content */}
