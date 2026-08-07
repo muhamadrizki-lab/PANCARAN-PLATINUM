@@ -171,7 +171,7 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in" id="external-notifications-container">
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 border-l-[6px] border-l-blue-600 shadow-xs">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 border-l-[6px] border-l-slate-200 shadow-xs">
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Bell className="w-5 h-5 text-blue-600" />
           <span>{t('Notifikasi Saya')} ({notifications.length})</span>
@@ -418,7 +418,7 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
     <div className="max-w-5xl mx-auto animate-fade-in" id="external-inbox-container">
       
       {/* Inbox Welcome Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 border-l-[6px] border-l-blue-600 shadow-xs mb-6">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 border-l-[6px] border-l-slate-200 shadow-xs mb-6">
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Mail className="w-5 h-5 text-blue-600" />
           <span>{language === 'en' ? 'Inbox' : 'Kotak Masuk / Inbox'} ({mails.length})</span>
