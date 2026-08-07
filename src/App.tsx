@@ -72,6 +72,7 @@ import {
   X,
   Globe,
   Mail,
+  Phone,
   RefreshCw,
   Bell,
   CheckCircle,
@@ -2025,10 +2026,36 @@ export default function App() {
                   {t('HUBUNGI KAMI')}
                 </h3>
                 <div className="space-y-3">
+                  {/* Phone / WhatsApp */}
+                  <div className="flex items-start gap-3">
+                    <Phone className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 drop-shadow-[0_0_4px_rgba(52,211,153,0.3)]" />
+                    <div className="space-y-0.5">
+                      <a 
+                        href="https://wa.me/6281317469744" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-white font-mono font-bold text-xs hover:text-emerald-400 transition flex items-center gap-1.5 group"
+                      >
+                        +62 813-1746-9744
+                        <span className="bg-emerald-500/20 text-emerald-300 text-[9px] px-1.5 py-0.5 rounded font-sans font-bold border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-white transition">WhatsApp</span>
+                      </a>
+                      <p className="text-emerald-400/90 text-[11px] font-semibold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Hotline & Support Lelang
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Email */}
                   <div className="flex items-start gap-3">
                     <Mail className="w-5 h-5 text-blue-400 shrink-0 mt-0.5 drop-shadow-[0_0_4px_rgba(96,165,250,0.3)]" />
                     <div className="space-y-0.5">
-                      <p className="text-white font-mono font-semibold text-xs">angga.prahadi@pancaran-logistic.id</p>
+                      <a 
+                        href="mailto:angga.prahadi@pancaran-logistic.id"
+                        className="text-white font-mono font-semibold text-xs hover:text-blue-300 transition"
+                      >
+                        angga.prahadi@pancaran-logistic.id
+                      </a>
                       <p className="text-slate-400 text-[11px] font-medium">(Inland & Logistic Services)</p>
                     </div>
                   </div>
