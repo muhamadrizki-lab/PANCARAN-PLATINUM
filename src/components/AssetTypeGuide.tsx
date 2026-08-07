@@ -57,18 +57,18 @@ export default function AssetTypeGuide({ assets = [] }: AssetTypeGuideProps) {
   const isId = language === 'id';
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 border-l-[6px] border-l-blue-600 shadow-sm overflow-hidden mt-6" id="asset-type-guide-section">
+    <div className="bg-white rounded-3xl border border-slate-200 border-l-[6px] border-l-slate-300 shadow-sm overflow-hidden mt-6" id="asset-type-guide-section">
       {/* Header Panel */}
       <div className="p-6 bg-slate-900 text-white relative">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
           <Layers className="w-24 h-24 text-white" />
         </div>
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-blue-600 rounded-xl">
-            <Truck className="w-5 h-5 text-white" />
+          <div className="p-2 bg-slate-800 border border-slate-700 rounded-xl">
+            <Truck className="w-5 h-5 text-slate-200" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               {isId ? 'Eksplorasi Detail Aset' : 'Asset Specifications Explorer'}
             </span>
             <h2 className="text-lg font-extrabold text-white mt-0.5">

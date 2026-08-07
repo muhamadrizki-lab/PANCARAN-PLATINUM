@@ -2506,7 +2506,7 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                     <div className="space-y-4">
                       <div className="border-b border-slate-100 pb-2">
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                          <span className="w-1.5 h-4 bg-blue-600 rounded-full"></span>
+                          <span className="w-1.5 h-4 bg-slate-400 rounded-full"></span>
                           {t('INFORMASI UTAMA (MAIN INFORMATION)')}
                         </h3>
                       </div>
@@ -3124,7 +3124,7 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
               <div className="space-y-4">
                 <div className="border-b border-slate-100 pb-2">
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <span className="w-1.5 h-4 bg-emerald-600 rounded-full"></span>
+                    <span className="w-1.5 h-4 bg-slate-400 rounded-full"></span>
                     {t('DETAIL SPESIFIKASI KENDARAAN (VEHICLE SPECIFICATION DETAILS)')}
                   </h3>
                 </div>
@@ -3253,7 +3253,7 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
               <div className="space-y-4">
                 <div className="border-b border-slate-100 pb-2">
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <span className="w-1.5 h-4 bg-teal-600 rounded-full"></span>
+                    <span className="w-1.5 h-4 bg-slate-400 rounded-full"></span>
                     {t('DOKUMEN & LEGALITAS KENDARAAN (VEHICLE DOCUMENTS & LEGALITY)')}
                   </h3>
                 </div>
@@ -3298,7 +3298,7 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
               <div className="space-y-4">
                 <div className="border-b border-slate-100 pb-2">
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <span className="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
+                    <span className="w-1.5 h-4 bg-slate-400 rounded-full"></span>
                     {t('SPESIFIKASI ATTACHMENT (ATTACHMENT SPECIFICATIONS)')}
                   </h3>
                 </div>
