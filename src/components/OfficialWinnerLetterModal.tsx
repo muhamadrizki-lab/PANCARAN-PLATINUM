@@ -48,7 +48,99 @@ export function OfficialWinnerLetterModal({
   );
 
   const handlePrint = () => {
-    window.print();
+    const letterElement = document.getElementById("printable-winner-letter");
+    
+    // Create or reuse hidden iframe for robust printing
+    let printIframe = document.getElementById("print-helper-iframe") as HTMLIFrameElement | null;
+    if (!printIframe) {
+      printIframe = document.createElement("iframe");
+      printIframe.id = "print-helper-iframe";
+      printIframe.style.position = "fixed";
+      printIframe.style.top = "-9999px";
+      printIframe.style.left = "-9999px";
+      printIframe.style.width = "0";
+      printIframe.style.height = "0";
+      printIframe.style.border = "none";
+      document.body.appendChild(printIframe);
+    }
+
+    if (letterElement) {
+      const clonedElement = letterElement.cloneNode(true) as HTMLElement;
+      // Remove any no-print items from clone
+      const noPrints = clonedElement.querySelectorAll(".no-print");
+      noPrints.forEach(node => node.remove());
+
+      const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <title>${language === 'en' ? 'Official Winner Decision Letter - Pancaran Platinum' : 'Surat Resmi Pemenang Lelang - Pancaran Platinum'}</title>
+              <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+              <style>
+                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+                @page { size: A4 portrait; margin: 8mm 10mm; }
+                body {
+                  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+                  background: #ffffff !important;
+                  color: #0f172a !important;
+                  margin: 0;
+                  padding: 12px;
+                  font-size: 10pt;
+                  line-height: 1.35;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+                .no-print { display: none !important; }
+                .overflow-y-auto, .max-h-\\[70vh\\], .max-h-\\[92vh\\] { max-height: none !important; overflow: visible !important; height: auto !important; }
+                .border { border-color: #cbd5e1 !important; }
+                .bg-slate-50 { background-color: #f8fafc !important; }
+                .bg-emerald-50\\/80, .bg-emerald-50 { background-color: #ecfdf5 !important; }
+                .bg-indigo-50\\/80, .bg-indigo-50 { background-color: #eef2ff !important; }
+                .border-t { border-top: 1px solid #cbd5e1 !important; }
+                .shadow-2xl, .shadow-xl, .shadow-md, .shadow-sm, .shadow-xs { box-shadow: none !important; }
+                .rounded-2xl, .rounded-3xl { border-radius: 12px !important; }
+                
+                /* Compact spacing to fit on 1 A4 sheet */
+                .space-y-6 > * + * { margin-top: 0.75rem !important; }
+                .space-y-4 > * + * { margin-top: 0.5rem !important; }
+                .space-y-3 > * + * { margin-top: 0.35rem !important; }
+                .space-y-2 > * + * { margin-top: 0.25rem !important; }
+                .p-6, .p-8, .p-10 { padding: 1.25rem !important; }
+              </style>
+            </head>
+            <body>
+              <div style="width: 100%; max-width: 780px; margin: 0 auto; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px;">
+                ${clonedElement.innerHTML}
+              </div>
+            </body>
+          </html>
+        `);
+        iframeDoc.close();
+
+        setTimeout(() => {
+          try {
+            printIframe?.contentWindow?.focus();
+            printIframe?.contentWindow?.print();
+          } catch (e) {
+            console.warn("Iframe print error, falling back to window.print():", e);
+            window.focus();
+            window.print();
+          }
+        }, 350);
+        return;
+      }
+    }
+
+    try {
+      window.focus();
+      window.print();
+    } catch (e) {
+      console.error("Window print error:", e);
+    }
   };
 
   return (

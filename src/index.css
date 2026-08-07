@@ -85,88 +85,115 @@
     color: #0f172a !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    font-size: 10.5pt !important;
-    line-height: 1.4 !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
     height: auto !important;
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* Completely suppress default page wrapper scrolling and fixed positioning */
-  #root,
-  #app-root-wrapper,
-  main,
-  #external-inbox-container,
-  #external-inbox-container > div {
-    display: block !important;
-    position: static !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    border: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
+  /* Hide everything in body by default when printing */
+  body * {
+    visibility: hidden !important;
   }
 
-  /* Hide headers, navigation, sidebars, buttons, and inbox list */
-  nav,
-  header,
-  footer,
-  aside,
-  .no-print,
-  #external-inbox-container .lg\:col-span-4,
-  #external-inbox-container > div:first-child {
-    display: none !important;
+  /* Show ONLY the printable winner letter and its contents */
+  #printable-winner-letter,
+  #printable-winner-letter * {
+    visibility: visible !important;
   }
 
-  /* Show and format the printable winner letter */
+  /* Position printable-winner-letter at top-left of the page */
   #printable-winner-letter {
     display: block !important;
-    position: relative !important;
+    position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 20px 24px !important;
     border: 1px solid #cbd5e1 !important;
-    border-radius: 8px !important;
+    border-radius: 12px !important;
     box-shadow: none !important;
     background: #ffffff !important;
+    box-sizing: border-box !important;
   }
 
-  /* Expand the inner scrollable container completely */
-  #printable-winner-letter .overflow-y-auto,
-  #printable-winner-letter .max-h-\[70vh\] {
-    max-height: none !important;
+  /* Completely reset fixed containers, overlays, modal backdrops */
+  .fixed,
+  .backdrop-blur-md,
+  .bg-slate-900\/75,
+  .bg-slate-900\/80,
+  .bg-slate-900\/70,
+  .bg-slate-900,
+  .overflow-y-auto,
+  .max-h-\[92vh\],
+  .max-h-\[70vh\],
+  .custom-scrollbar {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
     overflow: visible !important;
+    max-height: none !important;
     height: auto !important;
-    padding: 20px 24px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
   }
 
-  /* Compact spacing for perfect A4 page fit */
-  #printable-winner-letter .space-y-8 > * + * {
-    margin-top: 1rem !important;
+  /* Explicitly hide no-print elements, buttons, navbars, headers, footers */
+  .no-print,
+  button,
+  nav,
+  header,
+  footer,
+  aside {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Compact spacing for perfect A4 single-page fitting */
+  #printable-winner-letter .space-y-6 > * + * {
+    margin-top: 0.75rem !important;
   }
 
   #printable-winner-letter .space-y-4 > * + * {
-    margin-top: 0.65rem !important;
+    margin-top: 0.5rem !important;
   }
 
-  /* Prevent awkward page splits inside key cards & signature blocks */
+  #printable-winner-letter .space-y-3 > * + * {
+    margin-top: 0.35rem !important;
+  }
+
+  #printable-winner-letter .space-y-2 > * + * {
+    margin-top: 0.25rem !important;
+  }
+
+  #printable-winner-letter .py-6,
+  #printable-winner-letter .pt-6 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  #printable-winner-letter .p-6,
+  #printable-winner-letter .p-8,
+  #printable-winner-letter .p-10 {
+    padding: 1rem !important;
+  }
+
+  /* Prevent page breaks inside cards */
   #printable-winner-letter .bg-slate-50,
-  #printable-winner-letter .bg-blue-50\/50,
-  #printable-winner-letter .bg-indigo-50\/50,
-  #printable-winner-letter .border-t {
+  #printable-winner-letter .bg-emerald-50\/80,
+  #printable-winner-letter .bg-indigo-50\/80,
+  #printable-winner-letter .border-t,
+  #printable-winner-letter .grid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* High contrast colors and clean backgrounds */
   #printable-winner-letter .border {
     border-color: #cbd5e1 !important;
   }
@@ -175,12 +202,14 @@
     background-color: #f8fafc !important;
   }
 
-  #printable-winner-letter .bg-blue-50\/50 {
-    background-color: #f0f9ff !important;
+  #printable-winner-letter .bg-emerald-50\/80,
+  #printable-winner-letter .bg-emerald-50 {
+    background-color: #ecfdf5 !important;
   }
 
-  #printable-winner-letter .bg-indigo-50\/50 {
-    background-color: #e0e7ff !important;
+  #printable-winner-letter .bg-indigo-50\/80,
+  #printable-winner-letter .bg-indigo-50 {
+    background-color: #eef2ff !important;
   }
 }
 
