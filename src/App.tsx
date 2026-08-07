@@ -1926,10 +1926,9 @@ export default function App() {
             <div className={`w-full ${externalTab === 'catalog' ? '' : 'space-y-6'}`}>
               
               {externalTab !== 'catalog' && (isUserLoggedIn || isAdminLoggedIn) && (
-                <div className="relative w-full bg-slate-950 border-b border-slate-800 py-6">
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/25 via-slate-950/70 to-slate-950/80 opacity-80 z-0"></div>
+                <div className="relative w-full bg-white border-b border-slate-200 py-6" id="external-tabs-light-header">
                   <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-10">
-                    {renderExternalNavigationTabs(true)}
+                    {renderExternalNavigationTabs(false)}
                   </div>
                 </div>
               )}

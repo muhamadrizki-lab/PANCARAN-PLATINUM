@@ -792,9 +792,6 @@ export default function CatalogView({
         {/* Soft white gradient fade overlay at the bottom to merge seamlessly with the page background */}
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-50 via-slate-50/30 to-transparent pointer-events-none z-5"></div>
 
-        {/* Soft white gradient fade overlay at the top to gently soften the transition with the header/top layout */}
-        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-slate-50/45 via-slate-50/10 to-transparent pointer-events-none z-5"></div>
-
         {/* Navigation Tabs (Overlayed inside the hero background) */}
         {navigationTabs ? (
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-20 mb-8 md:mb-10">
