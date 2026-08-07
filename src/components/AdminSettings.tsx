@@ -98,6 +98,100 @@ export default function AdminSettings({ onShowNotification }: AdminSettingsProps
         <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20"></div>
         
+        {/* Traditional Botanical Batik Wallpaper Background Accent */}
+        <div className="absolute inset-0 opacity-[0.22] pointer-events-none z-0 select-none overflow-hidden mix-blend-overlay">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="batikBotanicalSettings" width="160" height="160" patternUnits="userSpaceOnUse">
+                {/* Background fine dots (cecek) */}
+                <circle cx="20" cy="15" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="35" cy="45" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="10" cy="85" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="50" cy="115" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="80" cy="25" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="95" cy="75" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="70" cy="105" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="120" cy="15" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="140" cy="55" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="110" cy="95" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="130" cy="135" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="25" cy="145" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="150" cy="105" r="0.7" fill="#ffffff" opacity="0.3"/>
+                <circle cx="85" cy="145" r="0.7" fill="#ffffff" opacity="0.3"/>
+                
+                {/* Scrolling vines/tendrils (Luwaran/Semen) */}
+                <path d="M -10,30 Q 30,-10 60,20 T 110,10 T 170,40" fill="none" stroke="#60a5fa" strokeWidth="1" opacity="0.5" />
+                <path d="M 0,110 Q 40,80 80,120 T 160,90 T 200,120" fill="none" stroke="#60a5fa" strokeWidth="1" opacity="0.5" />
+                <path d="M 30,170 Q 70,120 100,160 T 180,130" fill="none" stroke="#60a5fa" strokeWidth="1" opacity="0.5" />
+                
+                {/* Swirly branches (Semen vines) */}
+                <path d="M 35,45 Q 20,20 0,35 Q -10,50 15,60 C 35,70 50,40 35,45 Z" fill="none" stroke="#93c5fd" strokeWidth="1.2" opacity="0.6" />
+                <path d="M 115,115 Q 100,90 80,105 Q 70,120 95,130 C 115,140 130,110 115,115 Z" fill="none" stroke="#93c5fd" strokeWidth="1.2" opacity="0.6" />
+                
+                {/* Botanical fan leaves (Batik Sogan Golden Wing / Sawat) */}
+                {/* Motif 1 (Center-Left) */}
+                <g transform="translate(45, 65) scale(0.85)">
+                  <path d="M 0,0 C 15,-25 40,-25 50,-10 C 40,-5 20,-10 0,0" fill="#f59e0b" opacity="0.85"/>
+                  <path d="M 0,0 C 25,-15 50,-5 50,15 C 40,10 20,5 0,0" fill="#fbbf24" opacity="0.85"/>
+                  <path d="M 0,0 C 25,5 45,25 35,40 C 25,30 15,15 0,0" fill="#d97706" opacity="0.85"/>
+                  <path d="M 0,0 C 5,-25 -15,-35 -25,-20 C -15,-15 -5,-10 0,0" fill="#f59e0b" opacity="0.85"/>
+                  <path d="M 0,0 C -15,-25 -40,-15 -40,5 C -30,0 -15,0 0,0" fill="#fbbf24" opacity="0.85"/>
+                  <circle cx="0" cy="0" r="4" fill="#ef4444"/>
+                  <path d="M 0,0 L 10,-10 L 20,-5" stroke="#ffffff" strokeWidth="1" fill="none"/>
+                </g>
+
+                {/* Motif 2 (Top-Right) */}
+                <g transform="translate(125, 40) scale(0.6) rotate(45)">
+                  <path d="M 0,0 C 15,-25 40,-25 50,-10 C 40,-5 20,-10 0,0" fill="#fbbf24" opacity="0.85"/>
+                  <path d="M 0,0 C 25,-15 50,-5 50,15 C 40,10 20,5 0,0" fill="#f59e0b" opacity="0.85"/>
+                  <path d="M 0,0 C 25,5 45,25 35,40 C 25,30 15,15 0,0" fill="#d97706" opacity="0.85"/>
+                  <path d="M 0,0 C 5,-25 -15,-35 -25,-20 C -15,-15 -5,-10 0,0" fill="#f59e0b" opacity="0.85"/>
+                  <path d="M 0,0 C -15,-25 -40,-15 -40,5 C -30,0 -15,0 0,0" fill="#fbbf24" opacity="0.85"/>
+                  <circle cx="0" cy="0" r="3" fill="#f87171"/>
+                </g>
+
+                {/* Motif 3 (Bottom-Right) */}
+                <g transform="translate(115, 120) scale(0.75) rotate(-30)">
+                  <path d="M 0,0 C 15,-25 40,-25 50,-10 C 40,-5 20,-10 0,0" fill="#f59e0b" opacity="0.85"/>
+                  <path d="M 0,0 C 25,-15 50,-5 50,15 C 40,10 20,5 0,0" fill="#fbbf24" opacity="0.85"/>
+                  <path d="M 0,0 C 25,5 45,25 35,40 C 25,30 15,15 0,0" fill="#d97706" opacity="0.85"/>
+                  <path d="M 0,0 C 5,-25 -15,-35 -25,-20 C -15,-15 -5,-10 0,0" fill="#fbbf24" opacity="0.85"/>
+                  <path d="M 0,0 C -15,-25 -40,-15 -40,5 C -30,0 -15,0 0,0" fill="#d97706" opacity="0.85"/>
+                  <circle cx="0" cy="0" r="3.5" fill="#ef4444"/>
+                </g>
+
+                {/* Red Flowers/Buds */}
+                <g transform="translate(20, 100)">
+                  <path d="M 0,0 Q 10,-15 0,-25 Q -10,-15 0,0" fill="#ef4444" opacity="0.9"/>
+                  <path d="M 0,-5 Q 6,-15 0,-22 Q -6,-15 0,-5" fill="#f87171" opacity="0.9"/>
+                  <path d="M 0,0 L 0,5" stroke="#60a5fa" strokeWidth="1.2"/>
+                </g>
+                <g transform="translate(85, 25) rotate(15)">
+                  <path d="M 0,0 Q 10,-15 0,-25 Q -10,-15 0,0" fill="#ef4444" opacity="0.9"/>
+                  <path d="M 0,-5 Q 6,-15 0,-22 Q -6,-15 0,-5" fill="#f87171" opacity="0.9"/>
+                  <path d="M 0,0 L 0,5" stroke="#60a5fa" strokeWidth="1.2"/>
+                </g>
+                <g transform="translate(145, 90) rotate(-45)">
+                  <path d="M 0,0 Q 10,-15 0,-25 Q -10,-15 0,0" fill="#ef4444" opacity="0.9"/>
+                  <path d="M 0,-5 Q 6,-15 0,-22 Q -6,-15 0,-5" fill="#f87171" opacity="0.9"/>
+                  <path d="M 0,0 L 0,5" stroke="#60a5fa" strokeWidth="1.2"/>
+                </g>
+
+                {/* Small blue leaves */}
+                <g transform="translate(65, 115) scale(0.6)">
+                  <path d="M 0,0 C 15,-15 30,-10 35,5 C 20,5 10,-5 0,0" fill="#2563eb" opacity="0.8"/>
+                  <path d="M 0,0 C -15,-15 -30,-10 -35,5 C -20,5 -10,-5 0,0" fill="#3b82f6" opacity="0.8"/>
+                </g>
+                <g transform="translate(100, 70) scale(0.5) rotate(60)">
+                  <path d="M 0,0 C 15,-15 30,-10 35,5 C 20,5 10,-5 0,0" fill="#2563eb" opacity="0.8"/>
+                  <path d="M 0,0 C -15,-15 -30,-10 -35,5 C -20,5 -10,-5 0,0" fill="#3b82f6" opacity="0.8"/>
+                </g>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#batikBotanicalSettings)" />
+          </svg>
+        </div>
+        
         <div className="relative z-10 space-y-2">
           <span className="text-[9px] uppercase tracking-widest bg-blue-500/20 text-blue-300 font-extrabold px-3 py-1 rounded-full border border-blue-500/30 mb-2 inline-block">
             {t('Konfigurasi Portal')}

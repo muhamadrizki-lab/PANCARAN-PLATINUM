@@ -2164,7 +2164,7 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] font-medium">
               <p className="text-slate-500">
-                © 2026 PLATINUM - Pancaran Logistics. {t('Hak Cipta Dilindungi')}.
+                © 2026 PLATINUM. {t('Hak Cipta Dilindungi')}.
               </p>
               <div className="flex gap-4">
                 <span className="text-slate-600 hover:text-blue-600 transition-colors cursor-pointer font-bold">{t('Syarat & Ketentuan')}</span>
@@ -2287,7 +2287,7 @@ export default function App() {
                   </div>
 
                   <p className="font-semibold text-blue-950 italic text-center pt-2">
-                    {t('Mari bergabung dan dapatkan unit truck impian Anda di ajang eksklusif Pancaran Platinum!')}
+                    {t('Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!')}
                   </p>
                 </div>
 
