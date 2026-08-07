@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Pancaran Lelang",
+  "description": "Platform Lelang Asset Pancaran Logistics untuk Admin Internal dan Bidder Eksternal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

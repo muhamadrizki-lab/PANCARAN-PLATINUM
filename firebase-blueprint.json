@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "Asset": {
+      "title": "Asset",
+      "description": "Represents an industrial vehicle/logistics asset up for auction.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "category": { "type": "string" },
+        "modelYear": { "type": "integer" },
+        "plateNumber": { "type": "string" },
+        "condition": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "startingPrice": { "type": "number" },
+        "highestBid": { "type": "number" },
+        "status": { "type": "string", "enum": ["Open", "Sold"] },
+        "imageUrl": { "type": "string" },
+        "bids": { "type": "array" }
+      },
+      "required": ["id", "name", "brand", "category", "modelYear", "plateNumber", "condition", "location", "description", "startingPrice", "highestBid", "status", "imageUrl", "bids"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Represents an administrative user who can manage assets and users.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "name", "role", "createdAt"]
+    },
+    "Brand": {
+      "title": "Brand",
+      "description": "Represents a brand name used for assets filtering and dropdown selection.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Represents a category name used for assets classification.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "Condition": {
+      "title": "Condition",
+      "description": "Represents a physical condition name used for assets description.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "RegisteredUser": {
+      "title": "RegisteredUser",
+      "description": "Represents an external client who can log in to view prices and place bids.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string" },
+        "emailVerified": { "type": "boolean" },
+        "verificationCode": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "name", "phone", "status", "emailVerified", "verificationCode", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/assets/{assetId}": {
+      "schema": "Asset",
+      "description": "Collection of logistics assets open for public catalog viewing and bidding."
+    },
+    "/admins/{adminEmail}": {
+      "schema": "AdminUser",
+      "description": "Collection of authorized administrator user details."
+    },
+    "/brands/{brandId}": {
+      "schema": "Brand",
+      "description": "Collection of master brands for assets selection."
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Collection of master categories for assets selection."
+    },
+    "/conditions/{conditionId}": {
+      "schema": "Condition",
+      "description": "Collection of master physical conditions for assets selection."
+    },
+    "/registered_users/{email}": {
+      "schema": "RegisteredUser",
+      "description": "Collection of registered external user accounts with verification status."
+    }
+  }
+}

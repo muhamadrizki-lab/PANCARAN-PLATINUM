@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Rules for Assets collection
+    match /assets/{assetId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Admins collection
+    match /admins/{adminEmail} {
+      allow read, write: if true;
+    }
+
+    // Rules for Brands collection
+    match /brands/{brandId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Categories collection
+    match /categories/{categoryId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Conditions collection
+    match /conditions/{conditionId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Series collection
+    match /series/{seriesId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Colours collection
+    match /colours/{colourId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Fuels collection
+    match /fuels/{fuelId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Attachments collection
+    match /attachments/{attachmentId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Attachment Types collection
+    match /attachment_types/{typeId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Registered Users collection
+    match /registered_users/{email} {
+      allow read, write: if true;
+    }
+
+    // Rules for Config collection
+    match /config/{documentId} {
+      allow read, write: if true;
+    }
+
+    // Rules for Notifications collection
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+  }
+}
