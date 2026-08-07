@@ -152,19 +152,29 @@ export default function AdminDashboard({
   return (
     <div className="space-y-8 animate-fade-in" id="admin-dashboard-container">
       {/* Welcome Banner */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-md border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('Dashboard Pancaran Lelang')}</h1>
-          <p className="text-slate-300 mt-2 text-sm md:text-base">
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-xl border border-blue-900/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        {/* Soft, glowing ambient lights */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20"></div>
+        
+        <div className="relative z-10 space-y-2 max-w-2xl">
+          <span className="text-[9px] uppercase tracking-widest bg-blue-500/20 text-blue-300 font-extrabold px-3 py-1 rounded-full border border-blue-500/30 mb-2 inline-block">
+            {t('Sistem Manajemen Internal')}
+          </span>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent">
+            {t('Dashboard Pancaran Lelang')}
+          </h1>
+          <p className="text-slate-300 text-sm md:text-base leading-relaxed">
             {t('Halo Admin, kelola aset lelang komersial, pantau penawaran harga, dan atur survei fisik dalam satu portal terpadu.')}
           </p>
         </div>
-        <div className="bg-slate-800/80 px-4 py-3 rounded-xl border border-slate-700 text-xs md:text-sm font-mono self-stretch md:self-auto text-center md:text-left flex flex-col justify-center">
-          <p className="text-slate-400">{t('Waktu Sistem (WIB)')}</p>
-          <p className="font-semibold text-white mt-1">
+        
+        <div className="relative overflow-hidden bg-slate-950/60 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-blue-500/20 text-xs md:text-sm font-mono self-stretch md:self-auto text-center md:text-left flex flex-col justify-center shadow-inner shadow-blue-500/5 z-10 shrink-0 min-w-[200px]">
+          <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">{t('Waktu Sistem (WIB)')}</p>
+          <p className="font-semibold text-white mt-1.5">
             {currentTime.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
-          <p className="text-blue-400 font-bold mt-1 text-base md:text-lg tracking-wider">
+          <p className="text-blue-400 font-extrabold mt-1 text-base md:text-lg tracking-widest drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">
             {currentTime.toLocaleTimeString(language === 'id' ? 'id-ID' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} WIB
           </p>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'motion/react';
 import { Asset, Bid, MAIN_CATEGORIES, normalizeCategory } from '../types';
 import { useLanguage } from './LanguageContext';
 import { 
@@ -25,7 +26,8 @@ import {
   X,
   ZoomIn,
   ZoomOut,
-  Lock
+  Lock,
+  GripHorizontal
 } from 'lucide-react';
 
 interface CatalogViewProps {
@@ -40,6 +42,7 @@ interface CatalogViewProps {
   loggedInUserPhone?: string;
   canBid?: boolean;
   onOpenGuideModal?: (guide: 'ikut' | 'titip' | 'online') => void;
+  navigationTabs?: React.ReactNode;
 }
 
 interface CatalogCardProps {
@@ -412,7 +415,8 @@ export default function CatalogView({
   loggedInUserName = '',
   loggedInUserPhone = '',
   canBid = true,
-  onOpenGuideModal
+  onOpenGuideModal,
+  navigationTabs
 }: CatalogViewProps) {
   const { language, t } = useLanguage();
   const [internalSelectedAssetId, setInternalSelectedAssetId] = useState<string | null>(null);
@@ -422,6 +426,7 @@ export default function CatalogView({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showBiddingGuide, setShowBiddingGuide] = useState(true);
   
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -679,7 +684,7 @@ export default function CatalogView({
       
 
       {/* Premium Hero Banner for Public Bidders */}
-      <div className="relative w-full overflow-hidden bg-slate-950 text-white py-8 md:py-12 border-y border-slate-800 min-h-[305px]">
+      <div className="relative w-full overflow-hidden bg-slate-950 text-white border-y border-slate-800 pt-6 md:pt-8 pb-10 md:pb-14">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/30 via-slate-950/70 to-slate-950/80 opacity-80 z-0"></div>
         
         {/* Banner Background Image */}
@@ -689,6 +694,16 @@ export default function CatalogView({
             backgroundImage: "url('https://lh3.googleusercontent.com/d/1QsGItLvspUKwE2au0ayEtT86r1sR-FX4')",
           }}
         ></div>
+
+        {/* Navigation Tabs (Overlayed inside the hero background) */}
+        {navigationTabs ? (
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-20 mb-8 md:mb-10">
+            {navigationTabs}
+          </div>
+        ) : (
+          /* Empty spacer to maintain identical banner size/height and background image layout before login */
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-20 mb-8 md:mb-10 h-[46px]"></div>
+        )}
 
         {/* Content Container (Centered to match the site width) */}
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row justify-between items-center gap-6">
@@ -721,18 +736,7 @@ export default function CatalogView({
           </div>
 
           {/* Right Side: How It Works & Cara Ikut Lelang Side-by-Side */}
-          <div className="flex flex-col sm:flex-row items-stretch gap-4 shrink-0 w-full lg:w-auto">
-            {/* Box 1: Bagaimana Cara Kerja? - Only visible when NOT logged in */}
-            {!isUserLoggedIn && (
-              <div className="bg-transparent border border-white/25 p-5 rounded-2xl flex-1 sm:w-56 text-center flex flex-col justify-center items-center shadow-lg">
-                <Truck className="w-10 h-10 text-blue-400 mx-auto mb-2 drop-shadow-md" />
-                <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-md">{t('Bagaimana Cara Kerja?')}</h3>
-                <p className="text-slate-200 text-[11px] mt-1.5 leading-normal drop-shadow-sm font-medium">
-                  {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
-                </p>
-              </div>
-            )}
-
+          <div className="flex flex-col sm:flex-row items-stretch gap-4 shrink-0 w-full lg:w-auto lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-8 lg:z-20 lg:bottom-auto">
             {/* Box 2: Cara Ikut Lelang Card - Only visible for Digital Solution account when logged in */}
             {(() => {
               const isDigitalSolutionAccount = Boolean(
@@ -752,15 +756,55 @@ export default function CatalogView({
 
               if (!isUserLoggedIn || !isDigitalSolutionAccount) return null;
 
+              if (!showBiddingGuide) {
+                return (
+                  <motion.button
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    onClick={() => setShowBiddingGuide(true)}
+                    className="bg-blue-600/95 hover:bg-blue-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-full shadow-lg border border-blue-500/40 flex items-center gap-2 transition-all hover:scale-105 z-30 self-center sm:self-end"
+                    id="reopen-bidding-guide-btn"
+                  >
+                    <span>📋</span> {t('Syarat & Ketentuan Akses Bidding')}
+                  </motion.button>
+                );
+              }
+
               return (
-                <div 
-                  onClick={() => onOpenGuideModal?.('ikut')}
-                  className="bg-white text-slate-900 rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex-1 sm:w-56 flex flex-col items-center py-3 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
+                <motion.div 
+                  drag
+                  dragMomentum={false}
+                  onTap={() => onOpenGuideModal?.('ikut')}
+                  className="bg-white/95 backdrop-blur-md text-slate-900 rounded-3xl shadow-2xl border-2 border-blue-500/40 overflow-hidden flex-1 w-full sm:w-64 md:w-72 flex flex-col items-center pt-3 pb-4 cursor-grab active:cursor-grabbing hover:bg-white transition-colors duration-300 select-none z-30 touch-none relative group"
+                  id="draggable-bidding-guide-card"
+                  style={{ touchAction: 'none' }}
                 >
-                  <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm tracking-tight text-center px-3 mb-1.5">
+                  {/* Close button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowBiddingGuide(false);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="absolute top-3 right-3 p-1.5 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200/50 transition-colors z-40 shadow-xs"
+                    title={t('Tutup')}
+                    id="close-bidding-guide-btn"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Premium Drag Indicator Handle */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 hover:bg-blue-50 px-3 py-1 rounded-full mb-2 transition-colors border border-slate-200/50">
+                    <GripHorizontal className="w-4 h-4 text-slate-500 group-hover:text-blue-600" />
+                    <span className="text-[9px] font-extrabold text-slate-500 group-hover:text-blue-600 uppercase tracking-widest font-sans">
+                      {t('Tarik / Geser')}
+                    </span>
+                  </div>
+
+                  <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm md:text-base tracking-tight text-center px-4 mb-2">
                     {t('Syarat & Ketentuan Akses Bidding')}
                   </h3>
-                  <div className="w-full h-28 bg-slate-50 overflow-hidden flex items-center justify-center">
+                  <div className="w-full h-36 sm:h-40 bg-slate-50 overflow-hidden flex items-center justify-center border-y border-slate-100">
                     <img 
                       src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
                       alt={t('Syarat & Ketentuan Akses Bidding')}
@@ -768,10 +812,10 @@ export default function CatalogView({
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <p className="text-blue-950 font-medium text-[10px] leading-snug pt-2 px-3 text-center">
+                  <p className="text-blue-950 font-semibold text-[10px] sm:text-xs leading-relaxed pt-3 px-4 text-center">
                     {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
                   </p>
-                </div>
+                </motion.div>
               );
             })()}
           </div>

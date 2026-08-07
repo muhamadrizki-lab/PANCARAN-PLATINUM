@@ -93,13 +93,22 @@ export default function AdminSettings({ onShowNotification }: AdminSettingsProps
   return (
     <div className="space-y-8 animate-fade-in" id="admin-settings-container">
       {/* Title block */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-md border border-slate-800">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <span>⚙️</span> {t('Setelan Sistem & Integrasi')}
-        </h1>
-        <p className="text-slate-300 mt-2 text-sm md:text-base">
-          {t('Kelola konfigurasi integrasi cloud, atur koneksi email OTP asli, dan pantau penyelarasan data portal Pancaran Lelang.')}
-        </p>
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-xl border border-blue-900/30 flex flex-col justify-between">
+        {/* Soft, glowing ambient lights */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20"></div>
+        
+        <div className="relative z-10 space-y-2">
+          <span className="text-[9px] uppercase tracking-widest bg-blue-500/20 text-blue-300 font-extrabold px-3 py-1 rounded-full border border-blue-500/30 mb-2 inline-block">
+            {t('Konfigurasi Portal')}
+          </span>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent flex items-center gap-2">
+            <span>⚙️</span> {t('Setelan Sistem & Integrasi')}
+          </h1>
+          <p className="text-slate-300 text-sm md:text-base leading-relaxed max-w-3xl">
+            {t('Kelola konfigurasi integrasi cloud, atur koneksi email OTP asli, dan pantau penyelarasan data portal Pancaran Lelang.')}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

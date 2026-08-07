@@ -851,6 +851,77 @@ export default function App() {
 
   const externalNotificationsCount = outbidCount + winningAssets.length;
 
+  const renderExternalNavigationTabs = (isDarkTheme = false) => {
+    if (!isUserLoggedIn && !isAdminLoggedIn) return null;
+    
+    return (
+      <div 
+        className={`flex p-1 rounded-2xl max-w-md mx-auto ${
+          isDarkTheme 
+            ? 'border border-white/10 bg-slate-950/40 backdrop-blur-md shadow-lg' 
+            : 'border border-slate-200 bg-white shadow-sm'
+        }`} 
+        id="external-navigation-tabs"
+      >
+        <button
+          onClick={() => setExternalTab('catalog')}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            externalTab === 'catalog'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+              : isDarkTheme
+                ? 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>{t('Katalog')}</span>
+        </button>
+        <button
+          onClick={() => setExternalTab('notifications')}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
+            externalTab === 'notifications'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+              : isDarkTheme
+                ? 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span>{t('Notifikasi')}</span>
+          {externalNotificationsCount > 0 && (
+            <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none">
+              {externalNotificationsCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setExternalTab('inbox')}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
+            externalTab === 'inbox'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+              : isDarkTheme
+                ? 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <span>{t('Inbox')}</span>
+          {externalInboxCount > 0 && (
+            <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none animate-pulse">
+              {externalInboxCount}
+            </span>
+          )}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans" id="app-root-wrapper">
       
@@ -1850,62 +1921,15 @@ export default function App() {
 
         </div>
       ) : (
-        <main className="flex-1 w-full py-8">
+        <main className={`flex-1 w-full ${externalTab === 'catalog' ? 'pb-8' : 'py-8'}`}>
           {role === 'external' ? (
-            <div className="space-y-6 w-full">
-              {/* Desktop Sub-navigation for Logged In External Users */}
-              {(isUserLoggedIn || isAdminLoggedIn) && (
-                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="flex border border-slate-200 bg-white p-1 rounded-2xl shadow-sm max-w-md mx-auto" id="external-navigation-tabs">
-                    <button
-                      onClick={() => setExternalTab('catalog')}
-                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                        externalTab === 'catalog'
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                      <span>{t('Katalog')}</span>
-                    </button>
-                    <button
-                      onClick={() => setExternalTab('notifications')}
-                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
-                        externalTab === 'notifications'
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                      <span>{t('Notifikasi')}</span>
-                      {externalNotificationsCount > 0 && (
-                        <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none">
-                          {externalNotificationsCount}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setExternalTab('inbox')}
-                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
-                        externalTab === 'inbox'
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      <span>{t('Inbox')}</span>
-                      {externalInboxCount > 0 && (
-                        <span className="absolute top-1.5 right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none animate-pulse">
-                          {externalInboxCount}
-                        </span>
-                      )}
-                    </button>
+            <div className={`w-full ${externalTab === 'catalog' ? '' : 'space-y-6'}`}>
+              
+              {externalTab !== 'catalog' && (isUserLoggedIn || isAdminLoggedIn) && (
+                <div className="relative w-full bg-slate-950 border-b border-slate-800 py-6">
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/25 via-slate-950/70 to-slate-950/80 opacity-80 z-0"></div>
+                  <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-10">
+                    {renderExternalNavigationTabs(true)}
                   </div>
                 </div>
               )}
@@ -1922,6 +1946,7 @@ export default function App() {
                   loggedInUserName={isUserLoggedIn ? loggedInUserName : adminName}
                   loggedInUserPhone={isUserLoggedIn ? loggedInUserPhone : ''}
                   onOpenGuideModal={(guide) => setSelectedGuideModal(guide)}
+                  navigationTabs={renderExternalNavigationTabs(true)}
                   canBid={
                     isAdminLoggedIn
                       ? true
