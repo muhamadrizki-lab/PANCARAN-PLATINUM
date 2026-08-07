@@ -720,14 +720,16 @@ export default function CatalogView({
 
         {/* Right Side: How It Works & Cara Ikut Lelang Side-by-Side */}
         <div className="flex flex-col sm:flex-row items-stretch gap-4 z-10 relative shrink-0 w-full lg:w-auto">
-          {/* Box 1: Bagaimana Cara Kerja? */}
-          <div className="bg-transparent border border-white/25 p-5 rounded-2xl flex-1 sm:w-56 text-center flex flex-col justify-center items-center shadow-lg">
-            <Truck className="w-10 h-10 text-blue-400 mx-auto mb-2 drop-shadow-md" />
-            <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-md">{t('Bagaimana Cara Kerja?')}</h3>
-            <p className="text-slate-200 text-[11px] mt-1.5 leading-normal drop-shadow-sm font-medium">
-              {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
-            </p>
-          </div>
+          {/* Box 1: Bagaimana Cara Kerja? - Only visible when NOT logged in */}
+          {!isUserLoggedIn && (
+            <div className="bg-transparent border border-white/25 p-5 rounded-2xl flex-1 sm:w-56 text-center flex flex-col justify-center items-center shadow-lg">
+              <Truck className="w-10 h-10 text-blue-400 mx-auto mb-2 drop-shadow-md" />
+              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-md">{t('Bagaimana Cara Kerja?')}</h3>
+              <p className="text-slate-200 text-[11px] mt-1.5 leading-normal drop-shadow-sm font-medium">
+                {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
+              </p>
+            </div>
+          )}
 
           {/* Box 2: Cara Ikut Lelang Card - Only visible when user is logged in */}
           {isUserLoggedIn && (
