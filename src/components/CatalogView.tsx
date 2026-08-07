@@ -686,7 +686,7 @@ export default function CatalogView({
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-75 md:opacity-65 z-0"
           style={{ 
-            backgroundImage: "url('https://lh3.googleusercontent.com/d/1naj8LA7K5xUX7BwMCspTfC_ewAPdI8XE')",
+            backgroundImage: "url('https://lh3.googleusercontent.com/d/1QsGItLvspUKwE2au0ayEtT86r1sR-FX4')",
           }}
         ></div>
 
