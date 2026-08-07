@@ -2720,10 +2720,10 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                               <label className="text-xs font-bold text-amber-900 uppercase block">{t('Pilih Sub-Kategori Barang *')}</label>
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {[
-                                  { id: 'Ban', label: 'Ban (Tyre)', icon: Disc },
-                                  { id: 'Aki', label: 'Aki (Battery)', icon: BatteryCharging },
-                                  { id: 'Besi', label: 'Besi (Scrap Metal)', icon: Layers },
-                                  { id: 'Lainnya', label: 'Sparepart Lain', icon: Wrench },
+                                  { id: 'Ban', label: t('Ban (Tyre)'), icon: Disc },
+                                  { id: 'Aki', label: t('Aki (Battery)'), icon: BatteryCharging },
+                                  { id: 'Besi', label: t('Besi (Scrap Metal)'), icon: Layers },
+                                  { id: 'Lainnya', label: t('Sparepart Lain'), icon: Wrench },
                                 ].map((subCat) => {
                                   const isSelected = (formData.usedPartCategory || 'Ban') === subCat.id;
                                   const IconComp = subCat.icon;
@@ -2768,9 +2768,9 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                   onChange={(e) => setFormData(prev => ({ ...prev, salesSystem: e.target.value }))}
                                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
                                 >
-                                  <option value="Satuan">Satuan</option>
-                                  <option value="Borongan">Borongan (1 Lot)</option>
-                                  <option value="Timbangan">Timbangan (Per Kg / Ton)</option>
+                                  <option value="Satuan">{t('Satuan')}</option>
+                                  <option value="Borongan">{t('Borongan (1 Lot)')}</option>
+                                  <option value="Timbangan">{t('Timbangan (Per Kg / Ton)')}</option>
                                 </select>
                               </div>
                             </div>
@@ -2816,10 +2816,10 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                       onChange={(e) => setFormData(prev => ({ ...prev, tireType: e.target.value }))}
                                       className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
                                     >
-                                      <option value="Ban Luar">Ban Luar</option>
-                                      <option value="Ban Dalam">Ban Dalam</option>
-                                      <option value="Flap">Flap</option>
-                                      <option value="Set (Ban Luar + Dalam + Flap)">Set (Ban Luar + Dalam + Flap)</option>
+                                      <option value="Ban Luar">{t('Ban Luar')}</option>
+                                      <option value="Ban Dalam">{t('Ban Dalam')}</option>
+                                      <option value="Flap">{t('Flap')}</option>
+                                      <option value="Set (Ban Luar + Dalam + Flap)">{t('Set (Ban Luar + Dalam + Flap)')}</option>
                                     </select>
                                   </div>
 
@@ -2843,9 +2843,9 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                       onChange={(e) => setFormData(prev => ({ ...prev, tireCondition: e.target.value }))}
                                       className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
                                     >
-                                      <option value="Masih Layak Pakai (Tubeless/Pakai Ban Dalam)">Masih Layak Pakai (Tubeless/Pakai Ban Dalam)</option>
-                                      <option value="Perlu Vulkanisir">Perlu Vulkanisir</option>
-                                      <option value="Rusak / Avaf (Hanya untuk Olahan Karet)">Rusak / Avaf (Hanya untuk Olahan Karet)</option>
+                                      <option value="Masih Layak Pakai (Tubeless/Pakai Ban Dalam)">{t('Masih Layak Pakai (Tubeless/Pakai Ban Dalam)')}</option>
+                                      <option value="Perlu Vulkanisir">{t('Perlu Vulkanisir')}</option>
+                                      <option value="Rusak / Avaf (Hanya untuk Olahan Karet)">{t('Rusak / Avaf (Hanya untuk Olahan Karet)')}</option>
                                     </select>
                                   </div>
 
