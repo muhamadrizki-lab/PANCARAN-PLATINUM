@@ -50,7 +50,10 @@ import {
   Truck,
   Wrench,
   Building2,
-  Package
+  Package,
+  Disc,
+  BatteryCharging,
+  Layers
 } from 'lucide-react';
 
 interface AdminAssetsProps {
@@ -622,6 +625,32 @@ export default function AdminAssets({
     imageUrl: '',
     imageUrls: [] as string[],
     dimensions: '',
+    propertyType: 'Gudang',
+    auctionType: 'Jual',
+    landArea: '',
+    buildingArea: '',
+    // Used Part fields
+    usedPartCategory: 'Ban',
+    quantity: '',
+    salesSystem: 'Satuan',
+    openHouseSchedule: '',
+    tireBrand: '',
+    tireSize: '',
+    tireType: 'Ban Luar',
+    tireTreadDepth: '',
+    tireCondition: 'Masih Layak Pakai (Tubeless/Pakai Ban Dalam)',
+    tireDotCode: '',
+    batteryBrand: '',
+    batteryTypeCode: '',
+    batteryCapacity: '',
+    batteryType: 'Aki Basah',
+    batteryCondition: 'Masih Fungsi (Hanya Perlu Cas)',
+    batteryElectrolyteStatus: 'Masih Terisi Air Aki',
+    metalType: 'Besi Berat / H-Beam / I-Beam / Plate',
+    metalSalesMethod: 'Penimbangan',
+    metalEstimatedWeight: '',
+    metalCondition: '',
+    metalHandlingFacility: 'Pemenang Lelang wajib potong dan angkut sendiri',
     model: '',
     series: '',
     axels: '',
@@ -673,6 +702,31 @@ export default function AdminAssets({
       imageUrl: '',
       imageUrls: [],
       dimensions: '',
+      propertyType: 'Gudang',
+      auctionType: 'Jual',
+      landArea: '',
+      buildingArea: '',
+      usedPartCategory: 'Ban',
+      quantity: '',
+      salesSystem: 'Satuan',
+      openHouseSchedule: '',
+      tireBrand: '',
+      tireSize: '',
+      tireType: 'Ban Luar',
+      tireTreadDepth: '',
+      tireCondition: 'Masih Layak Pakai (Tubeless/Pakai Ban Dalam)',
+      tireDotCode: '',
+      batteryBrand: '',
+      batteryTypeCode: '',
+      batteryCapacity: '',
+      batteryType: 'Aki Basah',
+      batteryCondition: 'Masih Fungsi (Hanya Perlu Cas)',
+      batteryElectrolyteStatus: 'Masih Terisi Air Aki',
+      metalType: 'Besi Berat / H-Beam / I-Beam / Plate',
+      metalSalesMethod: 'Penimbangan',
+      metalEstimatedWeight: '',
+      metalCondition: '',
+      metalHandlingFacility: 'Pemenang Lelang wajib potong dan angkut sendiri',
       model: '',
       series: '440',
       axels: '',
@@ -720,6 +774,31 @@ export default function AdminAssets({
       imageUrl: asset.imageUrl || (resolvedUrls[0] || ''),
       imageUrls: resolvedUrls,
       dimensions: asset.dimensions || '',
+      propertyType: asset.propertyType || 'Gudang',
+      auctionType: asset.auctionType || 'Jual',
+      landArea: asset.landArea || '',
+      buildingArea: asset.buildingArea || '',
+      usedPartCategory: asset.usedPartCategory || 'Ban',
+      quantity: asset.quantity || '',
+      salesSystem: asset.salesSystem || 'Satuan',
+      openHouseSchedule: asset.openHouseSchedule || '',
+      tireBrand: asset.tireBrand || '',
+      tireSize: asset.tireSize || '',
+      tireType: asset.tireType || 'Ban Luar',
+      tireTreadDepth: asset.tireTreadDepth || '',
+      tireCondition: asset.tireCondition || 'Masih Layak Pakai (Tubeless/Pakai Ban Dalam)',
+      tireDotCode: asset.tireDotCode || '',
+      batteryBrand: asset.batteryBrand || '',
+      batteryTypeCode: asset.batteryTypeCode || '',
+      batteryCapacity: asset.batteryCapacity || '',
+      batteryType: asset.batteryType || 'Aki Basah',
+      batteryCondition: asset.batteryCondition || 'Masih Fungsi (Hanya Perlu Cas)',
+      batteryElectrolyteStatus: asset.batteryElectrolyteStatus || 'Masih Terisi Air Aki',
+      metalType: asset.metalType || 'Besi Berat / H-Beam / I-Beam / Plate',
+      metalSalesMethod: asset.metalSalesMethod || 'Penimbangan',
+      metalEstimatedWeight: asset.metalEstimatedWeight || '',
+      metalCondition: asset.metalCondition || '',
+      metalHandlingFacility: asset.metalHandlingFacility || 'Pemenang Lelang wajib potong dan angkut sendiri',
       model: asset.model || '',
       series: asset.series || '440',
       axels: asset.axels || '',
@@ -936,6 +1015,31 @@ export default function AdminAssets({
       imageUrl: formData.imageUrl || (resolvedUrls[0] || ''),
       imageUrls: resolvedUrls,
       dimensions: formData.dimensions || '',
+      propertyType: formData.propertyType || '',
+      auctionType: formData.auctionType || '',
+      landArea: formData.landArea || '',
+      buildingArea: formData.buildingArea || '',
+      usedPartCategory: formData.usedPartCategory || '',
+      quantity: formData.quantity || '',
+      salesSystem: formData.salesSystem || '',
+      openHouseSchedule: formData.openHouseSchedule || '',
+      tireBrand: formData.tireBrand || '',
+      tireSize: formData.tireSize || '',
+      tireType: formData.tireType || '',
+      tireTreadDepth: formData.tireTreadDepth || '',
+      tireCondition: formData.tireCondition || '',
+      tireDotCode: formData.tireDotCode || '',
+      batteryBrand: formData.batteryBrand || '',
+      batteryTypeCode: formData.batteryTypeCode || '',
+      batteryCapacity: formData.batteryCapacity || '',
+      batteryType: formData.batteryType || '',
+      batteryCondition: formData.batteryCondition || '',
+      batteryElectrolyteStatus: formData.batteryElectrolyteStatus || '',
+      metalType: formData.metalType || '',
+      metalSalesMethod: formData.metalSalesMethod || '',
+      metalEstimatedWeight: formData.metalEstimatedWeight || '',
+      metalCondition: formData.metalCondition || '',
+      metalHandlingFacility: formData.metalHandlingFacility || '',
       model: formData.model || '',
       series: formData.series || '',
       axels: formData.axels || '',
@@ -1568,9 +1672,167 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                     </div>
                   </div>
                 )}
+                {selectedAsset.propertyType && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE PROPERTI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.propertyType}</span>
+                  </div>
+                )}
+                {selectedAsset.auctionType && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE LELANG')}</span>
+                    <span className="font-semibold text-blue-700 text-xs font-bold">{selectedAsset.auctionType}</span>
+                  </div>
+                )}
+                {selectedAsset.landArea && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('LUAS TANAH')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.landArea}</span>
+                  </div>
+                )}
+                {selectedAsset.buildingArea && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('LUAS BANGUNAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.buildingArea}</span>
+                  </div>
+                )}
+
+                {/* Used Part specifics display */}
+                {selectedAsset.usedPartCategory && (
+                  <div>
+                    <span className="text-[11px] text-amber-600 font-bold block">{t('SUB-KATEGORI USED PART')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.usedPartCategory}</span>
+                  </div>
+                )}
+                {selectedAsset.quantity && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('JUMLAH / KUANTITAS')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.quantity}</span>
+                  </div>
+                )}
+                {selectedAsset.salesSystem && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('SISTEM PENJUALAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.salesSystem}</span>
+                  </div>
+                )}
+                {selectedAsset.openHouseSchedule && (
+                  <div className="col-span-2">
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('JADWAL OPEN HOUSE')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.openHouseSchedule}</span>
+                  </div>
+                )}
+
+                {/* Ban fields */}
+                {selectedAsset.tireBrand && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK BAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireBrand}</span>
+                  </div>
+                )}
+                {selectedAsset.tireSize && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('UKURAN BAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.tireSize}</span>
+                  </div>
+                )}
+                {selectedAsset.tireType && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS BAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireType}</span>
+                  </div>
+                )}
+                {selectedAsset.tireTreadDepth && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('KETEBALAN KEMBANG')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireTreadDepth}</span>
+                  </div>
+                )}
+                {selectedAsset.tireCondition && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI BAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireCondition}</span>
+                  </div>
+                )}
+                {selectedAsset.tireDotCode && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('DOT CODE (TAHUN)')}</span>
+                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.tireDotCode}</span>
+                  </div>
+                )}
+
+                {/* Aki fields */}
+                {selectedAsset.batteryBrand && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK AKI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryBrand}</span>
+                  </div>
+                )}
+                {selectedAsset.batteryTypeCode && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE / KODE AKI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.batteryTypeCode}</span>
+                  </div>
+                )}
+                {selectedAsset.batteryCapacity && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('KAPASITAS AKI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.batteryCapacity}</span>
+                  </div>
+                )}
+                {selectedAsset.batteryType && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS AKI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryType}</span>
+                  </div>
+                )}
+                {selectedAsset.batteryCondition && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI AKI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryCondition}</span>
+                  </div>
+                )}
+                {selectedAsset.batteryElectrolyteStatus && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('AIR AKI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryElectrolyteStatus}</span>
+                  </div>
+                )}
+
+                {/* Besi fields */}
+                {selectedAsset.metalType && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS BESI / LOGAM')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalType}</span>
+                  </div>
+                )}
+                {selectedAsset.metalSalesMethod && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('METODE PENJUALAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalSalesMethod}</span>
+                  </div>
+                )}
+                {selectedAsset.metalEstimatedWeight && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('ESTIMASI BERAT')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalEstimatedWeight}</span>
+                  </div>
+                )}
+                {selectedAsset.metalCondition && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI BESI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalCondition}</span>
+                  </div>
+                )}
+                {selectedAsset.metalHandlingFacility && (
+                  <div className="col-span-2">
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('PEMOTONGAN & PENGANGKUTAN')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalHandlingFacility}</span>
+                  </div>
+                )}
                 {selectedAsset.dimensions && (
                   <div className="col-span-2 border-t border-slate-50/50 pt-2">
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('Dimensi Unit')}</span>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('Dimensi / Ringkasan Luas')}</span>
                     <span className="font-semibold text-slate-800 font-mono text-xs">{selectedAsset.dimensions}</span>
                   </div>
                 )}
@@ -2262,70 +2524,75 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                           </div>
                         )}
 
-                        {/* Brand */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-slate-600 uppercase">
-                              {isProperty ? t('Pengembang / Merek / Owner') : t('Merek (Brand) *')}
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => setIsBrandMasterOpen(true)}
-                              className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold transition"
-                              title={t('Kelola Master Merek')}
+                        {/* Brand (Only for Vehicle / non-UsedPart, non-Property, non-Misc) */}
+                        {!isProperty && !isUsedPart && !isMisc && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-slate-600 uppercase">
+                                {t('Merek (Brand) *')}
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setIsBrandMasterOpen(true)}
+                                className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold transition"
+                                title={t('Kelola Master Merek')}
+                              >
+                                <Settings className="w-3.5 h-3.5 animate-spin-hover" />
+                              </button>
+                            </div>
+                            <select
+                              value={formData.brand}
+                              onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
+                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             >
-                              <Settings className="w-3.5 h-3.5 animate-spin-hover" />
-                            </button>
+                              {displayBrandsList.map(bName => (
+                                <option key={bName} value={bName}>{bName}</option>
+                              ))}
+                              {formData.brand && !displayBrandsList.includes(formData.brand) && (
+                                <option value={formData.brand}>{formData.brand}</option>
+                              )}
+                            </select>
                           </div>
-                          <select
-                            value={formData.brand}
-                            onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value }))}
-                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                          >
-                            {displayBrandsList.map(bName => (
-                              <option key={bName} value={bName}>{bName}</option>
-                            ))}
-                            {formData.brand && !displayBrandsList.includes(formData.brand) && (
-                              <option value={formData.brand}>{formData.brand}</option>
-                            )}
-                          </select>
-                        </div>
+                        )}
 
                         {/* Model / Type */}
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-600 uppercase">
-                            {isVehicle ? `${t('Model')} *` : t('Model / Tipe / Spec')}
-                          </label>
-                          <input
-                            type="text"
-                            required={isVehicle}
-                            placeholder={
-                              isVehicle ? t('Contoh: FMX, Ranger, Giga, 440') :
-                              isUsedPart ? t('Contoh: Part No. 12345-E001, E13C') :
-                              isProperty ? t('Contoh: Kavling A-12, Blok Depo') :
-                              t('Contoh: CAT-500KVA, Model 2021')
-                            }
-                            value={formData.model}
-                            onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
-                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                          />
-                        </div>
+                        {!isProperty && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-600 uppercase">
+                              {isVehicle ? `${t('Model')} *` : t('Model / Tipe / Spec')}
+                            </label>
+                            <input
+                              type="text"
+                              required={isVehicle}
+                              placeholder={
+                                isVehicle ? t('Contoh: FMX, Ranger, Giga, 440') :
+                                isUsedPart ? t('Contoh: Part No. 12345-E001, E13C') :
+                                t('Contoh: CAT-500KVA, Model 2021')
+                              }
+                              value={formData.model}
+                              onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
+                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            />
+                          </div>
+                        )}
 
                         {/* Model Year */}
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-600 uppercase">
-                            {isProperty ? t('Tahun Pembangunan / Beli *') : t('Tahun Produksi / Pembuatan *')}
-                          </label>
-                          <input
-                            type="number"
-                            min="1950"
-                            max="2027"
-                            required
-                            value={formData.modelYear}
-                            onChange={(e) => setFormData(prev => ({ ...prev, modelYear: Number(e.target.value) }))}
-                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                          />
-                        </div>
+                        {!isProperty && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-600 uppercase">
+                              {t('Tahun Produksi / Pembuatan *')}
+                            </label>
+                            <input
+                              type="number"
+                              min="1950"
+                              max="2027"
+                              required={!isProperty}
+                              value={formData.modelYear}
+                              onChange={(e) => setFormData(prev => ({ ...prev, modelYear: Number(e.target.value) }))}
+                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            />
+                          </div>
+                        )}
 
                         {/* Plate / Reg Number */}
                         <div className="space-y-1.5">
@@ -2348,23 +2615,441 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                           />
                         </div>
 
-                        {/* Dimensi Unit / Luas */}
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-600 uppercase">
-                            {isProperty ? t('Luas Tanah & Bangunan (m²)') : t('Dimensi Unit (Opsional)')}
-                          </label>
-                          <input
-                            type="text"
-                            placeholder={
-                              isProperty ? t('Contoh: LT 1.200 m², LB 600 m²') :
-                              isUsedPart ? t('Contoh: 1.2 x 0.8 x 0.9 m, 350 kg') :
-                              t('Contoh: 12.0 x 2.5 x 3.7 m')
-                            }
-                            value={formData.dimensions}
-                            onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
-                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                          />
-                        </div>
+                        {/* Property Specific Details Block */}
+                        {isProperty && (
+                          <div className="md:col-span-2 bg-blue-50/60 border border-blue-200/80 rounded-2xl p-4 space-y-4 my-1">
+                            <div className="flex items-center gap-2 border-b border-blue-200/60 pb-2.5">
+                              <Building2 className="w-4 h-4 text-blue-600" />
+                              <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">{t('Spesifikasi Utama Properti')}</h4>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Tipe Properti */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Tipe Properti *')}</label>
+                                <select
+                                  value={formData.propertyType || 'Gudang'}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, propertyType: e.target.value }))}
+                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                                >
+                                  <option value="Tanah">Tanah</option>
+                                  <option value="Gudang">Gudang</option>
+                                  <option value="Kantor">Kantor</option>
+                                  <option value="Ruko">Ruko</option>
+                                  <option value="Rumah">Rumah</option>
+                                  <option value="Lahan Depo / Pool">Lahan Depo / Pool</option>
+                                  <option value="Gudang & Kantor">Gudang & Kantor</option>
+                                  <option value="Lainnya">Lainnya</option>
+                                </select>
+                              </div>
+
+                              {/* Tipe Lelang */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Tipe Lelang *')}</label>
+                                <select
+                                  value={formData.auctionType || 'Jual'}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, auctionType: e.target.value }))}
+                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                                >
+                                  <option value="Jual">Jual (Penjualan)</option>
+                                  <option value="Sewa">Sewa (Penyewaan)</option>
+                                  <option value="Jual & Sewa">Jual & Sewa</option>
+                                </select>
+                              </div>
+
+                              {/* Luas Tanah */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Luas Tanah (m²)')}</label>
+                                <input
+                                  type="text"
+                                  placeholder={t('Contoh: 1.200 m²')}
+                                  value={formData.landArea}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setFormData(prev => {
+                                      const updatedLand = val;
+                                      const combinedDim = updatedLand || prev.buildingArea 
+                                        ? `LT ${updatedLand || '-'}, LB ${prev.buildingArea || '-'}` 
+                                        : prev.dimensions;
+                                      return { ...prev, landArea: updatedLand, dimensions: combinedDim };
+                                    });
+                                  }}
+                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                                />
+                              </div>
+
+                              {/* Luas Bangunan */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Luas Bangunan (m²)')}</label>
+                                <input
+                                  type="text"
+                                  placeholder={t('Contoh: 600 m²')}
+                                  value={formData.buildingArea}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setFormData(prev => {
+                                      const updatedBldg = val;
+                                      const combinedDim = prev.landArea || updatedBldg 
+                                        ? `LT ${prev.landArea || '-'}, LB ${updatedBldg || '-'}` 
+                                        : prev.dimensions;
+                                      return { ...prev, buildingArea: updatedBldg, dimensions: combinedDim };
+                                    });
+                                  }}
+                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Used Part Specific Details Block */}
+                        {isUsedPart && (
+                          <div className="md:col-span-2 bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 space-y-4 my-1 shadow-sm">
+                            <div className="flex items-center justify-between border-b border-amber-200/80 pb-3">
+                              <div className="flex items-center gap-2">
+                                <Wrench className="w-4 h-4 text-amber-700" />
+                                <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">{t('Detail Spesifikasi Suku Cadang (Used Part)')}</h4>
+                              </div>
+                              <span className="text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-200">
+                                {formData.usedPartCategory || 'Ban'}
+                              </span>
+                            </div>
+
+                            {/* Sub-Category Selection Pills */}
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-bold text-amber-900 uppercase block">{t('Pilih Sub-Kategori Barang *')}</label>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                {[
+                                  { id: 'Ban', label: 'Ban (Tyre)', icon: Disc },
+                                  { id: 'Aki', label: 'Aki (Battery)', icon: BatteryCharging },
+                                  { id: 'Besi', label: 'Besi (Scrap Metal)', icon: Layers },
+                                  { id: 'Lainnya', label: 'Sparepart Lain', icon: Wrench },
+                                ].map((subCat) => {
+                                  const isSelected = (formData.usedPartCategory || 'Ban') === subCat.id;
+                                  const IconComp = subCat.icon;
+                                  return (
+                                    <button
+                                      key={subCat.id}
+                                      type="button"
+                                      onClick={() => setFormData(prev => ({ ...prev, usedPartCategory: subCat.id }))}
+                                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all text-left ${
+                                        isSelected
+                                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm ring-2 ring-amber-500/30'
+                                          : 'bg-white text-slate-700 border-slate-200 hover:border-amber-300 hover:bg-amber-50/50'
+                                      }`}
+                                    >
+                                      <IconComp className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-amber-600'}`} />
+                                      <span>{subCat.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Informasi Umum Lelang Used Part */}
+                            <div className="pt-2 border-t border-amber-200/60 grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {/* Jumlah / Kuantitas */}
+                              <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Jumlah / Kuantitas *')}</label>
+                                <input
+                                  type="text"
+                                  placeholder={t('Contoh: 10 Pcs / 2 Set / 5 Ton')}
+                                  value={formData.quantity}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
+                                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
+                                />
+                              </div>
+
+                              {/* Sistem Penjualan */}
+                              <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Sistem Penjualan *')}</label>
+                                <select
+                                  value={formData.salesSystem || 'Satuan'}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, salesSystem: e.target.value }))}
+                                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
+                                >
+                                  <option value="Satuan">Satuan</option>
+                                  <option value="Borongan">Borongan (1 Lot)</option>
+                                  <option value="Timbangan">Timbangan (Per Kg / Ton)</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Form Spesifik Berdasarkan Sub-Kategori */}
+                            {/* A. BAN (TYRE) */}
+                            {(formData.usedPartCategory === 'Ban' || !formData.usedPartCategory) && (
+                              <div className="bg-white/90 rounded-xl p-3.5 border border-amber-200/80 space-y-3.5">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 border-b border-slate-100 pb-2">
+                                  <Disc className="w-4 h-4 text-amber-600" />
+                                  <span>{t('A. Spesifikasi Lelang Ban (Tyre)')}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                  {/* Merek Ban */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Merek Ban')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: Bridgestone, Michelin, Giti, GT Radial')}
+                                      value={formData.tireBrand}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, tireBrand: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Ukuran Ban */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Ukuran Ban')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: 11.00 R20, 205/55 R16, 10.00 R20')}
+                                      value={formData.tireSize}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, tireSize: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-mono"
+                                    />
+                                  </div>
+
+                                  {/* Jenis Ban */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Jenis Ban')}</label>
+                                    <select
+                                      value={formData.tireType || 'Ban Luar'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, tireType: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Ban Luar">Ban Luar</option>
+                                      <option value="Ban Dalam">Ban Dalam</option>
+                                      <option value="Flap">Flap</option>
+                                      <option value="Set (Ban Luar + Dalam + Flap)">Set (Ban Luar + Dalam + Flap)</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Estimasi Ketebalan Kembang (%) */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Estimasi Ketebalan Kembang (%)')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: 70%, 50%, Gunting/Vulkanisir')}
+                                      value={formData.tireTreadDepth}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, tireTreadDepth: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Kondisi Ban */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Kondisi Ban')}</label>
+                                    <select
+                                      value={formData.tireCondition || 'Masih Layak Pakai (Tubeless/Pakai Ban Dalam)'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, tireCondition: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Masih Layak Pakai (Tubeless/Pakai Ban Dalam)">Masih Layak Pakai (Tubeless/Pakai Ban Dalam)</option>
+                                      <option value="Perlu Vulkanisir">Perlu Vulkanisir</option>
+                                      <option value="Rusak / Avaf (Hanya untuk Olahan Karet)">Rusak / Avaf (Hanya untuk Olahan Karet)</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Tahun Pembuatan (DOT Code) */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Tahun Pembuatan (DOT Code)')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: 2422 / 2022')}
+                                      value={formData.tireDotCode}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, tireDotCode: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-mono"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* B. AKI (BATTERY) */}
+                            {formData.usedPartCategory === 'Aki' && (
+                              <div className="bg-white/90 rounded-xl p-3.5 border border-amber-200/80 space-y-3.5">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 border-b border-slate-100 pb-2">
+                                  <BatteryCharging className="w-4 h-4 text-amber-600" />
+                                  <span>{t('B. Spesifikasi Lelang Aki (Battery)')}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                  {/* Merek Aki */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Merek Aki')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: GS Astra, Yuasa, Incoe, Rocket')}
+                                      value={formData.batteryBrand}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryBrand: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Tipe / Kode Aki */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Tipe / Kode Aki')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: N70, 55D23L, DIN 100, N150')}
+                                      value={formData.batteryTypeCode}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryTypeCode: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-mono"
+                                    />
+                                  </div>
+
+                                  {/* Kapasitas (Amper/Ah & Volt) */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Kapasitas (Amper/Ah & Volt)')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: 12V 70Ah, 24V 100Ah')}
+                                      value={formData.batteryCapacity}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryCapacity: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-mono"
+                                    />
+                                  </div>
+
+                                  {/* Jenis Aki */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Jenis Aki')}</label>
+                                    <select
+                                      value={formData.batteryType || 'Aki Basah'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryType: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Aki Basah (Conventional)">Aki Basah (Conventional)</option>
+                                      <option value="Aki Kering (MF / Maintenance Free)">Aki Kering (MF / Maintenance Free)</option>
+                                      <option value="Gel / AGM">Gel / AGM</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Kondisi Fisik & Fungsi */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Kondisi Fisik & Fungsi')}</label>
+                                    <select
+                                      value={formData.batteryCondition || 'Masih Fungsi (Hanya Perlu Cas)'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryCondition: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Masih Fungsi (Hanya Perlu Cas)">Masih Fungsi (Hanya Perlu Cas)</option>
+                                      <option value="Soak / Mati Total (Scrap)">Soak / Mati Total (Scrap)</option>
+                                      <option value="Fisik Utuh (Tidak Bocor/Retak)">Fisik Utuh (Tidak Bocor/Retak)</option>
+                                      <option value="Fisik Bocor / Pecah">Fisik Bocor / Pecah</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Keberadaan Air Aki */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Keberadaan Air Aki')}</label>
+                                    <select
+                                      value={formData.batteryElectrolyteStatus || 'Masih Terisi Air Aki'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryElectrolyteStatus: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Masih Terisi Air Aki">Masih Terisi Air Aki</option>
+                                      <option value="Sudah Dikosongkan">Sudah Dikosongkan</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* C. BESI (SCRAP METAL) */}
+                            {formData.usedPartCategory === 'Besi' && (
+                              <div className="bg-white/90 rounded-xl p-3.5 border border-amber-200/80 space-y-3.5">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 border-b border-slate-100 pb-2">
+                                  <Layers className="w-4 h-4 text-amber-600" />
+                                  <span>{t('C. Spesifikasi Lelang Besi (Scrap Metal)')}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                  {/* Jenis Besi / Logam */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Jenis Besi / Logam')}</label>
+                                    <select
+                                      value={formData.metalType || 'Besi Berat / H-Beam / I-Beam / Plate'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, metalType: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Besi Berat / H-Beam / I-Beam / Plate">Besi Berat / H-Beam / I-Beam / Plate</option>
+                                      <option value="Besi Siku / Pipa / Hollow">Besi Siku / Pipa / Hollow</option>
+                                      <option value="Besi Tipis / Seng / Body Part">Besi Tipis / Seng / Body Part</option>
+                                      <option value="Besi Campur / Scrap Variasi">Besi Campur / Scrap Variasi</option>
+                                      <option value="Logam Lain (Tembaga / Kuningan / Aluminium)">Logam Lain (Tembaga / Kuningan / Aluminium)</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Metode Penjualan */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Metode Penjualan')}</label>
+                                    <select
+                                      value={formData.metalSalesMethod || 'Penimbangan'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, metalSalesMethod: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Penimbangan (Harga per Kg / Ton)">Penimbangan (Harga per Kg / Ton)</option>
+                                      <option value="Taksiran / Borongan (Harga langsung 1 Lot)">Taksiran / Borongan (Harga langsung 1 Lot)</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Estimasi Total Berat */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Estimasi Total Berat')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: ± 5 Ton atau ± 500 Kg')}
+                                      value={formData.metalEstimatedWeight}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, metalEstimatedWeight: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Kondisi Besi */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Kondisi Besi')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: Berkarat Ringan, Potongan 1 - 2 meter')}
+                                      value={formData.metalCondition}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, metalCondition: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Fasilitas Pemotongan & Pengangkutan */}
+                                  <div className="space-y-1 md:col-span-2">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Fasilitas Pemotongan & Pengangkutan')}</label>
+                                    <select
+                                      value={formData.metalHandlingFacility || 'Pemenang Lelang wajib potong dan angkut sendiri'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, metalHandlingFacility: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Penyedia Lelang menyiapkan alat angkut">Penyedia Lelang menyiapkan alat angkut</option>
+                                      <option value="Pemenang Lelang wajib potong dan angkut sendiri">Pemenang Lelang wajib potong dan angkut sendiri</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Dimensi Unit / Catatan Luas Opsional */}
+                        {!isProperty && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-600 uppercase">
+                              {t('Dimensi Unit (Opsional)')}
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={
+                                isUsedPart ? t('Contoh: 1.2 x 0.8 x 0.9 m, 350 kg') :
+                                t('Contoh: 12.0 x 2.5 x 3.7 m')
+                              }
+                              value={formData.dimensions}
+                              onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
+                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                            />
+                          </div>
+                        )}
 
                         {/* Condition */}
                         <div className="space-y-1.5">

@@ -8,6 +8,8 @@ import AdminSettings from './components/AdminSettings';
 import CatalogView from './components/CatalogView';
 import LoginModal from './components/LoginModal';
 import { useLanguage } from './components/LanguageContext';
+
+import imageIkutLelang from './assets/images/cara_ikut_lelang_1786088386491.jpg';
 import { ExternalNotificationsView, ExternalInboxView } from './components/ExternalViews';
 import { AnimatePresence, motion } from 'motion/react';
 import { 
@@ -78,7 +80,10 @@ import {
   CheckCircle,
   AlertCircle,
   Trash2,
-  Settings
+  Settings,
+  ShieldCheck,
+  Layers,
+  Award
 } from 'lucide-react';
 
 export default function App() {
@@ -95,6 +100,7 @@ export default function App() {
   const [loggedInUserPhone, setLoggedInUserPhone] = useState('');
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [selectedGuideModal, setSelectedGuideModal] = useState<'ikut' | 'titip' | 'online' | null>(null);
   
   // Navigation inside Admin area
   const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'settings'>('dashboard');
@@ -1913,6 +1919,7 @@ export default function App() {
                   loggedInUserEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
                   loggedInUserName={isUserLoggedIn ? loggedInUserName : adminName}
                   loggedInUserPhone={isUserLoggedIn ? loggedInUserPhone : ''}
+                  onOpenGuideModal={(guide) => setSelectedGuideModal(guide)}
                   canBid={
                     isAdminLoggedIn
                       ? true
@@ -2195,6 +2202,214 @@ export default function App() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Guide Detail Modal */}
+      {selectedGuideModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedGuideModal(null)}
+              className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {selectedGuideModal === 'ikut' && (
+              <div className="space-y-5">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                    <CheckCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug">
+                      {t('Syarat & Ketentuan Akses Bidding - Lelang Truck Pancaran Platinum')}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{t('Informasi Resmi Deposit & Akses Penawaran')}</p>
+                  </div>
+                </div>
+
+                {/* Banner / Guide Image */}
+                <div className="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-sm">
+                  <img
+                    src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN"
+                    alt={t('Syarat & Ketentuan Akses Bidding')}
+                    className="w-full h-full object-cover object-center"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  <p className="font-medium text-slate-800">
+                    {t('Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan')} <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">{t('deposit jaminan sebesar Rp10.000.000,-')}</span> {t('sebagai syarat aktif untuk melakukan penawaran (ngebid).')}
+                  </p>
+
+                  <div className="p-4 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1.5">
+                    <h4 className="font-extrabold text-emerald-900 text-sm flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      {t('Jaminan Keamanan Dana:')}
+                    </h4>
+                    <p className="text-emerald-950 font-medium text-xs sm:text-sm">
+                      {t('Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar')} <span className="font-extrabold text-emerald-900">{t('Rp10.000.000,-')}</span> {t('akan dikembalikan penuh')} <span className="font-extrabold text-emerald-900">({t('100%')})</span> {t('setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.')}
+                    </p>
+                  </div>
+
+                  <p className="font-semibold text-blue-950 italic text-center pt-2">
+                    {t('Mari bergabung dan dapatkan unit truck impian Anda di ajang eksklusif Pancaran Platinum!')}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-3 justify-end items-center">
+                  <button
+                    onClick={() => setSelectedGuideModal(null)}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 transition"
+                  >
+                    {t('Tutup')}
+                  </button>
+                  <a
+                    href="https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition"
+                  >
+                    <Phone className="w-4 h-4" />
+                    {t('Hubungi Panitia untuk Akses Bidding')}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {selectedGuideModal === 'titip' && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+                    <Truck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-900">{t('Panduan & Cara Titip Jual')}</h3>
+                    <p className="text-xs text-slate-500">{t('Layanan konsinyasi & penjualan armada transparan')}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-emerald-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Pengajuan Data Konsinyasi')}</h4>
+                      <p>{t('Kirimkan spesifikasi armada/unit kendaraan Anda beserta fotokopi STNK dan BPKB.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-emerald-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Inspeksi & Estimasi Nilai Limit')}</h4>
+                      <p>{t('Tim ahli mekanik Pancaran melakukan penilaian kondisi fisik, mesin, dan memberikan rekomendasi harga limit.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-emerald-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Penandatanganan Perjanjian')}</h4>
+                      <p>{t('Sepakati nilai reserve price dan persyaratan hak lelang dalam surat titip jual resmi.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-emerald-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">4</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Pemasaran & Event Lelang')}</h4>
+                      <p>{t('Unit dipasarkan ke ribuan pembeli potensial di ekosistem lelang nasional Pancaran Platinum.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-emerald-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">5</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Pencairan Hasil Lelang')}</h4>
+                      <p>{t('Setelah pembeli melunasi pembayaran, dana diteruskan ke rekening Anda secara tepat waktu.')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setSelectedGuideModal(null)}
+                    className="px-5 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition"
+                  >
+                    {t('Saya Mengerti')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedGuideModal === 'online' && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                  <div className="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center shrink-0">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-900">{t('Panduan & Cara Lelang Online')}</h3>
+                    <p className="text-xs text-slate-500">{t('Partisipasi lelang digital dari mana saja kapan saja')}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-cyan-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Akses Portal Digital')}</h4>
+                      <p>{t('Masuk ke portal Pancaran Lelang menggunakan HP, tablet, atau laptop Anda.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-cyan-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Cek Katalog & Laporan Inspeksi')}</h4>
+                      <p>{t('Pelajari foto detail, spesifikasi teknis, serta nilai grade kelayakan unit.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-cyan-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Beli NPL Online')}</h4>
+                      <p>{t('Dapatkan Nomor Peserta Lelang secara cepat melalui pembayaran Payment Gateway terverifikasi.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-cyan-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">4</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Live Bidding Real-Time')}</h4>
+                      <p>{t('Ikuti penawaran interaktif saat lelang dibuka dengan indikator persaingan harga otomatis.')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="w-6 h-6 bg-cyan-600 text-white font-bold text-xs rounded-full flex items-center justify-center shrink-0 mt-0.5">5</span>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t('Konfirmasi & Risalah Lelang')}</h4>
+                      <p>{t('Terima pemberitahuan penetapan pemenang dan unduh risalah lelang secara digital.')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setSelectedGuideModal(null)}
+                    className="px-5 py-2.5 bg-cyan-600 text-white font-bold text-xs rounded-xl hover:bg-cyan-700 transition"
+                  >
+                    {t('Saya Mengerti')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

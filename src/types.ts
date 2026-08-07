@@ -36,6 +36,35 @@ export interface Asset {
   imageUrls?: string[];
   bids: Bid[];
   dimensions?: string;
+  propertyType?: string;
+  auctionType?: string;
+  landArea?: string;
+  buildingArea?: string;
+  // Used Part specific fields
+  usedPartCategory?: 'Ban' | 'Aki' | 'Besi' | 'Lainnya' | string;
+  quantity?: string;
+  salesSystem?: string;
+  openHouseSchedule?: string;
+  // Ban fields
+  tireBrand?: string;
+  tireSize?: string;
+  tireType?: string;
+  tireTreadDepth?: string;
+  tireCondition?: string;
+  tireDotCode?: string;
+  // Aki fields
+  batteryBrand?: string;
+  batteryTypeCode?: string;
+  batteryCapacity?: string;
+  batteryType?: string;
+  batteryCondition?: string;
+  batteryElectrolyteStatus?: string;
+  // Besi fields
+  metalType?: string;
+  metalSalesMethod?: string;
+  metalEstimatedWeight?: string;
+  metalCondition?: string;
+  metalHandlingFacility?: string;
   model?: string;
   series?: string;
   axels?: string;
