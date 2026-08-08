@@ -901,12 +901,14 @@ export default function CatalogView({
                   <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm md:text-base tracking-tight text-center px-4 mb-2">
                     {t('Syarat & Ketentuan Akses Bidding')}
                   </h3>
-                  <div className="w-full h-36 sm:h-40 bg-slate-50 overflow-hidden flex items-center justify-center border-y border-slate-100">
+                  <div className="w-full h-36 sm:h-40 bg-slate-50 overflow-hidden flex items-center justify-center border-y border-slate-100 pointer-events-none select-none">
                     <img 
                       src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
                       alt={t('Syarat & Ketentuan Akses Bidding')}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 pointer-events-none select-none"
                       referrerPolicy="no-referrer"
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
                     />
                   </div>
                   <p className="text-blue-950 font-semibold text-[10px] sm:text-xs leading-relaxed pt-3 px-4 text-center">
