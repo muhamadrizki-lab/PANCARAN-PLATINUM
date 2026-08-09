@@ -24,7 +24,7 @@ export interface Asset {
   name: string;
   brand: string;
   category: string;
-  modelYear: number;
+  modelYear: number | string;
   plateNumber: string;
   condition: string;
   location: string;

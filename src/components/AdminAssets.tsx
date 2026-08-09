@@ -616,7 +616,7 @@ export default function AdminAssets({
     name: '',
     brand: 'Hino',
     category: '',
-    modelYear: 2022,
+    modelYear: 2022 as number | string,
     plateNumber: '',
     condition: 'Baik' as Asset['condition'],
     location: '',
@@ -1016,7 +1016,7 @@ export default function AdminAssets({
       name: finalName,
       brand: formData.brand,
       category: formData.category,
-      modelYear: Number(formData.modelYear),
+      modelYear: isNaN(Number(formData.modelYear)) || String(formData.modelYear).trim() === '' ? formData.modelYear : Number(formData.modelYear),
       plateNumber: formData.plateNumber || 'N/A',
       condition: formData.condition,
       location: formData.location,
@@ -2475,7 +2475,20 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                             <button
                               key={catItem.id}
                               type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, category: catItem.id }))}
+                              onClick={() => setFormData(prev => {
+                                const normId = normalizeCategory(catItem.id);
+                                let nextYear = prev.modelYear;
+                                if (normId === 'Used part' || normId === 'Property' || normId === 'Miscellaneous') {
+                                  if (prev.modelYear === 2022 || prev.modelYear === '2022') {
+                                    nextYear = '';
+                                  }
+                                } else if (normId === 'Vehicle') {
+                                  if (prev.modelYear === '') {
+                                    nextYear = 2022;
+                                  }
+                                }
+                                return { ...prev, category: catItem.id, modelYear: nextYear };
+                              })}
                               className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 relative overflow-hidden ${
                                 isSelected
                                   ? 'border-blue-600 bg-white text-blue-900 ring-2 ring-blue-500/30 shadow-xs'
@@ -2570,15 +2583,29 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                             <label className="text-xs font-bold text-slate-600 uppercase">
                               {t('Tahun Produksi / Pembuatan *')}
                             </label>
-                            <input
-                              type="number"
-                              min="1950"
-                              max="2027"
-                              required={!isProperty}
-                              value={formData.modelYear}
-                              onChange={(e) => setFormData(prev => ({ ...prev, modelYear: Number(e.target.value) }))}
-                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            />
+                            {isUsedPart || isMisc ? (
+                              <input
+                                type="text"
+                                required
+                                placeholder={
+                                  isUsedPart ? t('Contoh: 2021 (DOT 1221) / Baru / 2018') :
+                                  t('Contoh: Pembelian 2020 / Produksi 2019 / N/A')
+                                }
+                                value={formData.modelYear}
+                                onChange={(e) => setFormData(prev => ({ ...prev, modelYear: e.target.value }))}
+                                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 bg-white"
+                              />
+                            ) : (
+                              <input
+                                type="number"
+                                min="1950"
+                                max="2027"
+                                required
+                                value={formData.modelYear}
+                                onChange={(e) => setFormData(prev => ({ ...prev, modelYear: e.target.value ? Number(e.target.value) : '' }))}
+                                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 bg-white"
+                              />
+                            )}
                           </div>
                         )}
 
