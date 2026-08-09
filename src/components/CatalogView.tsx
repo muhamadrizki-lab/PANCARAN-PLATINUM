@@ -833,7 +833,7 @@ export default function CatalogView({
           </div>
 
           {/* Right Side: How It Works & Cara Ikut Lelang Side-by-Side */}
-          <div className="flex flex-col sm:flex-row items-stretch gap-4 shrink-0 w-full lg:w-auto lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-8 lg:z-20 lg:bottom-auto">
+          <div className="flex flex-col sm:flex-row items-stretch gap-4 shrink-0 w-full lg:w-auto lg:absolute lg:top-[62%] lg:-translate-y-[38%] lg:right-8 lg:z-20 lg:bottom-auto">
             {/* Box 2: Cara Ikut Lelang Card - Only visible for Digital Solution account when logged in */}
             {(() => {
               const isDigitalSolutionAccount = Boolean(
