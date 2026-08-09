@@ -993,15 +993,28 @@ export default function CatalogView({
             ))}
 
             {filteredAssets.length === 0 && (
-              <div className="col-span-full text-center py-20 bg-white border border-dashed border-slate-200 rounded-3xl space-y-3">
-                <Info className="w-8 h-8 text-slate-400 mx-auto" />
-                <p className="text-slate-400 font-semibold text-sm">{t('Tidak ada armada lelang yang terdaftar atau sesuai filter.')}</p>
-                <button 
-                  onClick={() => { setSelectedBrand('all'); setSelectedCategory('all'); setSearchQuery(''); }}
-                  className="text-xs text-blue-600 hover:underline font-bold"
-                >
-                  {t('Lihat Semua Koleksi')}
-                </button>
+              <div className="col-span-full text-center py-16 bg-white border border-slate-100 rounded-3xl space-y-4 px-6 max-w-lg mx-auto shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto text-blue-600">
+                  <Info className="w-6 h-6" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-base font-extrabold text-slate-800 tracking-tight">
+                    {t('Belum Ada Unit Tersedia')}
+                  </h3>
+                  <p className="text-slate-500 text-xs leading-relaxed max-w-sm mx-auto font-medium">
+                    {t('Saat ini Pancaran Lelang belum memiliki aset yang sedang dilelang. Nantikan pembaharuan unit terbaru kami dalam waktu dekat. Terima kasih atas perhatian Anda! 👋')}
+                  </p>
+                </div>
+                {openAssets.length > 0 && (
+                  <div className="pt-2">
+                    <button 
+                      onClick={() => { setSelectedBrand('all'); setSelectedCategory('all'); setSearchQuery(''); }}
+                      className="inline-flex items-center justify-center px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-xs text-blue-600 hover:text-blue-700 font-bold rounded-xl transition duration-150 cursor-pointer"
+                    >
+                      {t('Lihat Semua Koleksi')}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

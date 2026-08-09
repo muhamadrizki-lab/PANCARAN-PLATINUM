@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType } from './types';
+import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest } from './types';
 import { INITIAL_ASSETS, INITIAL_ADMINS } from './data/mockData';
 import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
@@ -10,7 +10,7 @@ import LoginModal from './components/LoginModal';
 import { useLanguage } from './components/LanguageContext';
 
 import imageIkutLelang from './assets/images/cara_ikut_lelang_1786088386491.jpg';
-import { ExternalNotificationsView, ExternalInboxView } from './components/ExternalViews';
+import { ExternalNotificationsView, ExternalInboxView, ExternalBiddingAccessView, ExternalRefundBiddingView } from './components/ExternalViews';
 import { AnimatePresence, motion } from 'motion/react';
 import { 
   seedDatabaseIfEmpty,
@@ -56,7 +56,12 @@ import {
   deleteNotificationFromDb,
   clearAllNotificationsInDb,
   markNotificationReadInDb,
-  markAllNotificationsReadInDb
+  markAllNotificationsReadInDb,
+  subscribeToBiddingRequests,
+  addBiddingRequest,
+  updateBiddingRequest,
+  subscribeToRefundRequests,
+  updateRefundRequest
 } from './firebase';
 import { 
   Shield, 
@@ -106,7 +111,7 @@ export default function App() {
   const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'settings'>('dashboard');
   
   // Navigation inside External area
-  const [externalTab, setExternalTab] = useState<'catalog' | 'notifications' | 'inbox'>('catalog');
+  const [externalTab, setExternalTab] = useState<'catalog' | 'notifications' | 'inbox' | 'bidding_access' | 'refund'>('catalog');
   
   // Mobile menu toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -123,6 +128,8 @@ export default function App() {
   const [attachmentCategories, setAttachmentCategories] = useState<AttachmentCategory[]>([]);
   const [attachmentTypes, setAttachmentTypes] = useState<AttachmentType[]>([]);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
+  const [biddingRequests, setBiddingRequests] = useState<BiddingRequest[]>([]);
+  const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
   
   // Selected asset for highlighting or detailed specs in AdminAssets
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -370,6 +377,8 @@ export default function App() {
     let unsubscribeAdmins: (() => void) | null = null;
     let unsubscribeRegisteredUsers: (() => void) | null = null;
     let unsubscribeNotifications: (() => void) | null = null;
+    let unsubscribeBiddingRequests: (() => void) | null = null;
+    let unsubscribeRefundRequests: (() => void) | null = null;
 
     // Load master data with aggressive local storage caching to minimize reads
     fetchMasterDataWithCache().then((master) => {
@@ -575,6 +584,18 @@ export default function App() {
           }
         }
       });
+
+      unsubscribeBiddingRequests = subscribeToBiddingRequests((updatedRequests) => {
+        if (updatedRequests) {
+          setBiddingRequests(updatedRequests);
+        }
+      });
+
+      unsubscribeRefundRequests = subscribeToRefundRequests((updatedRefunds) => {
+        if (updatedRefunds) {
+          setRefundRequests(updatedRefunds);
+        }
+      });
     }).catch((err) => {
       console.warn("Firestore connection is offline or unavailable. Operating with local database.", err);
     });
@@ -601,6 +622,8 @@ export default function App() {
       if (unsubscribeAdmins) unsubscribeAdmins();
       if (unsubscribeRegisteredUsers) unsubscribeRegisteredUsers();
       if (unsubscribeNotifications) unsubscribeNotifications();
+      if (unsubscribeBiddingRequests) unsubscribeBiddingRequests();
+      if (unsubscribeRefundRequests) unsubscribeRefundRequests();
     };
   }, []);
 
@@ -732,6 +755,113 @@ export default function App() {
     } catch (error) {
       console.error("Failed to update bidding access", error);
       addNotification('warning', t('Gagal Mengubah Akses'), `${t('Gagal mengubah akses bidding user')} ${email}`);
+    }
+  };
+
+  const handleApproveBiddingAccess = async (requestId: string) => {
+    try {
+      const request = biddingRequests.find(r => r.id === requestId);
+      if (!request) return;
+
+      // 1. Update request status in bidding_requests collection
+      await updateBiddingRequest(requestId, { status: 'Approved' });
+
+      // 2. Set the user's canBid flag to true in registered_users collection
+      await updateRegisteredUser(request.email, { canBid: true });
+
+      // 3. System Notification/Toast
+      addNotification('success', t('Akses Bidding Disetujui'), `Permohonan akses bidding dari ${request.userName} (${request.email}) telah disetujui.`);
+
+      // 4. ToastNotification for all (so clients get instantly notified)
+      const notif: ToastNotification = {
+        id: `notif-${Date.now()}`,
+        type: 'success',
+        title: 'Akses Bidding Disetujui',
+        message: `Selamat, akses bidding untuk ${request.userName} (${request.email}) telah aktif dan disetujui oleh admin.`,
+        timestamp: new Date()
+      };
+      await addNotificationToDb(notif);
+    } catch (error) {
+      console.error("Failed to approve bidding access", error);
+      addNotification('warning', t('Gagal Menyetujui'), `Gagal menyetujui akses bidding.`);
+    }
+  };
+
+  const handleRejectBiddingAccess = async (requestId: string) => {
+    try {
+      const request = biddingRequests.find(r => r.id === requestId);
+      if (!request) return;
+
+      // 1. Update request status to Rejected
+      await updateBiddingRequest(requestId, { status: 'Rejected' });
+
+      // 2. System Notification/Toast
+      addNotification('warning', t('Akses Bidding Ditolak'), `Permohonan akses bidding dari ${request.userName} (${request.email}) telah ditolak.`);
+
+      // 3. ToastNotification for all
+      const notif: ToastNotification = {
+        id: `notif-${Date.now()}`,
+        type: 'warning',
+        title: 'Akses Bidding Ditolak',
+        message: `Permohonan akses bidding untuk ${request.userName} (${request.email}) ditolak. Hubungi panitia untuk informasi lebih lanjut.`,
+        timestamp: new Date()
+      };
+      await addNotificationToDb(notif);
+    } catch (error) {
+      console.error("Failed to reject bidding access", error);
+      addNotification('warning', t('Gagal Menolak'), `Gagal menolak akses bidding.`);
+    }
+  };
+
+  const handleApproveRefundRequest = async (requestId: string) => {
+    try {
+      const request = refundRequests.find(r => r.id === requestId);
+      if (!request) return;
+
+      // 1. Update request status to Approved
+      await updateRefundRequest(requestId, { status: 'Approved' });
+
+      // 2. System Notification/Toast
+      addNotification('success', t('Refund Disetujui'), `Permohonan refund dari ${request.userName} (${request.email}) telah disetujui.`);
+
+      // 3. ToastNotification for all
+      const notif: ToastNotification = {
+        id: `notif-${Date.now()}`,
+        type: 'success',
+        title: 'Refund Bidding Disetujui',
+        message: `Pengajuan refund untuk ${request.userName} (${request.email}) sebesar dana yang diajukan telah disetujui oleh admin.`,
+        timestamp: new Date()
+      };
+      await addNotificationToDb(notif);
+    } catch (error) {
+      console.error("Failed to approve refund request", error);
+      addNotification('warning', t('Gagal Menyetujui'), `Gagal menyetujui pengajuan refund.`);
+    }
+  };
+
+  const handleRejectRefundRequest = async (requestId: string) => {
+    try {
+      const request = refundRequests.find(r => r.id === requestId);
+      if (!request) return;
+
+      // 1. Update request status to Rejected
+      await updateRefundRequest(requestId, { status: 'Rejected' });
+
+      // 2. System Notification/Toast
+      addNotification('warning', t('Refund Ditolak'), `Permohonan refund dari ${request.userName} (${request.email}) telah ditolak.`);
+
+      // 3. ToastNotification for all
+      const notif: ToastNotification = {
+        id: `notif-${Date.now()}`,
+        type: 'warning',
+        title: 'Refund Bidding Ditolak',
+        message: `Pengajuan refund untuk ${request.userName} (${request.email}) telah ditolak. Hubungi tim administrasi pancaran untuk detail lebih lanjut.`,
+        timestamp: new Date()
+      };
+      await addNotificationToDb(notif);
+    } catch (error) {
+      console.error("Failed to reject refund request", error);
+      addNotification('warning', t('Gagal Menolak'), `Gagal menolak pengajuan refund.`);
     }
   };
 
@@ -917,6 +1047,36 @@ export default function App() {
               {externalInboxCount}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setExternalTab('bidding_access')}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
+            externalTab === 'bidding_access'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+              : isDarkTheme
+                ? 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <span>{t('Akses Bidding')}</span>
+        </button>
+        <button
+          onClick={() => setExternalTab('refund')}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
+            externalTab === 'refund'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
+              : isDarkTheme
+                ? 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{t('Refund Bidding')}</span>
         </button>
       </div>
     );
@@ -1739,6 +1899,22 @@ export default function App() {
                     </span>
                   )}
                 </button>
+                <button
+                  onClick={() => { setExternalTab('bidding_access'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
+                    externalTab === 'bidding_access' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
+                  }`}
+                >
+                  <span>{t('Akses Bidding')}</span>
+                </button>
+                <button
+                  onClick={() => { setExternalTab('refund'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
+                    externalTab === 'refund' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
+                  }`}
+                >
+                  <span>{t('Refund Bidding')}</span>
+                </button>
               </div>
             )}
 
@@ -1906,6 +2082,12 @@ export default function App() {
                   onRejectUser={handleRejectUser}
                   onDeleteRegisteredUser={handleDeleteRegisteredUser}
                   onToggleBiddingAccess={handleToggleUserBiddingAccess}
+                  biddingRequests={biddingRequests}
+                  onApproveBiddingRequest={handleApproveBiddingAccess}
+                  onRejectBiddingRequest={handleRejectBiddingAccess}
+                  refundRequests={refundRequests}
+                  onApproveRefundRequest={handleApproveRefundRequest}
+                  onRejectRefundRequest={handleRejectRefundRequest}
                 />
               )}
               {adminTab === 'settings' && (
@@ -1966,13 +2148,30 @@ export default function App() {
                     userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
                   />
                 </div>
-              ) : (
+              ) : externalTab === 'inbox' ? (
                 <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
                   <ExternalInboxView
                     assets={assets}
                     userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
                     userName={isUserLoggedIn ? loggedInUserName : adminName}
                     userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
+                  />
+                </div>
+              ) : externalTab === 'bidding_access' ? (
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+                  <ExternalBiddingAccessView
+                    userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
+                    userName={isUserLoggedIn ? loggedInUserName : adminName}
+                    biddingRequests={biddingRequests}
+                  />
+                </div>
+              ) : (
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+                  <ExternalRefundBiddingView
+                    userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
+                    userName={isUserLoggedIn ? loggedInUserName : adminName}
+                    userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
+                    refundRequests={refundRequests}
                   />
                 </div>
               )}

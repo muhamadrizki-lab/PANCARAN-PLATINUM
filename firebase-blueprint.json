@@ -81,6 +81,37 @@
         "createdAt": { "type": "string" }
       },
       "required": ["email", "name", "phone", "status", "emailVerified", "verificationCode", "createdAt"]
+    },
+    "BiddingRequest": {
+      "title": "BiddingRequest",
+      "description": "Represents a request for bidding access with submitted proof of payment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "userName": { "type": "string" },
+        "requestType": { "type": "string" },
+        "proofUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email", "userName", "requestType", "proofUrl", "status", "createdAt"]
+    },
+    "RefundRequest": {
+      "title": "RefundRequest",
+      "description": "Represents a request for bidding fee refund with submitted proof of payment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "userName": { "type": "string" },
+        "phone": { "type": "string" },
+        "purpose": { "type": "string" },
+        "proofUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email", "userName", "phone", "purpose", "proofUrl", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -107,6 +138,14 @@
     "/registered_users/{email}": {
       "schema": "RegisteredUser",
       "description": "Collection of registered external user accounts with verification status."
+    },
+    "/bidding_requests/{requestId}": {
+      "schema": "BiddingRequest",
+      "description": "Collection of bidding access requests."
+    },
+    "/refund_requests/{requestId}": {
+      "schema": "RefundRequest",
+      "description": "Collection of refund requests."
     }
   }
 }

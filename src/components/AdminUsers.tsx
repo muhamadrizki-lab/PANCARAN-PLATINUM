@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AdminUser, RegisteredUser } from '../types';
+import { AdminUser, RegisteredUser, BiddingRequest, RefundRequest } from '../types';
 import { useLanguage } from './LanguageContext';
 import {   
   UserPlus, 
@@ -15,7 +15,10 @@ import {
   Phone,
   UserCheck,
   UserX,
-  Clock
+  Clock,
+  FileText,
+  X,
+  Eye
 } from 'lucide-react';
 
 interface AdminUsersProps {
@@ -29,6 +32,16 @@ interface AdminUsersProps {
   onRejectUser?: (email: string) => void;
   onDeleteRegisteredUser?: (email: string) => void;
   onToggleBiddingAccess?: (email: string, canBid: boolean) => void;
+  
+  // Bidding Access Requests
+  biddingRequests?: BiddingRequest[];
+  onApproveBiddingRequest?: (id: string) => void;
+  onRejectBiddingRequest?: (id: string) => void;
+
+  // Refund Requests
+  refundRequests?: RefundRequest[];
+  onApproveRefundRequest?: (id: string) => void;
+  onRejectRefundRequest?: (id: string) => void;
 }
 
 export default function AdminUsers({ 
@@ -40,11 +53,17 @@ export default function AdminUsers({
   onApproveUser,
   onRejectUser,
   onDeleteRegisteredUser,
-  onToggleBiddingAccess
+  onToggleBiddingAccess,
+  biddingRequests = [],
+  onApproveBiddingRequest,
+  onRejectBiddingRequest,
+  refundRequests = [],
+  onApproveRefundRequest,
+  onRejectRefundRequest
 }: AdminUsersProps) {
   const { t } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'internal' | 'external'>('internal');
+  const [activeTab, setActiveTab] = useState<'internal' | 'external' | 'bidding_requests' | 'refund_requests'>('internal');
   
   // Internal Admin Form States
   const [formData, setFormData] = useState({
@@ -61,6 +80,7 @@ export default function AdminUsers({
   // External Users Search State
   const [userSearch, setUserSearch] = useState('');
   const [externalDeleteConfirmEmail, setExternalDeleteConfirmEmail] = useState<string | null>(null);
+  const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +193,38 @@ export default function AdminUsers({
             {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan').length > 0 && (
               <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
                 {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan').length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('bidding_requests')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
+              activeTab === 'bidding_requests'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            <Lock className="w-4 h-4" />
+            {t('Pending Akses Bidding')}
+            {biddingRequests.filter(req => req.status === 'Pending').length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
+                {biddingRequests.filter(req => req.status === 'Pending').length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('refund_requests')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
+              activeTab === 'refund_requests'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            {t('Pending Refund Bidding')}
+            {refundRequests.filter(req => req.status === 'Pending').length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
+                {refundRequests.filter(req => req.status === 'Pending').length}
               </span>
             )}
           </button>
@@ -643,6 +695,294 @@ export default function AdminUsers({
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: BIDDING ACCESS REQUESTS */}
+      {activeTab === 'bidding_requests' && (
+        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">{t('Permohonan Akses Bidding')}</h2>
+              <p className="text-xs text-slate-500 mt-1">{t('Persetujuan atau penolakan bukti pembayaran dari pemohon akses bidding.')}</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Pemohon')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Pilihan Akses')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Tanggal Pengajuan')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Bukti Transfer')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Status')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">{t('Aksi')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                {biddingRequests.length > 0 ? (
+                  [...biddingRequests]
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map((req) => {
+                      return (
+                        <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
+                          {/* Pemohon info */}
+                          <td className="py-4 px-6">
+                            <div className="space-y-1">
+                              <p className="font-extrabold text-slate-800">{req.userName}</p>
+                              <p className="text-[10px] text-slate-400">{req.email}</p>
+                            </div>
+                          </td>
+
+                          {/* Pilihan Akses */}
+                          <td className="py-4 px-6">
+                            <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold text-[10px]">
+                              {req.requestType}
+                            </span>
+                          </td>
+
+                          {/* Tanggal Pengajuan */}
+                          <td className="py-4 px-6 text-slate-500">
+                            {new Date(req.createdAt).toLocaleString('id-ID')}
+                          </td>
+
+                          {/* Bukti Transfer File Icon */}
+                          <td className="py-4 px-6">
+                            {req.proofUrl ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedReceiptUrl(req.proofUrl || null)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 rounded-lg border border-slate-200 transition cursor-pointer"
+                                title={t('Klik untuk melihat bukti transfer')}
+                              >
+                                <FileText className="w-4.5 h-4.5 text-slate-500" />
+                                <span className="text-[10px] font-extrabold text-slate-600">{t('Lihat Bukti')}</span>
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 font-medium italic">-</span>
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-4 px-6">
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                              req.status === 'Approved'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : req.status === 'Rejected'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse'
+                            }`}>
+                              {req.status === 'Approved' && <Check className="w-3 h-3" />}
+                              {req.status === 'Rejected' && <X className="w-3 h-3" />}
+                              {req.status === 'Pending' && <Clock className="w-3 h-3" />}
+                              {req.status}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {req.status === 'Pending' ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => onApproveBiddingRequest?.(req.id)}
+                                    className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg border border-emerald-100 hover:border-emerald-600 transition cursor-pointer"
+                                    title={t('Setujui Akses Bidding')}
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onRejectBiddingRequest?.(req.id)}
+                                    className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg border border-rose-100 hover:border-rose-600 transition cursor-pointer"
+                                    title={t('Tolak Akses Bidding')}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('Selesai')}</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-slate-400 text-xs font-semibold">
+                      {t('Belum ada permohonan akses bidding.')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: REFUND REQUESTS */}
+      {activeTab === 'refund_requests' && (
+        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">{t('Permohonan Refund Bidding')}</h2>
+              <p className="text-xs text-slate-500 mt-1">{t('Persetujuan atau penolakan pengajuan refund dari konsumen lelang.')}</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Pemohon')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Keperluan / Keterangan')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Tanggal Pengajuan')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Bukti Transfer')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Status')}</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">{t('Aksi')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                {refundRequests.length > 0 ? (
+                  [...refundRequests]
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map((req) => {
+                      return (
+                        <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
+                          {/* Pemohon info */}
+                          <td className="py-4 px-6">
+                            <div className="space-y-1">
+                              <p className="font-extrabold text-slate-800">{req.userName}</p>
+                              <p className="text-[10px] text-slate-400">{req.email}</p>
+                            </div>
+                          </td>
+
+                          {/* Keperluan */}
+                          <td className="py-4 px-6">
+                            <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold text-[10px]">
+                              {req.purpose}
+                            </span>
+                          </td>
+
+                          {/* Tanggal Pengajuan */}
+                          <td className="py-4 px-6 text-slate-500">
+                            {new Date(req.createdAt).toLocaleString('id-ID')}
+                          </td>
+
+                          {/* Bukti Transfer File Icon */}
+                          <td className="py-4 px-6">
+                            {req.proofUrl ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedReceiptUrl(req.proofUrl || null)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 rounded-lg border border-slate-200 transition cursor-pointer"
+                                title={t('Klik untuk melihat bukti transfer')}
+                              >
+                                <FileText className="w-4.5 h-4.5 text-slate-500" />
+                                <span className="text-[10px] font-extrabold text-slate-600">{t('Lihat Bukti')}</span>
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 font-medium italic">-</span>
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-4 px-6">
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                              req.status === 'Approved'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : req.status === 'Rejected'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse'
+                            }`}>
+                              {req.status === 'Approved' && <Check className="w-3 h-3" />}
+                              {req.status === 'Rejected' && <X className="w-3 h-3" />}
+                              {req.status === 'Pending' && <Clock className="w-3 h-3" />}
+                              {req.status}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {req.status === 'Pending' ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => onApproveRefundRequest?.(req.id)}
+                                    className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg border border-emerald-100 hover:border-emerald-600 transition cursor-pointer"
+                                    title={t('Setujui Pengajuan Refund')}
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onRejectRefundRequest?.(req.id)}
+                                    className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg border border-rose-100 hover:border-rose-600 transition cursor-pointer"
+                                    title={t('Tolak Pengajuan Refund')}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('Selesai')}</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-slate-400 text-xs font-semibold">
+                      {t('Belum ada permohonan refund bidding.')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Inline Proof of Transfer Modal */}
+      {selectedReceiptUrl && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col animate-in zoom-in duration-200">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-blue-600" />
+                {t('Bukti Pembayaran / Transfer')}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedReceiptUrl(null)}
+                className="p-1.5 hover:bg-slate-100 rounded-xl transition text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 bg-slate-50 flex items-center justify-center max-h-[70vh] overflow-y-auto">
+              <img
+                src={selectedReceiptUrl}
+                alt="Receipt Full Size"
+                className="max-w-full max-h-[60vh] object-contain rounded-2xl border border-slate-200 bg-white shadow-inner"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-white text-right">
+              <button
+                type="button"
+                onClick={() => setSelectedReceiptUrl(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                {t('Tutup')}
+              </button>
+            </div>
           </div>
         </div>
       )}

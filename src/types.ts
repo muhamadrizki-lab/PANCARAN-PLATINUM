@@ -171,3 +171,27 @@ export interface ToastNotification {
   assetId?: string;
   read?: boolean;
 }
+
+export interface BiddingRequest {
+  id: string;
+  email: string;
+  userName: string;
+  requestType: string;
+  proofUrl: string; // Base64 image
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface RefundRequest {
+  id: string;
+  email: string;
+  userName: string;
+  phone: string;
+  purpose: string; // Keperluan refund
+  proofUrl: string; // Base64 image upload
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+  updatedAt?: string;
+}
+

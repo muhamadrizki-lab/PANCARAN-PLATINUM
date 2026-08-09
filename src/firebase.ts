@@ -13,7 +13,7 @@ import {
   query,
   limit
 } from 'firebase/firestore';
-import { Asset, AdminUser, Bid, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, ToastNotification, normalizeCategory } from './types';
+import { Asset, AdminUser, Bid, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, ToastNotification, normalizeCategory, BiddingRequest, RefundRequest } from './types';
 import { INITIAL_ASSETS, INITIAL_ADMINS } from './data/mockData';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -37,6 +37,8 @@ const FUELS_COLLECTION = 'fuels';
 const ATTACHMENTS_COLLECTION = 'attachments';
 const ATTACHMENT_TYPES_COLLECTION = 'attachment_types';
 const NOTIFICATIONS_COLLECTION = 'notifications';
+const BIDDING_REQUESTS_COLLECTION = 'bidding_requests';
+const REFUND_REQUESTS_COLLECTION = 'refund_requests';
 
 // Operation types for standard error handling matching the Firebase skill
 export enum OperationType {
@@ -1365,5 +1367,115 @@ export async function markAllNotificationsReadInDb() {
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, NOTIFICATIONS_COLLECTION);
   }
+}
+
+/**
+ * Add a new bidding access request to Firestore.
+ */
+export async function addBiddingRequest(request: BiddingRequest): Promise<void> {
+  const path = `${BIDDING_REQUESTS_COLLECTION}/${request.id}`;
+  try {
+    await setDoc(doc(db, BIDDING_REQUESTS_COLLECTION, request.id), sanitizeData(request));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+/**
+ * Update a bidding access request (e.g. status).
+ */
+export async function updateBiddingRequest(id: string, updates: Partial<BiddingRequest>): Promise<void> {
+  const path = `${BIDDING_REQUESTS_COLLECTION}/${id}`;
+  try {
+    await updateDoc(doc(db, BIDDING_REQUESTS_COLLECTION, id), sanitizeData(updates));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+/**
+ * Subscribe to realtime updates for bidding access requests.
+ */
+export function subscribeToBiddingRequests(callback: (requests: BiddingRequest[]) => void) {
+  return onSnapshot(
+    collection(db, BIDDING_REQUESTS_COLLECTION),
+    (snapshot) => {
+      const requests: BiddingRequest[] = [];
+      snapshot.forEach((docSnap) => {
+        requests.push(docSnap.data() as BiddingRequest);
+      });
+      const sorted = requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('pancaran_bidding_requests_cache', JSON.stringify(sorted)); } catch (e) {}
+      }
+      callback(sorted);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, BIDDING_REQUESTS_COLLECTION);
+      let fallback: BiddingRequest[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('pancaran_bidding_requests_cache');
+          if (cached) fallback = JSON.parse(cached);
+        } catch (e) {}
+      }
+      callback(fallback);
+    }
+  );
+}
+
+/**
+ * Add a new refund request to Firestore.
+ */
+export async function addRefundRequest(request: RefundRequest): Promise<void> {
+  const path = `${REFUND_REQUESTS_COLLECTION}/${request.id}`;
+  try {
+    await setDoc(doc(db, REFUND_REQUESTS_COLLECTION, request.id), sanitizeData(request));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+/**
+ * Update a refund request (e.g. status).
+ */
+export async function updateRefundRequest(id: string, updates: Partial<RefundRequest>): Promise<void> {
+  const path = `${REFUND_REQUESTS_COLLECTION}/${id}`;
+  try {
+    await updateDoc(doc(db, REFUND_REQUESTS_COLLECTION, id), sanitizeData(updates));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+/**
+ * Subscribe to realtime updates for refund requests.
+ */
+export function subscribeToRefundRequests(callback: (requests: RefundRequest[]) => void) {
+  return onSnapshot(
+    collection(db, REFUND_REQUESTS_COLLECTION),
+    (snapshot) => {
+      const requests: RefundRequest[] = [];
+      snapshot.forEach((docSnap) => {
+        requests.push(docSnap.data() as RefundRequest);
+      });
+      const sorted = requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('pancaran_refund_requests_cache', JSON.stringify(sorted)); } catch (e) {}
+      }
+      callback(sorted);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, REFUND_REQUESTS_COLLECTION);
+      let fallback: RefundRequest[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('pancaran_refund_requests_cache');
+          if (cached) fallback = JSON.parse(cached);
+        } catch (e) {}
+      }
+      callback(fallback);
+    }
+  );
 }
 

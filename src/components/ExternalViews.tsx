@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Asset, Bid } from '../types';
+import React, { useState, useRef } from 'react';
+import { Asset, Bid, BiddingRequest, ToastNotification, RefundRequest } from '../types';
+import { addBiddingRequest, addNotificationToDb, addRefundRequest } from '../firebase';
 import { useLanguage } from './LanguageContext';
 import { 
   Bell, 
@@ -770,6 +771,744 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
           )}
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+interface ExternalBiddingAccessViewProps {
+  userEmail: string;
+  userName: string;
+  biddingRequests: BiddingRequest[];
+}
+
+export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests }: ExternalBiddingAccessViewProps) {
+  const { language, t } = useLanguage();
+  const [requestType, setRequestType] = useState('Akses Bidding Semua Aset / Umum');
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter requests submitted by the logged-in user
+  const userRequests = biddingRequests.filter(req => req.email.toLowerCase() === userEmail.toLowerCase());
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setErrorMsg(language === 'en' ? 'Please upload an image file (png, jpg, jpeg).' : 'Silakan unggah file gambar (png, jpg, jpeg).');
+        return;
+      }
+      // Max 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg(language === 'en' ? 'Image size must be less than 5MB.' : 'Ukuran gambar harus kurang dari 5MB.');
+        return;
+      }
+
+      setErrorMsg('');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setProofImage(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setErrorMsg(language === 'en' ? 'Please upload an image file (png, jpg, jpeg).' : 'Silakan unggah file gambar (png, jpg, jpeg).');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg(language === 'en' ? 'Image size must be less than 5MB.' : 'Ukuran gambar harus kurang dari 5MB.');
+        return;
+      }
+
+      setErrorMsg('');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setProofImage(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proofImage) {
+      setErrorMsg(language === 'en' ? 'Please upload proof of transfer receipt.' : 'Silakan unggah bukti transfer pembayaran.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg('');
+
+    try {
+      const requestId = `REQ-${Date.now()}`;
+      const newRequest: BiddingRequest = {
+        id: requestId,
+        email: userEmail,
+        userName: userName,
+        requestType: requestType,
+        proofUrl: proofImage,
+        status: 'Pending',
+        createdAt: new Date().toISOString()
+      };
+
+      await addBiddingRequest(newRequest);
+
+      // Save a ToastNotification for both admin and client reference
+      const notif: ToastNotification = {
+        id: `notif-${Date.now()}`,
+        type: 'info',
+        title: 'Pending Approval Akses Bidding',
+        message: `${userName} (${userEmail}) mengajukan permohonan ${requestType}.`,
+        timestamp: new Date()
+      };
+      await addNotificationToDb(notif);
+
+      setSubmitSuccess(true);
+      setProofImage(null);
+      // Reset after success
+      setTimeout(() => setSubmitSuccess(false), 5000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error submitting request');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8" id="bidding-access-view-container">
+      {/* Header section */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <Lock className="w-6 h-6 text-blue-600" />
+            {language === 'en' ? 'Bidding Access Request' : 'Permohonan Akses Bidding'}
+          </h1>
+          <p className="text-slate-500 text-sm max-w-xl">
+            {language === 'en' 
+              ? 'Submit your bidding access application and attach your proof of transfer receipt to start participating in active asset auctions.' 
+              : 'Ajukan permohonan akses bidding Anda dan lampirkan bukti transfer pembayaran untuk mulai berpartisipasi dalam lelang aset aktif.'}
+          </p>
+        </div>
+        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3 max-w-xs md:max-w-md">
+          <div className="bg-blue-100 text-blue-700 p-2 rounded-xl">
+            <Lock className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">{language === 'en' ? 'Transfer Verification' : 'Verifikasi Transfer'}</h4>
+            <p className="text-slate-600 text-xs mt-1">
+              {language === 'en' 
+                ? 'Verification takes up to 24 hours. You will receive notifications inside your account.' 
+                : 'Verifikasi membutuhkan waktu hingga 24 jam. Anda akan menerima notifikasi di akun Anda.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Form Column */}
+        <div className="lg:col-span-2">
+          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+            <div className="border-b border-slate-100 p-6 bg-slate-50/50">
+              <h2 className="text-lg font-bold text-slate-800">{language === 'en' ? 'Application Form' : 'Formulir Permohonan'}</h2>
+              <p className="text-xs text-slate-500 mt-1">{language === 'en' ? 'Fill in the two required fields below' : 'Isi dua kolom wajib di bawah ini'}</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+              {submitSuccess && (
+                <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-2xl flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold">{language === 'en' ? 'Application Submitted!' : 'Permohonan Berhasil Dikirim!'}</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">
+                      {language === 'en' 
+                        ? 'Your request is now in pending approval. Our team will verify your receipt shortly.' 
+                        : 'Permohonan Anda saat ini dalam status pending approval. Tim kami akan segera melakukan verifikasi.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {errorMsg && (
+                <div className="p-4 bg-rose-50 border border-rose-100 text-rose-800 rounded-2xl flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                  <p className="text-xs font-medium">{errorMsg}</p>
+                </div>
+              )}
+
+              {/* Input 1: Pilihan Permohonan Akses Bidding */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700">
+                  1. {language === 'en' ? 'Bidding Access Option' : 'Pilihan Permohonan Akses Bidding'}
+                </label>
+                <select
+                  value={requestType}
+                  onChange={(e) => setRequestType(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  required
+                >
+                  <option value="Akses Bidding Semua Aset / Umum">
+                    {language === 'en' ? 'All Assets / General Bidding Access' : 'Akses Bidding Semua Aset / Umum'}
+                  </option>
+                  <option value="Akses Bidding Unit (Heavy Equipment, Property, etc.)">
+                    {language === 'en' ? 'Heavy Equipment / Property Bidding Access' : 'Akses Bidding Unit (Alat Berat, Properti, dll)'}
+                  </option>
+                  <option value="Akses Bidding Fleet (Truck, Trailer, etc.)">
+                    {language === 'en' ? 'Fleet / Truck & Trailer Bidding Access' : 'Akses Bidding Fleet (Truk, Trailer, dll)'}
+                  </option>
+                </select>
+              </div>
+
+              {/* Input 2: Bukti Transfer Akses Bidding */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700">
+                  2. {language === 'en' ? 'Proof of Transfer Receipt' : 'Bukti Transfer Akses Bidding'}
+                </label>
+                
+                <div 
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+                    proofImage 
+                      ? 'border-emerald-200 bg-emerald-50/20' 
+                      : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50/50'
+                  }`}
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
+
+                  {proofImage ? (
+                    <div className="space-y-4 w-full max-w-xs">
+                      <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 bg-white shadow-inner">
+                        <img 
+                          src={proofImage} 
+                          alt="Proof of transfer preview" 
+                          className="w-full h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-emerald-800">{language === 'en' ? 'Receipt uploaded successfully' : 'Bukti transfer berhasil diunggah'}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Click or drag a new file to replace' : 'Klik atau seret file baru untuk mengganti'}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">{language === 'en' ? 'Upload transfer receipt' : 'Unggah bukti transfer pembayaran'}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Drag & drop image here, or click to browse' : 'Seret & lepas gambar ke sini, atau klik untuk memilih'}</p>
+                      </div>
+                      <span className="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full tracking-wider mt-2">PNG, JPG, JPEG (MAX. 5MB)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit button */}
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !proofImage}
+                  className={`w-full py-3 px-4 rounded-xl text-sm font-extrabold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    !proofImage
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : isSubmitting
+                        ? 'bg-blue-600/80 text-white cursor-wait'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/10'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>{language === 'en' ? 'Submitting Application...' : 'Mengirimkan Permohonan...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>{language === 'en' ? 'Submit Access Request' : 'Kirim Permohonan Akses'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* History Column */}
+        <div className="lg:col-span-1">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">{language === 'en' ? 'Request Status' : 'Status Permohonan'}</h3>
+              <p className="text-xs text-slate-500 mt-1">{language === 'en' ? 'Monitor your access submissions' : 'Pantau pengajuan akses Anda'}</p>
+            </div>
+
+            <div className="space-y-4">
+              {userRequests.length === 0 ? (
+                <div className="text-center py-8 border border-dashed border-slate-100 rounded-2xl">
+                  <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 mx-auto mb-2">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-600">{language === 'en' ? 'No active requests' : 'Belum ada pengajuan'}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Your submissions will appear here' : 'Pengajuan Anda akan muncul di sini'}</p>
+                </div>
+              ) : (
+                userRequests.map((req) => (
+                  <div 
+                    key={req.id} 
+                    className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-3 relative overflow-hidden"
+                  >
+                    {/* Status badge */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-slate-400 font-bold">{req.id}</span>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                        req.status === 'Approved'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                          : req.status === 'Rejected'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                            : 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse'
+                      }`}>
+                        {req.status === 'Approved' && <CheckCircle className="w-3 h-3" />}
+                        {req.status === 'Rejected' && <AlertTriangle className="w-3 h-3" />}
+                        {req.status === 'Pending' && <Clock className="w-3 h-3" />}
+                        {req.status === 'Pending' ? (language === 'en' ? 'Pending Approval' : 'Pending Approval') : req.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-extrabold text-slate-800">{req.requestType}</h4>
+                      <p className="text-[10px] text-slate-400">
+                        {language === 'en' ? 'Submitted on:' : 'Diajukan pada:'} {new Date(req.createdAt).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+
+                    {/* Receipt thumbnail */}
+                    {req.proofUrl && (
+                      <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                        <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                          <FileText className="w-3 h-3" />
+                          {language === 'en' ? 'Proof of Payment' : 'Bukti Pembayaran'}
+                        </span>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const win = window.open();
+                            if (win) {
+                              win.document.write(`<img src="${req.proofUrl}" style="max-width:100%; max-height:100vh; display:block; margin:auto;"/>`);
+                            }
+                          }}
+                          className="text-[10px] text-blue-600 font-extrabold hover:underline"
+                        >
+                          {language === 'en' ? 'View File' : 'Lihat File'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface ExternalRefundBiddingViewProps {
+  userEmail: string;
+  userName: string;
+  userPhone: string;
+  refundRequests: RefundRequest[];
+}
+
+export function ExternalRefundBiddingView({ userEmail, userName, userPhone, refundRequests }: ExternalRefundBiddingViewProps) {
+  const { language, t } = useLanguage();
+  const [purpose, setPurpose] = useState('Refund Uang Jaminan (Deposit) Bidding');
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter requests submitted by the logged-in user
+  const userRefunds = refundRequests.filter(req => req.email.toLowerCase() === userEmail.toLowerCase());
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setErrorMsg(language === 'en' ? 'Please upload an image file (png, jpg, jpeg).' : 'Silakan unggah file gambar (png, jpg, jpeg).');
+        return;
+      }
+      // Max 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg(language === 'en' ? 'Image size must be less than 5MB.' : 'Ukuran gambar harus kurang dari 5MB.');
+        return;
+      }
+
+      setErrorMsg('');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setProofImage(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setErrorMsg(language === 'en' ? 'Please upload an image file (png, jpg, jpeg).' : 'Silakan unggah file gambar (png, jpg, jpeg).');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg(language === 'en' ? 'Image size must be less than 5MB.' : 'Ukuran gambar harus kurang dari 5MB.');
+        return;
+      }
+
+      setErrorMsg('');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setProofImage(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proofImage) {
+      setErrorMsg(language === 'en' ? 'Please upload refund proof receipt.' : 'Silakan unggah bukti refund pembayaran.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg('');
+
+    try {
+      const requestId = `REF-${Date.now()}`;
+      const newRequest: RefundRequest = {
+        id: requestId,
+        email: userEmail,
+        userName: userName,
+        phone: userPhone || '',
+        purpose: purpose,
+        proofUrl: proofImage,
+        status: 'Pending',
+        createdAt: new Date().toISOString()
+      };
+
+      await addRefundRequest(newRequest);
+
+      // Save a ToastNotification for both admin and client reference
+      const notif: ToastNotification = {
+        id: `notif-${Date.now()}`,
+        type: 'info',
+        title: 'Pengajuan Refund Bidding Baru',
+        message: `${userName} (${userEmail}) mengajukan pengembalian: ${purpose}.`,
+        timestamp: new Date()
+      };
+      await addNotificationToDb(notif);
+
+      setSubmitSuccess(true);
+      setProofImage(null);
+      // Reset after success
+      setTimeout(() => setSubmitSuccess(false), 5000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error submitting request');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-fade-in" id="refund-bidding-view-container">
+      {/* Header section */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <span className="p-2 bg-rose-50 text-rose-600 rounded-2xl inline-block">
+              <FileText className="w-6 h-6" />
+            </span>
+            {language === 'en' ? 'Refund Bidding' : 'Refund Bidding / Pengembalian'}
+          </h1>
+          <p className="text-slate-500 text-sm max-w-xl">
+            {language === 'en' 
+              ? 'Submit your bidding deposit refund request, select your purpose, and attach the original receipt/proof of transfer.' 
+              : 'Ajukan pengembalian uang jaminan (refund deposit) bidding Anda, pilih keperluan, dan lampirkan bukti transfer asli.'}
+          </p>
+        </div>
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-start gap-3 max-w-xs md:max-w-md">
+          <div className="bg-rose-100 text-rose-700 p-2 rounded-xl">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">{language === 'en' ? 'Processing Time' : 'Waktu Proses'}</h4>
+            <p className="text-slate-500 text-[11px] mt-1">
+              {language === 'en' 
+                ? 'Refund requests take 1-3 business days to verify. Funds will be returned to the registered bank account.' 
+                : 'Permohonan refund diproses dalam 1-3 hari kerja. Dana dikembalikan ke rekening bank yang terdaftar.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Form Column */}
+        <div className="lg:col-span-2">
+          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+            <div className="border-b border-slate-100 p-6 bg-slate-50/50">
+              <h2 className="text-lg font-bold text-slate-800">{language === 'en' ? 'Refund Application Form' : 'Formulir Pengajuan Refund'}</h2>
+              <p className="text-xs text-slate-500 mt-1">{language === 'en' ? 'Fill in the two required fields below' : 'Isi dua kolom wajib di bawah ini'}</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+              {submitSuccess && (
+                <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-2xl flex items-center gap-3 animate-fade-in">
+                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold">{language === 'en' ? 'Refund Request Submitted!' : 'Pengajuan Refund Berhasil Dikirim!'}</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">
+                      {language === 'en' 
+                        ? 'Your request has been saved and is currently in pending approval. Our finance team will process it shortly.' 
+                        : 'Pengajuan Anda telah disimpan dan berstatus pending approval. Tim keuangan kami akan segera memprosesnya.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {errorMsg && (
+                <div className="p-4 bg-rose-50 border border-rose-100 text-rose-800 rounded-2xl flex items-center gap-3 animate-fade-in">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                  <p className="text-xs font-medium">{errorMsg}</p>
+                </div>
+              )}
+
+              {/* Input 1: Keperluan Refund */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700">
+                  1. {language === 'en' ? 'Refund Purpose' : 'Keperluan Refund / Pengembalian'}
+                </label>
+                <select
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  required
+                >
+                  <option value="Refund Uang Jaminan (Deposit) Bidding">
+                    {language === 'en' ? 'Refund Bidding Guarantee Deposit' : 'Refund Uang Jaminan (Deposit) Bidding'}
+                  </option>
+                  <option value="Pembatalan Ikut Lelang & Tarik Deposit">
+                    {language === 'en' ? 'Cancel Auction & Withdraw Deposit' : 'Pembatalan Ikut Lelang & Tarik Deposit'}
+                  </option>
+                  <option value="Kelebihan Bayar Transfer Pelunasan Unit">
+                    {language === 'en' ? 'Overpayment of Unit Handover/Settlement' : 'Kelebihan Bayar Transfer Pelunasan Unit'}
+                  </option>
+                  <option value="Salah Transfer Pembayaran">
+                    {language === 'en' ? 'Mistransfer of Payment' : 'Salah Transfer Pembayaran'}
+                  </option>
+                  <option value="Lainnya">
+                    {language === 'en' ? 'Others' : 'Lainnya'}
+                  </option>
+                </select>
+              </div>
+
+              {/* Input 2: Upload Bukti Refund */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700">
+                  2. {language === 'en' ? 'Proof of Refund (Transfer Receipt)' : 'Upload Bukti Refund / Bukti Transfer'}
+                </label>
+                
+                <div 
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+                    proofImage 
+                      ? 'border-emerald-200 bg-emerald-50/20' 
+                      : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50/50'
+                  }`}
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
+
+                  {proofImage ? (
+                    <div className="space-y-4 w-full max-w-xs">
+                      <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 bg-white shadow-inner">
+                        <img 
+                          src={proofImage} 
+                          alt="Refund proof preview" 
+                          className="w-full h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-emerald-800">{language === 'en' ? 'Proof uploaded successfully' : 'Bukti refund berhasil diunggah'}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Click or drag a new file to replace' : 'Klik atau seret file baru untuk mengganti'}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">{language === 'en' ? 'Upload transfer receipt / proof' : 'Unggah bukti refund / resi transfer'}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Drag & drop image here, or click to browse' : 'Seret & lepas gambar ke sini, atau klik untuk memilih'}</p>
+                      </div>
+                      <span className="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full tracking-wider mt-2">PNG, JPG, JPEG (MAX. 5MB)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit button */}
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !proofImage}
+                  className={`w-full py-3 px-4 rounded-xl text-sm font-extrabold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    !proofImage
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : isSubmitting
+                        ? 'bg-blue-600/80 text-white cursor-wait'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/10'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>{language === 'en' ? 'Submitting Request...' : 'Mengirimkan Pengajuan...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      <span>{language === 'en' ? 'Submit Refund Request' : 'Kirim Pengajuan Refund'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* History / Details Column */}
+        <div className="lg:col-span-1">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">{language === 'en' ? 'Refund Status' : 'Status Refund'}</h3>
+              <p className="text-xs text-slate-500 mt-1">{language === 'en' ? 'Monitor your refund submissions' : 'Pantau pengajuan refund Anda'}</p>
+            </div>
+
+            <div className="space-y-4 max-h-[550px] overflow-y-auto pr-1">
+              {userRefunds.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-slate-100 rounded-2xl">
+                  <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 mx-auto mb-2">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-600">{language === 'en' ? 'No active refunds' : 'Belum ada pengajuan'}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Your submissions will appear here' : 'Pengajuan Anda akan muncul di sini'}</p>
+                </div>
+              ) : (
+                userRefunds.map((req) => (
+                  <div 
+                    key={req.id} 
+                    className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-3 relative overflow-hidden transition-all hover:border-rose-100"
+                  >
+                    {/* Status badge */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-slate-400 font-bold">{req.id}</span>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                        req.status === 'Approved'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                          : req.status === 'Rejected'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                            : 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse'
+                      }`}>
+                        {req.status === 'Approved' && <CheckCircle className="w-3 h-3" />}
+                        {req.status === 'Rejected' && <AlertTriangle className="w-3 h-3" />}
+                        {req.status === 'Pending' && <Clock className="w-3 h-3" />}
+                        {req.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-extrabold text-slate-800 leading-snug">{req.purpose}</h4>
+                      <p className="text-[10px] text-slate-400">
+                        {language === 'en' ? 'Submitted on:' : 'Diajukan pada:'} {new Date(req.createdAt).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+
+                    {/* Receipt thumbnail */}
+                    {req.proofUrl && (
+                      <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                        <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                          <FileText className="w-3 h-3 text-slate-500" />
+                          {language === 'en' ? 'Receipt Bukti' : 'Bukti Refund'}
+                        </span>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const win = window.open();
+                            if (win) {
+                              win.document.write(`<img src="${req.proofUrl}" style="max-width:100%; max-height:100vh; display:block; margin:auto;"/>`);
+                            }
+                          }}
+                          className="text-[10px] text-blue-600 font-extrabold hover:underline"
+                        >
+                          {language === 'en' ? 'View File' : 'Lihat File'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
