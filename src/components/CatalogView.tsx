@@ -851,7 +851,33 @@ export default function CatalogView({
                 )
               );
 
-              if (!isUserLoggedIn || !isDigitalSolutionAccount) return null;
+              if (!isUserLoggedIn || !isDigitalSolutionAccount) {
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-transparent text-white rounded-3xl p-5 sm:p-6 border border-slate-800/60 shadow-none max-w-sm w-full sm:w-80 flex flex-col justify-between gap-3.5 z-30 select-none relative group"
+                    id="how-it-works-before-login-card"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base sm:text-lg">💡</span>
+                        <h3 className="text-white font-extrabold text-sm sm:text-base tracking-tight uppercase">
+                          {t('Step By Step Lelang ?')}
+                        </h3>
+                      </div>
+                      <p className="text-slate-300 font-medium text-[11px] sm:text-xs leading-relaxed">
+                        {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t border-slate-800/80 pt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      <span>Pancaran Platinum</span>
+                    </div>
+                  </motion.div>
+                );
+              }
 
               if (!showBiddingGuide) {
                 return (

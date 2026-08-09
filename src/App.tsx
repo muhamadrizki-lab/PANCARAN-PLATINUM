@@ -61,7 +61,8 @@ import {
   addBiddingRequest,
   updateBiddingRequest,
   subscribeToRefundRequests,
-  updateRefundRequest
+  updateRefundRequest,
+  addRefundRequest
 } from './firebase';
 import { 
   Shield, 
@@ -821,15 +822,18 @@ export default function App() {
       // 1. Update request status to Approved
       await updateRefundRequest(requestId, { status: 'Approved' });
 
+      // 1.5 Auto turn off bidding access
+      await updateRegisteredUser(request.email, { canBid: false });
+
       // 2. System Notification/Toast
-      addNotification('success', t('Refund Disetujui'), `Permohonan refund dari ${request.userName} (${request.email}) telah disetujui.`);
+      addNotification('success', t('Refund Disetujui'), `Permohonan refund dari ${request.userName} (${request.email}) telah disetujui, dan akses bidding telah dinonaktifkan.`);
 
       // 3. ToastNotification for all
       const notif: ToastNotification = {
         id: `notif-${Date.now()}`,
         type: 'success',
         title: 'Refund Bidding Disetujui',
-        message: `Pengajuan refund untuk ${request.userName} (${request.email}) sebesar dana yang diajukan telah disetujui oleh admin.`,
+        message: `Pengajuan refund untuk ${request.userName} (${request.email}) sebesar dana yang diajukan telah disetujui oleh admin. Akses bidding dinonaktifkan.`,
         timestamp: new Date()
       };
       await addNotificationToDb(notif);
@@ -862,6 +866,63 @@ export default function App() {
     } catch (error) {
       console.error("Failed to reject refund request", error);
       addNotification('warning', t('Gagal Menolak'), `Gagal menolak pengajuan refund.`);
+    }
+  };
+
+  const handleCreateRefundRequest = async (
+    email: string, 
+    amount: string, 
+    bankName: string, 
+    accountNumber: string, 
+    accountHolder: string, 
+    purpose: string,
+    proofUrl?: string
+  ) => {
+    try {
+      const user = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (!user) throw new Error("User not found");
+
+      // 1. Create request
+      const newRequest: RefundRequest = {
+        id: `ref-${Date.now()}`,
+        email: user.email,
+        userName: user.name,
+        phone: user.phone || '',
+        purpose: purpose || 'Refund Jaminan Bidding',
+        amount: Number(amount) || 0,
+        bankName,
+        accountNumber,
+        accountHolder,
+        proofUrl: proofUrl || '',
+        status: 'Approved', // Auto approved since created by Admin
+        createdAt: new Date().toISOString()
+      };
+
+      await addRefundRequest(newRequest);
+
+      // 2. Auto deactivate bidding access
+      await updateRegisteredUser(user.email, { canBid: false });
+
+      // 3. Add system notification
+      addNotification(
+        'success', 
+        t('Refund Berhasil Dibuat'), 
+        `Refund untuk ${user.name} sebesar Rp ${Number(amount).toLocaleString('id-ID')} berhasil dibuat dan akses bidding dinonaktifkan.`
+      );
+
+      // 4. Global notification
+      const notif: ToastNotification = {
+        id: `notif-${Date.now()}`,
+        type: 'success',
+        title: 'Refund Bidding Diproses',
+        message: `Administrasi: Refund jaminan bidding untuk ${user.name} sebesar Rp ${Number(amount).toLocaleString('id-ID')} telah diproses oleh admin. Akses bidding dinonaktifkan.`,
+        timestamp: new Date()
+      };
+      await addNotificationToDb(notif);
+    } catch (error) {
+      console.error("Failed to create refund by admin", error);
+      addNotification('warning', t('Gagal Membuat'), `Gagal membuat refund jaminan bidding.`);
+      throw error;
     }
   };
 
@@ -2088,6 +2149,7 @@ export default function App() {
                   refundRequests={refundRequests}
                   onApproveRefundRequest={handleApproveRefundRequest}
                   onRejectRefundRequest={handleRejectRefundRequest}
+                  onCreateRefundRequest={handleCreateRefundRequest}
                 />
               )}
               {adminTab === 'settings' && (

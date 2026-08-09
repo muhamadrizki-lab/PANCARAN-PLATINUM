@@ -193,5 +193,9 @@ export interface RefundRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
   updatedAt?: string;
+  amount?: number;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { AdminUser, RegisteredUser, BiddingRequest, RefundRequest } from '../types';
 import { useLanguage } from './LanguageContext';
 import {   
@@ -17,6 +17,7 @@ import {
   UserX,
   Clock,
   FileText,
+  Upload,
   X,
   Eye
 } from 'lucide-react';
@@ -42,6 +43,15 @@ interface AdminUsersProps {
   refundRequests?: RefundRequest[];
   onApproveRefundRequest?: (id: string) => void;
   onRejectRefundRequest?: (id: string) => void;
+  onCreateRefundRequest?: (
+    email: string, 
+    amount: string, 
+    bankName: string, 
+    accountNumber: string, 
+    accountHolder: string, 
+    purpose: string,
+    proofUrl?: string
+  ) => Promise<void>;
 }
 
 export default function AdminUsers({ 
@@ -59,7 +69,8 @@ export default function AdminUsers({
   onRejectBiddingRequest,
   refundRequests = [],
   onApproveRefundRequest,
-  onRejectRefundRequest
+  onRejectRefundRequest,
+  onCreateRefundRequest
 }: AdminUsersProps) {
   const { t } = useLanguage();
 
@@ -81,6 +92,18 @@ export default function AdminUsers({
   const [userSearch, setUserSearch] = useState('');
   const [externalDeleteConfirmEmail, setExternalDeleteConfirmEmail] = useState<string | null>(null);
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
+
+  // Admin Create Refund Form States
+  const [isCreateRefundOpen, setIsCreateRefundOpen] = useState(false);
+  const [newRefundEmail, setNewRefundEmail] = useState('');
+  const [newRefundAmount, setNewRefundAmount] = useState('');
+  const [newRefundBankName, setNewRefundBankName] = useState('BCA');
+  const [newRefundAccountNumber, setNewRefundAccountNumber] = useState('');
+  const [newRefundAccountHolder, setNewRefundAccountHolder] = useState('');
+  const [newRefundPurpose, setNewRefundPurpose] = useState('Refund Jaminan Bidding');
+  const [createRefundError, setCreateRefundError] = useState('');
+  const [createRefundSuccess, setCreateRefundSuccess] = useState('');
+  const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +152,55 @@ export default function AdminUsers({
     setTimeout(() => {
       setSuccessMsg('');
     }, 4000);
+  };
+
+  const handleCreateRefundSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateRefundError('');
+    setCreateRefundSuccess('');
+
+    if (!newRefundEmail || !newRefundAmount || !newRefundBankName || !newRefundAccountNumber || !newRefundAccountHolder) {
+      setCreateRefundError(t('Mohon lengkapi semua field formulir refund.'));
+      return;
+    }
+
+    if (isNaN(Number(newRefundAmount)) || Number(newRefundAmount) <= 0) {
+      setCreateRefundError(t('Jumlah refund harus berupa angka valid lebih dari 0.'));
+      return;
+    }
+
+    setIsSubmittingRefund(true);
+    try {
+      if (onCreateRefundRequest) {
+        await onCreateRefundRequest(
+          newRefundEmail,
+          newRefundAmount,
+          newRefundBankName,
+          newRefundAccountNumber,
+          newRefundAccountHolder,
+          newRefundPurpose,
+          ''
+        );
+        setCreateRefundSuccess(t('Refund jaminan berhasil dibuat! Akses bidding konsumen otomatis dinonaktifkan.'));
+        
+        // Reset form fields
+        setNewRefundEmail('');
+        setNewRefundAmount('');
+        setNewRefundAccountNumber('');
+        setNewRefundAccountHolder('');
+        setNewRefundPurpose('Refund Jaminan Bidding');
+
+        setTimeout(() => {
+          setIsCreateRefundOpen(false);
+          setCreateRefundSuccess('');
+        }, 3000);
+      }
+    } catch (err: any) {
+      console.error("Failed creating refund request from admin", err);
+      setCreateRefundError(err.message || t('Gagal memproses refund.'));
+    } finally {
+      setIsSubmittingRefund(false);
+    }
   };
 
   // Filter external users based on search
@@ -832,6 +904,24 @@ export default function AdminUsers({
               <h2 className="text-base font-bold text-slate-800">{t('Permohonan Refund Bidding')}</h2>
               <p className="text-xs text-slate-500 mt-1">{t('Persetujuan atau penolakan pengajuan refund dari konsumen lelang.')}</p>
             </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  // Set default user if there's any registered users
+                  const approvedUsers = registeredUsers.filter(u => u.status === 'Disetujui');
+                  if (approvedUsers.length > 0) {
+                    setNewRefundEmail(approvedUsers[0].email);
+                    setNewRefundAccountHolder(approvedUsers[0].name);
+                  }
+                  setIsCreateRefundOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>{t('Buat Refund Konsumen')}</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -863,9 +953,21 @@ export default function AdminUsers({
 
                           {/* Keperluan */}
                           <td className="py-4 px-6">
-                            <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold text-[10px]">
-                              {req.purpose}
-                            </span>
+                            <div className="space-y-1.5">
+                              <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold text-[10px]">
+                                {req.purpose}
+                              </span>
+                              {req.amount !== undefined && req.amount > 0 && (
+                                <p className="font-extrabold text-slate-800 text-xs">
+                                  Rp {req.amount.toLocaleString('id-ID')}
+                                </p>
+                              )}
+                              {req.bankName && (
+                                <p className="text-[10px] text-slate-500 font-semibold">
+                                  {req.bankName} - {req.accountNumber} <span className="text-slate-400 font-normal">a/n</span> {req.accountHolder}
+                                </p>
+                              )}
+                            </div>
                           </td>
 
                           {/* Tanggal Pengajuan */}
@@ -950,6 +1052,166 @@ export default function AdminUsers({
       )}
 
       {/* Inline Proof of Transfer Modal */}
+      {isCreateRefundOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-slate-800">{t('Buat Pengajuan Refund Baru')}</h3>
+                <p className="text-xs text-slate-500">{t('Proses refund jaminan bidding dan nonaktifkan akses bidding konsumen.')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateRefundOpen(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateRefundSubmit} className="space-y-4">
+              {createRefundError && (
+                <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{createRefundError}</span>
+                </div>
+              )}
+
+              {createRefundSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl text-xs font-semibold flex items-start gap-2">
+                  <Check className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{createRefundSuccess}</span>
+                </div>
+              )}
+
+              {/* Select Registered User */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('Pilih Konsumen / User')}</label>
+                <select
+                  value={newRefundEmail}
+                  onChange={(e) => {
+                    const email = e.target.value;
+                    setNewRefundEmail(email);
+                    // Pre-fill account holder with user name if available
+                    const u = registeredUsers.find(item => item.email === email);
+                    if (u) {
+                      setNewRefundAccountHolder(u.name);
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  required
+                >
+                  <option value="" disabled>{t('-- Pilih User Eksternal --')}</option>
+                  {registeredUsers
+                    .filter(u => u.status === 'Disetujui')
+                    .map(u => (
+                      <option key={u.email} value={u.email}>
+                        {u.name} ({u.email}) - {u.canBid !== false ? t('Akses Bidding Aktif') : t('Hanya Lihat')}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Refund Amount */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('Jumlah Refund (Rp)')}</label>
+                <input
+                  type="number"
+                  placeholder="Contoh: 5000000"
+                  value={newRefundAmount}
+                  onChange={(e) => setNewRefundAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  required
+                  min="1"
+                />
+              </div>
+
+              {/* Purpose */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('Keperluan / Keterangan')}</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Refund Deposit Jaminan Bidding"
+                  value={newRefundPurpose}
+                  onChange={(e) => setNewRefundPurpose(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Bank Name */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('Bank Tujuan')}</label>
+                  <select
+                    value={newRefundBankName}
+                    onChange={(e) => setNewRefundBankName(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    required
+                  >
+                    <option value="BCA">BCA</option>
+                    <option value="Mandiri">Mandiri</option>
+                    <option value="BNI">BNI</option>
+                    <option value="BRI">BRI</option>
+                    <option value="BSI">BSI</option>
+                    <option value="Permata">Permata</option>
+                  </select>
+                </div>
+
+                {/* Account Number */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('No. Rekening')}</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: 812739123"
+                    value={newRefundAccountNumber}
+                    onChange={(e) => setNewRefundAccountNumber(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Account Holder Name */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('Nama Pemilik Rekening')}</label>
+                <input
+                  type="text"
+                  placeholder="Sesuai nama di buku tabungan"
+                  value={newRefundAccountHolder}
+                  onChange={(e) => setNewRefundAccountHolder(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-[11px] text-slate-500 leading-normal font-medium flex items-start gap-1.5">
+                <AlertCircle className="w-4.5 h-4.5 text-slate-400 shrink-0 mt-0.5" />
+                <span>{t('Memproses refund akan otomatis mencabut hak akses penawaran (bidding) konsumen ini di dashboard lelang.')}</span>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateRefundOpen(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                >
+                  {t('Batal')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingRefund}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/10 hover:shadow-blue-600/20 transition cursor-pointer flex items-center gap-1"
+                >
+                  {isSubmittingRefund && <Clock className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{t('Proses Refund & Blokir Akses')}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {selectedReceiptUrl && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col animate-in zoom-in duration-200">

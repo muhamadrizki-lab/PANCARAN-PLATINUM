@@ -906,19 +906,6 @@ export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests
               : 'Ajukan permohonan akses bidding Anda dan lampirkan bukti transfer pembayaran untuk mulai berpartisipasi dalam lelang aset aktif.'}
           </p>
         </div>
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3 max-w-xs md:max-w-md">
-          <div className="bg-blue-100 text-blue-700 p-2 rounded-xl">
-            <Lock className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">{language === 'en' ? 'Transfer Verification' : 'Verifikasi Transfer'}</h4>
-            <p className="text-slate-600 text-xs mt-1">
-              {language === 'en' 
-                ? 'Verification takes up to 24 hours. You will receive notifications inside your account.' 
-                : 'Verifikasi membutuhkan waktu hingga 24 jam. Anda akan menerima notifikasi di akun Anda.'}
-            </p>
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1213,10 +1200,6 @@ export function ExternalRefundBiddingView({ userEmail, userName, userPhone, refu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!proofImage) {
-      setErrorMsg(language === 'en' ? 'Please upload refund proof receipt.' : 'Silakan unggah bukti refund pembayaran.');
-      return;
-    }
 
     setIsSubmitting(true);
     setErrorMsg('');
@@ -1229,7 +1212,7 @@ export function ExternalRefundBiddingView({ userEmail, userName, userPhone, refu
         userName: userName,
         phone: userPhone || '',
         purpose: purpose,
-        proofUrl: proofImage,
+        proofUrl: '',
         status: 'Pending',
         createdAt: new Date().toISOString()
       };
@@ -1320,10 +1303,10 @@ export function ExternalRefundBiddingView({ userEmail, userName, userPhone, refu
                 </div>
               )}
 
-              {/* Input 1: Keperluan Refund */}
+              {/* Input: Keperluan Refund */}
               <div className="space-y-2">
                 <label className="block text-sm font-bold text-slate-700">
-                  1. {language === 'en' ? 'Refund Purpose' : 'Keperluan Refund / Pengembalian'}
+                  {language === 'en' ? 'Refund Purpose' : 'Keperluan Refund / Pengembalian'}
                 </label>
                 <select
                   value={purpose}
@@ -1349,73 +1332,15 @@ export function ExternalRefundBiddingView({ userEmail, userName, userPhone, refu
                 </select>
               </div>
 
-              {/* Input 2: Upload Bukti Refund */}
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">
-                  2. {language === 'en' ? 'Proof of Refund (Transfer Receipt)' : 'Upload Bukti Refund / Bukti Transfer'}
-                </label>
-                
-                <div 
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
-                    proofImage 
-                      ? 'border-emerald-200 bg-emerald-50/20' 
-                      : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50/50'
-                  }`}
-                >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange} 
-                    accept="image/*" 
-                    className="hidden" 
-                  />
-
-                  {proofImage ? (
-                    <div className="space-y-4 w-full max-w-xs">
-                      <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 bg-white shadow-inner">
-                        <img 
-                          src={proofImage} 
-                          alt="Refund proof preview" 
-                          className="w-full h-full object-contain"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-emerald-800">{language === 'en' ? 'Proof uploaded successfully' : 'Bukti refund berhasil diunggah'}</p>
-                        <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Click or drag a new file to replace' : 'Klik atau seret file baru untuk mengganti'}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-700">{language === 'en' ? 'Upload transfer receipt / proof' : 'Unggah bukti refund / resi transfer'}</p>
-                        <p className="text-[10px] text-slate-400 mt-1">{language === 'en' ? 'Drag & drop image here, or click to browse' : 'Seret & lepas gambar ke sini, atau klik untuk memilih'}</p>
-                      </div>
-                      <span className="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full tracking-wider mt-2">PNG, JPG, JPEG (MAX. 5MB)</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Submit button */}
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={isSubmitting || !proofImage}
+                  disabled={isSubmitting}
                   className={`w-full py-3 px-4 rounded-xl text-sm font-extrabold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    !proofImage
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : isSubmitting
-                        ? 'bg-blue-600/80 text-white cursor-wait'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/10'
+                    isSubmitting
+                      ? 'bg-blue-600/80 text-white cursor-wait'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/10'
                   }`}
                 >
                   {isSubmitting ? (
