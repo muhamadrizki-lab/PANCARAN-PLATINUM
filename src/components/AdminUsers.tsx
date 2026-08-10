@@ -50,7 +50,8 @@ interface AdminUsersProps {
     accountNumber: string, 
     accountHolder: string, 
     purpose: string,
-    proofUrl?: string
+    proofUrl?: string,
+    registerEntryName?: string
   ) => Promise<void>;
 }
 
@@ -74,7 +75,7 @@ export default function AdminUsers({
 }: AdminUsersProps) {
   const { t } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'internal' | 'external' | 'bidding_requests' | 'refund_requests'>('internal');
+  const [activeTab, setActiveTab] = useState<'internal' | 'external' | 'bidding_requests'>('internal');
   
   // Internal Admin Form States
   const [formData, setFormData] = useState({
@@ -100,6 +101,7 @@ export default function AdminUsers({
   const [newRefundBankName, setNewRefundBankName] = useState('BCA');
   const [newRefundAccountNumber, setNewRefundAccountNumber] = useState('');
   const [newRefundAccountHolder, setNewRefundAccountHolder] = useState('');
+  const [newRefundRegisterEntryName, setNewRefundRegisterEntryName] = useState('');
   const [newRefundPurpose, setNewRefundPurpose] = useState('Refund Jaminan Bidding');
   const [createRefundError, setCreateRefundError] = useState('');
   const [createRefundSuccess, setCreateRefundSuccess] = useState('');
@@ -159,8 +161,8 @@ export default function AdminUsers({
     setCreateRefundError('');
     setCreateRefundSuccess('');
 
-    if (!newRefundEmail || !newRefundAmount || !newRefundBankName || !newRefundAccountNumber || !newRefundAccountHolder) {
-      setCreateRefundError(t('Mohon lengkapi semua field formulir refund.'));
+    if (!newRefundEmail || !newRefundAmount || !newRefundBankName || !newRefundAccountNumber || !newRefundAccountHolder || !newRefundRegisterEntryName) {
+      setCreateRefundError(t('Mohon lengkapi semua field formulir refund, termasuk nama register entry.'));
       return;
     }
 
@@ -179,7 +181,8 @@ export default function AdminUsers({
           newRefundAccountNumber,
           newRefundAccountHolder,
           newRefundPurpose,
-          ''
+          '',
+          newRefundRegisterEntryName
         );
         setCreateRefundSuccess(t('Refund jaminan berhasil dibuat! Akses bidding konsumen otomatis dinonaktifkan.'));
         
@@ -188,6 +191,7 @@ export default function AdminUsers({
         setNewRefundAmount('');
         setNewRefundAccountNumber('');
         setNewRefundAccountHolder('');
+        setNewRefundRegisterEntryName('');
         setNewRefundPurpose('Refund Jaminan Bidding');
 
         setTimeout(() => {
@@ -281,22 +285,6 @@ export default function AdminUsers({
             {biddingRequests.filter(req => req.status === 'Pending').length > 0 && (
               <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
                 {biddingRequests.filter(req => req.status === 'Pending').length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('refund_requests')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
-              activeTab === 'refund_requests'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-800'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            {t('Pending Refund Bidding')}
-            {refundRequests.filter(req => req.status === 'Pending').length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
-                {refundRequests.filter(req => req.status === 'Pending').length}
               </span>
             )}
           </button>
@@ -810,9 +798,17 @@ export default function AdminUsers({
 
                           {/* Pilihan Akses */}
                           <td className="py-4 px-6">
-                            <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold text-[10px]">
-                              {req.requestType}
-                            </span>
+                            <div className="space-y-1">
+                              <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold text-[10px]">
+                                {req.requestType}
+                              </span>
+                              {req.notes && (
+                                <p className="text-[10px] text-slate-500 bg-slate-50 p-2 border border-slate-100 rounded-lg mt-1 whitespace-pre-wrap max-w-xs font-medium">
+                                  <span className="font-bold text-slate-700 block text-[9px] uppercase tracking-wider mb-0.5">{t('Catatan Detail:')}</span>
+                                  {req.notes}
+                                </p>
+                              )}
+                            </div>
                           </td>
 
                           {/* Tanggal Pengajuan */}
@@ -896,169 +892,14 @@ export default function AdminUsers({
         </div>
       )}
 
-      {/* TAB 4: REFUND REQUESTS */}
-      {activeTab === 'refund_requests' && (
-        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-base font-bold text-slate-800">{t('Permohonan Refund Bidding')}</h2>
-              <p className="text-xs text-slate-500 mt-1">{t('Persetujuan atau penolakan pengajuan refund dari konsumen lelang.')}</p>
-            </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => {
-                  // Set default user if there's any registered users
-                  const approvedUsers = registeredUsers.filter(u => u.status === 'Disetujui');
-                  if (approvedUsers.length > 0) {
-                    setNewRefundEmail(approvedUsers[0].email);
-                    setNewRefundAccountHolder(approvedUsers[0].name);
-                  }
-                  setIsCreateRefundOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>{t('Buat Refund Konsumen')}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Pemohon')}</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Keperluan / Keterangan')}</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Tanggal Pengajuan')}</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Bukti Transfer')}</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('Status')}</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">{t('Aksi')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                {refundRequests.length > 0 ? (
-                  [...refundRequests]
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .map((req) => {
-                      return (
-                        <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
-                          {/* Pemohon info */}
-                          <td className="py-4 px-6">
-                            <div className="space-y-1">
-                              <p className="font-extrabold text-slate-800">{req.userName}</p>
-                              <p className="text-[10px] text-slate-400">{req.email}</p>
-                            </div>
-                          </td>
-
-                          {/* Keperluan */}
-                          <td className="py-4 px-6">
-                            <div className="space-y-1.5">
-                              <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold text-[10px]">
-                                {req.purpose}
-                              </span>
-                              {req.amount !== undefined && req.amount > 0 && (
-                                <p className="font-extrabold text-slate-800 text-xs">
-                                  Rp {req.amount.toLocaleString('id-ID')}
-                                </p>
-                              )}
-                              {req.bankName && (
-                                <p className="text-[10px] text-slate-500 font-semibold">
-                                  {req.bankName} - {req.accountNumber} <span className="text-slate-400 font-normal">a/n</span> {req.accountHolder}
-                                </p>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Tanggal Pengajuan */}
-                          <td className="py-4 px-6 text-slate-500">
-                            {new Date(req.createdAt).toLocaleString('id-ID')}
-                          </td>
-
-                          {/* Bukti Transfer File Icon */}
-                          <td className="py-4 px-6">
-                            {req.proofUrl ? (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedReceiptUrl(req.proofUrl || null)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 rounded-lg border border-slate-200 transition cursor-pointer"
-                                title={t('Klik untuk melihat bukti transfer')}
-                              >
-                                <FileText className="w-4.5 h-4.5 text-slate-500" />
-                                <span className="text-[10px] font-extrabold text-slate-600">{t('Lihat Bukti')}</span>
-                              </button>
-                            ) : (
-                              <span className="text-slate-400 font-medium italic">-</span>
-                            )}
-                          </td>
-
-                          {/* Status */}
-                          <td className="py-4 px-6">
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                              req.status === 'Approved'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                : req.status === 'Rejected'
-                                  ? 'bg-rose-50 text-rose-700 border border-rose-100'
-                                  : 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse'
-                            }`}>
-                              {req.status === 'Approved' && <Check className="w-3 h-3" />}
-                              {req.status === 'Rejected' && <X className="w-3 h-3" />}
-                              {req.status === 'Pending' && <Clock className="w-3 h-3" />}
-                              {req.status}
-                            </span>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-4 px-6 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {req.status === 'Pending' ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => onApproveRefundRequest?.(req.id)}
-                                    className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg border border-emerald-100 hover:border-emerald-600 transition cursor-pointer"
-                                    title={t('Setujui Pengajuan Refund')}
-                                  >
-                                    <Check className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => onRejectRefundRequest?.(req.id)}
-                                    className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg border border-rose-100 hover:border-rose-600 transition cursor-pointer"
-                                    title={t('Tolak Pengajuan Refund')}
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('Selesai')}</span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="text-center py-12 text-slate-400 text-xs font-semibold">
-                      {t('Belum ada permohonan refund bidding.')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* Inline Proof of Transfer Modal */}
       {isCreateRefundOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm overflow-y-auto flex items-start justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-100 p-6 my-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 shrink-0">
               <div className="space-y-1">
-                <h3 className="text-base font-extrabold text-slate-800">{t('Buat Pengajuan Refund Baru')}</h3>
-                <p className="text-xs text-slate-500">{t('Proses refund jaminan bidding dan nonaktifkan akses bidding konsumen.')}</p>
+                <h3 className="text-base font-extrabold text-slate-800">{t('Refund Adjustment Super Admin')}</h3>
+                <p className="text-xs text-slate-500">{t('Super Admin Dashboard - Proses refund jaminan bidding konsumen lelang.')}</p>
               </div>
               <button
                 type="button"
@@ -1069,7 +910,7 @@ export default function AdminUsers({
               </button>
             </div>
 
-            <form onSubmit={handleCreateRefundSubmit} className="space-y-4">
+            <form onSubmit={handleCreateRefundSubmit} className="flex-1 overflow-y-auto pr-1.5 space-y-4 mt-4 min-h-0">
               {createRefundError && (
                 <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -1110,6 +951,19 @@ export default function AdminUsers({
                       </option>
                     ))}
                 </select>
+              </div>
+
+              {/* Nama Register Entry */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('Nama Register Entry')}</label>
+                <input
+                  type="text"
+                  placeholder={t('Nama super admin pencatat refund')}
+                  value={newRefundRegisterEntryName}
+                  onChange={(e) => setNewRefundRegisterEntryName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  required
+                />
               </div>
 
               {/* Refund Amount */}
@@ -1213,8 +1067,8 @@ export default function AdminUsers({
       )}
 
       {selectedReceiptUrl && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col animate-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm overflow-y-auto flex items-start justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col my-auto animate-in zoom-in duration-200">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-blue-600" />

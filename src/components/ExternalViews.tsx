@@ -786,6 +786,7 @@ export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests
   const { language, t } = useLanguage();
   const [requestType, setRequestType] = useState('Akses Bidding Semua Aset / Umum');
   const [proofImage, setProofImage] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -865,7 +866,8 @@ export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests
         requestType: requestType,
         proofUrl: proofImage,
         status: 'Pending',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        notes: notes.trim() || undefined
       };
 
       await addBiddingRequest(newRequest);
@@ -882,6 +884,7 @@ export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests
 
       setSubmitSuccess(true);
       setProofImage(null);
+      setNotes('');
       // Reset after success
       setTimeout(() => setSubmitSuccess(false), 5000);
     } catch (err: any) {
@@ -1018,6 +1021,20 @@ export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests
                 </div>
               </div>
 
+              {/* Input 3: Catatan / Keterangan Detail */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700">
+                  3. {language === 'en' ? 'Additional Notes / Details' : 'Catatan / Keterangan Detail'} <span className="text-slate-400 font-normal">({language === 'en' ? 'Optional' : 'Opsional'})</span>
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={language === 'en' ? 'Add any additional details or notes...' : 'Masukkan catatan atau keterangan tambahan...'}
+                  rows={3}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+                />
+              </div>
+
               {/* Submit button */}
               <div className="pt-4">
                 <button
@@ -1090,6 +1107,12 @@ export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests
 
                     <div className="space-y-1">
                       <h4 className="text-xs font-extrabold text-slate-800">{req.requestType}</h4>
+                      {req.notes && (
+                        <p className="text-[10px] text-slate-600 bg-white border border-slate-100 p-2 rounded-xl mt-1 whitespace-pre-wrap font-medium">
+                          <span className="font-bold text-slate-400 text-[8px] uppercase tracking-wider block mb-0.5">{language === 'en' ? 'Notes' : 'Catatan'}</span>
+                          {req.notes}
+                        </p>
+                      )}
                       <p className="text-[10px] text-slate-400">
                         {language === 'en' ? 'Submitted on:' : 'Diajukan pada:'} {new Date(req.createdAt).toLocaleString('id-ID')}
                       </p>

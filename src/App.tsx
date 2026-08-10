@@ -10,7 +10,7 @@ import LoginModal from './components/LoginModal';
 import { useLanguage } from './components/LanguageContext';
 
 import imageIkutLelang from './assets/images/cara_ikut_lelang_1786088386491.jpg';
-import { ExternalNotificationsView, ExternalInboxView, ExternalBiddingAccessView, ExternalRefundBiddingView } from './components/ExternalViews';
+import { ExternalNotificationsView, ExternalInboxView, ExternalBiddingAccessView } from './components/ExternalViews';
 import { AnimatePresence, motion } from 'motion/react';
 import { 
   seedDatabaseIfEmpty,
@@ -112,7 +112,7 @@ export default function App() {
   const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'settings'>('dashboard');
   
   // Navigation inside External area
-  const [externalTab, setExternalTab] = useState<'catalog' | 'notifications' | 'inbox' | 'bidding_access' | 'refund'>('catalog');
+  const [externalTab, setExternalTab] = useState<'catalog' | 'notifications' | 'inbox' | 'bidding_access'>('catalog');
   
   // Mobile menu toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -876,7 +876,8 @@ export default function App() {
     accountNumber: string, 
     accountHolder: string, 
     purpose: string,
-    proofUrl?: string
+    proofUrl?: string,
+    registerEntryName?: string
   ) => {
     try {
       const user = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -895,7 +896,8 @@ export default function App() {
         accountHolder,
         proofUrl: proofUrl || '',
         status: 'Approved', // Auto approved since created by Admin
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        registerEntryName: registerEntryName || ''
       };
 
       await addRefundRequest(newRequest);
@@ -1123,21 +1125,6 @@ export default function App() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
           <span>{t('Akses Bidding')}</span>
-        </button>
-        <button
-          onClick={() => setExternalTab('refund')}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
-            externalTab === 'refund'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/15'
-              : isDarkTheme
-                ? 'text-slate-300 hover:text-white hover:bg-white/5'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{t('Refund Bidding')}</span>
         </button>
       </div>
     );
@@ -1968,14 +1955,6 @@ export default function App() {
                 >
                   <span>{t('Akses Bidding')}</span>
                 </button>
-                <button
-                  onClick={() => { setExternalTab('refund'); setIsMobileMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
-                    externalTab === 'refund' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
-                  }`}
-                >
-                  <span>{t('Refund Bidding')}</span>
-                </button>
               </div>
             )}
 
@@ -2219,21 +2198,12 @@ export default function App() {
                     userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
                   />
                 </div>
-              ) : externalTab === 'bidding_access' ? (
+              ) : (
                 <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
                   <ExternalBiddingAccessView
                     userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
                     userName={isUserLoggedIn ? loggedInUserName : adminName}
                     biddingRequests={biddingRequests}
-                  />
-                </div>
-              ) : (
-                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-                  <ExternalRefundBiddingView
-                    userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
-                    userName={isUserLoggedIn ? loggedInUserName : adminName}
-                    userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
-                    refundRequests={refundRequests}
                   />
                 </div>
               )}

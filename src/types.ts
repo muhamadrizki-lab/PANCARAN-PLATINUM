@@ -181,6 +181,7 @@ export interface BiddingRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
   updatedAt?: string;
+  notes?: string;
 }
 
 export interface RefundRequest {
@@ -197,5 +198,6 @@ export interface RefundRequest {
   bankName?: string;
   accountNumber?: string;
   accountHolder?: string;
+  registerEntryName?: string;
 }
 
