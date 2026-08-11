@@ -1216,6 +1216,18 @@ export default function App() {
           </svg>
           <span>{t('Akses Bidding')}</span>
         </button>
+        <button
+          onClick={() => setSelectedGuideModal('ikut')}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
+            isDarkTheme
+              ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300 border border-amber-500/30'
+              : 'bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 border border-amber-300/80 shadow-xs'
+          }`}
+          title={t('Aturan Bidding')}
+        >
+          <Lock className="w-3.5 h-3.5 text-amber-500" />
+          <span>{t('Aturan Bidding')}</span>
+        </button>
       </div>
       </div>
     );
