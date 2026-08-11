@@ -94,7 +94,8 @@ import {
   Layers,
   Award,
   Eye,
-  Lock
+  Lock,
+  Search
 } from 'lucide-react';
 
 export default function App() {
@@ -1260,45 +1261,7 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Filters next to Logo (only on catalog) */}
-              {role === 'external' && externalTab === 'catalog' && (
-                <div className="hidden lg:flex items-center gap-2 ml-6">
-                  <div className="relative group">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
-                    <input
-                      type="text"
-                      placeholder={t('Cari armada...')}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-8 pr-4 py-1.5 bg-blue-900/40 border border-blue-500/30 rounded-xl text-[10px] font-bold text-blue-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-400 w-44 transition-all focus:w-56"
-                    />
-                  </div>
 
-                  <div className="h-4 w-[1px] bg-blue-500/20 mx-1"></div>
-
-                  <select
-                    value={selectedBrand}
-                    onChange={(e) => setSelectedBrand(e.target.value)}
-                    className="px-2 py-1.5 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer hover:bg-blue-800/40 transition-colors"
-                  >
-                    <option value="all" className="bg-slate-900">{t('Semua Brand')}</option>
-                    {uniqueBrands.sort().map(b => (
-                      <option key={b} value={b} className="bg-slate-900">{b}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-2 py-1.5 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer hover:bg-blue-800/40 transition-colors"
-                  >
-                    <option value="all" className="bg-slate-900">{t('Semua Kategori')}</option>
-                    {uniqueCategories.sort().map(c => (
-                      <option key={c} value={c} className="bg-slate-900">{c}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
 
             {/* Desktop Navigation Toggles */}
