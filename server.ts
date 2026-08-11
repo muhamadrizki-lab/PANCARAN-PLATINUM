@@ -327,7 +327,7 @@ async function startServer() {
   });
 
   app.post('/api/wa/send', async (req, res) => {
-    const { recipients, message, email } = req.body || {};
+    const { recipients, message, imageUrl, email } = req.body || {};
     const userEmail = email || (req.query.email as string) || (req.headers['x-user-email'] as string);
     const emailKey = normalizeEmail(userEmail);
     const session = getSession(emailKey);
@@ -357,7 +357,14 @@ async function startServer() {
             
             if (session.sock && typeof session.sock.sendMessage === 'function') {
               try {
-                await session.sock.sendMessage(jid, { text: personalizedMessage });
+                if (imageUrl) {
+                  await session.sock.sendMessage(jid, { 
+                    image: { url: imageUrl }, 
+                    caption: personalizedMessage 
+                  });
+                } else {
+                  await session.sock.sendMessage(jid, { text: personalizedMessage });
+                }
               } catch (e) {
                 console.log('Baileys send fallback:', e);
               }
@@ -375,7 +382,7 @@ async function startServer() {
           id: 'blast_' + Date.now(),
           time: new Date().toLocaleString('id-ID'),
           recipientCount: recipients.length,
-          messagePreview: message.slice(0, 60) + (message.length > 60 ? '...' : ''),
+          messagePreview: (imageUrl ? '[Gambar + Pesan] ' : '') + message.slice(0, 50) + (message.length > 50 ? '...' : ''),
           status: `Selesai (${emailKey})`
         });
       })();
