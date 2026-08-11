@@ -23,6 +23,7 @@ import { useLanguage } from './LanguageContext';
 interface AdminWhatsAppBlastingProps {
   registeredUsers: RegisteredUser[];
   assets: Asset[];
+  currentUserEmail?: string;
 }
 
 interface MessageTemplate {
@@ -31,8 +32,10 @@ interface MessageTemplate {
   content: string;
 }
 
-export default function AdminWhatsAppBlasting({ registeredUsers, assets }: AdminWhatsAppBlastingProps) {
+export default function AdminWhatsAppBlasting({ registeredUsers, assets, currentUserEmail }: AdminWhatsAppBlastingProps) {
   const { t } = useLanguage();
+  const effectiveEmail = currentUserEmail || 'digital.solution@pancaran-logistic.id';
+
   const [waStatus, setWaStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [connectedPhone, setConnectedPhone] = useState<string>('+62 813-1746-9744');
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -55,10 +58,10 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successInfo, setSuccessInfo] = useState<{ count: number; preview: string; time: string } | null>(null);
 
-  // Fetch WA Status & Real QR
+  // Fetch WA Status & Real QR for effectiveEmail
   const checkStatus = async () => {
     try {
-      const res = await fetch('/api/wa/status');
+      const res = await fetch(`/api/wa/status?email=${encodeURIComponent(effectiveEmail)}`);
       const data = await res.json();
       setWaStatus(data.status);
       if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
@@ -73,7 +76,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
 
   const fetchQr = async () => {
     try {
-      const res = await fetch('/api/wa/qr');
+      const res = await fetch(`/api/wa/qr?email=${encodeURIComponent(effectiveEmail)}`);
       const data = await res.json();
       if (data.qr) {
         setQrCode(data.qr);
@@ -91,14 +94,17 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
       const res = await fetch('/api/wa/quick-connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phoneOverride || pairPhoneInput || '+6281317469744' })
+        body: JSON.stringify({ 
+          phone: phoneOverride || pairPhoneInput || '+6281317469744',
+          email: effectiveEmail 
+        })
       });
       const data = await res.json();
       if (data.success) {
         setWaStatus('connected');
         if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
         setQrCode(null);
-        alert('✅ WhatsApp Berhasil Terhubung! Sesi aktif dan siap melakukan WhatsApp Blasting.');
+        alert(`✅ WhatsApp Berhasil Terhubung untuk akun ${effectiveEmail}! Sesi aktif dan siap digunakan.`);
         setActiveTab('blast');
       }
     } catch (e) {
@@ -111,11 +117,15 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
     try {
       setWaStatus('connecting');
       setQrCode(null);
-      const res = await fetch('/api/wa/refresh-qr', { method: 'POST' });
+      const res = await fetch('/api/wa/refresh-qr', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: effectiveEmail })
+      });
       const data = await res.json();
       if (data.qr) setQrCode(data.qr);
       if (data.status) setWaStatus(data.status);
-      alert('🔄 QR Code WhatsApp baru telah di-generate. Silakan scan dengan HP Anda.');
+      alert(`🔄 QR Code WhatsApp baru di-generate untuk akun ${effectiveEmail}. Silakan scan dengan HP Anda.`);
     } catch (e) {
       console.error('Failed to refresh QR', e);
     }
@@ -138,7 +148,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
       checkStatus();
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [effectiveEmail]);
 
   const handleRequestPairCode = async () => {
     if (!pairPhoneInput.trim()) {
@@ -150,7 +160,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
       const res = await fetch('/api/wa/pair-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: pairPhoneInput })
+        body: JSON.stringify({ phone: pairPhoneInput, email: effectiveEmail })
       });
       const data = await res.json();
       if (data.success && data.pairCode) {
@@ -160,7 +170,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
           setWaStatus('connected');
           setQrCode(null);
           setIsPairing(false);
-          alert('✅ Perangkat berhasil dikaitkan via Kode Pasangkan!');
+          alert(`✅ Perangkat berhasil dikaitkan via Kode Pasangkan untuk akun ${effectiveEmail}!`);
           setActiveTab('blast');
         }, 4000);
       } else {
@@ -257,7 +267,8 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           recipients, 
-          message: messageContent 
+          message: messageContent,
+          email: effectiveEmail
         })
       });
       
@@ -281,9 +292,13 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
   };
 
   const handleLogout = async () => {
-    if (!window.confirm('Putus koneksi WhatsApp?')) return;
+    if (!window.confirm(`Putus koneksi WhatsApp untuk akun ${effectiveEmail}?`)) return;
     try {
-      await fetch('/api/wa/logout', { method: 'POST' });
+      await fetch('/api/wa/logout', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: effectiveEmail })
+      });
       setWaStatus('disconnected');
       setPairCodeResult(null);
       checkStatus();
@@ -294,6 +309,29 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Account Lock Security Notice */}
+      <div className="bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-4 rounded-2xl shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-500/20 border border-emerald-400/30 rounded-xl">
+            <Lock className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-sm text-white">Koneksi WhatsApp Terkunci Per Akun</span>
+              <span className="px-2 py-0.5 bg-emerald-500/30 border border-emerald-400/30 text-emerald-300 rounded-full text-[10px] font-bold uppercase">
+                Proteksi Akses
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Aktivasi scan barcode hanya terhubung & aktif pada akun email: <strong className="font-mono text-emerald-300 underline">{effectiveEmail}</strong>
+            </p>
+          </div>
+        </div>
+        <div className="text-[11px] text-slate-300 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
+          🔒 Bebas dari penggunaan unauthorized oleh akun lain
+        </div>
+      </div>
+
       {/* Header section with Status */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

@@ -2225,11 +2225,12 @@ export default function App() {
                 />
               )}
               {adminTab === 'whatsapp' && (
-          <AdminWhatsAppBlasting 
-            registeredUsers={registeredUsers} 
-            assets={assets} 
-          />
-        )}
+                <AdminWhatsAppBlasting 
+                  registeredUsers={registeredUsers} 
+                  assets={assets}
+                  currentUserEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
+                />
+              )}
         {adminTab === 'settings' && (
                 <AdminSettings 
                   onShowNotification={(msg, type) => {

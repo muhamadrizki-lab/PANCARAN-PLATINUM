@@ -45,14 +45,37 @@ try {
   __dirname = process.cwd();
 }
 
-// WA Global State
-let sock: any = null;
-let qrCode: string | null = null;
-let waStatus: 'disconnected' | 'connecting' | 'connected' = 'disconnected';
-let connectedPhone: string = '';
+// WA Per-User Session Management State
+interface WASession {
+  sock: any;
+  qrCode: string | null;
+  waStatus: 'disconnected' | 'connecting' | 'connected';
+  connectedPhone: string;
+}
+
+const userSessions: Record<string, WASession> = {};
 let blastLogs: Array<{ id: string; time: string; recipientCount: number; messagePreview: string; status: string }> = [];
 
 const logger = pino({ level: 'error' }) as any;
+
+function normalizeEmail(email?: string): string {
+  if (!email || typeof email !== 'string') return 'digital.solution@pancaran-logistic.id';
+  const trimmed = email.trim().toLowerCase();
+  return trimmed || 'digital.solution@pancaran-logistic.id';
+}
+
+function getSession(email?: string): WASession {
+  const key = normalizeEmail(email);
+  if (!userSessions[key]) {
+    userSessions[key] = {
+      sock: null,
+      qrCode: null,
+      waStatus: 'disconnected',
+      connectedPhone: ''
+    };
+  }
+  return userSessions[key];
+}
 
 async function generateFallbackQr() {
   const payload = `https://wa.me/6281317469744?text=PANCARAN_LELANG_CONNECT_${Date.now()}`;
@@ -66,7 +89,10 @@ async function generateFallbackQr() {
   });
 }
 
-async function connectToWhatsApp(forceFresh = false) {
+async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) {
+  const emailKey = normalizeEmail(userEmail);
+  const session = getSession(emailKey);
+
   try {
     const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = getBaileys();
 
@@ -74,12 +100,14 @@ async function connectToWhatsApp(forceFresh = false) {
       throw new Error('makeWASocket resolution failed: not a function');
     }
 
-    const authDir = path.join(process.cwd(), 'wa_auth');
+    const safeFolderName = 'wa_auth_' + emailKey.replace(/[^a-z0-9]/g, '_');
+    const authDir = path.join(process.cwd(), safeFolderName);
+
     if (forceFresh && fs.existsSync(authDir)) {
       try {
         fs.rmSync(authDir, { recursive: true, force: true });
       } catch (e) {
-        console.warn('Could not clear authDir:', e);
+        console.warn(`Could not clear authDir for ${emailKey}:`, e);
       }
     }
     if (!fs.existsSync(authDir)) {
@@ -89,30 +117,33 @@ async function connectToWhatsApp(forceFresh = false) {
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] }));
 
-    waStatus = 'connecting';
-    qrCode = null;
+    session.waStatus = 'connecting';
+    session.qrCode = null;
 
-    if (sock) {
-      try { sock.ev.removeAllListeners('connection.update'); sock.ev.removeAllListeners('creds.update'); } catch(e){}
+    if (session.sock) {
+      try {
+        session.sock.ev.removeAllListeners('connection.update');
+        session.sock.ev.removeAllListeners('creds.update');
+      } catch (e) {}
     }
 
-    sock = makeWASocket({
+    session.sock = makeWASocket({
       version,
       printQRInTerminal: false,
       auth: state,
       logger,
-      browser: ['Pancaran Lelang Admin', 'Chrome', '120.0.0.0'],
+      browser: [`Pancaran Lelang (${emailKey})`, 'Chrome', '120.0.0.0'],
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: undefined,
       keepAliveIntervalMs: 25000,
     });
 
-    sock.ev.on('connection.update', async (update: any) => {
+    session.sock.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
-      
+
       if (qr) {
         try {
-          qrCode = await QRCode.toDataURL(qr, {
+          session.qrCode = await QRCode.toDataURL(qr, {
             width: 320,
             margin: 2,
             color: {
@@ -120,19 +151,19 @@ async function connectToWhatsApp(forceFresh = false) {
               light: '#ffffff'
             }
           });
-          console.log('✅ Real Baileys QR code generated successfully');
+          console.log(`✅ Real Baileys QR code generated for ${emailKey}`);
         } catch (err) {
-          console.error('Failed to convert QR code:', err);
+          console.error(`Failed to convert QR code for ${emailKey}:`, err);
         }
       }
 
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-        console.log('WA Connection closed, statusCode:', statusCode, 'reconnecting:', shouldReconnect);
-        
-        waStatus = 'disconnected';
-        qrCode = null;
+        console.log(`WA Connection closed for ${emailKey}, statusCode:`, statusCode, 'reconnecting:', shouldReconnect);
+
+        session.waStatus = 'disconnected';
+        session.qrCode = null;
 
         if (statusCode === DisconnectReason.loggedOut) {
           if (fs.existsSync(authDir)) {
@@ -140,21 +171,21 @@ async function connectToWhatsApp(forceFresh = false) {
           }
         }
       } else if (connection === 'open') {
-        console.log('🎉 WhatsApp connection verified and opened!');
-        waStatus = 'connected';
-        qrCode = null;
-        
-        const rawJid = sock?.user?.id || sock?.user?.jid || '';
+        console.log(`🎉 WhatsApp connection verified and opened for ${emailKey}!`);
+        session.waStatus = 'connected';
+        session.qrCode = null;
+
+        const rawJid = session.sock?.user?.id || session.sock?.user?.jid || '';
         const phoneDigits = rawJid.split(':')[0].split('@')[0];
-        connectedPhone = phoneDigits ? (phoneDigits.startsWith('+') ? phoneDigits : '+' + phoneDigits) : '+6281317469744';
+        session.connectedPhone = phoneDigits ? (phoneDigits.startsWith('+') ? phoneDigits : '+' + phoneDigits) : '+6281317469744';
       }
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    session.sock.ev.on('creds.update', saveCreds);
   } catch (err) {
-    console.error('Baileys init error:', err);
-    waStatus = 'disconnected';
-    qrCode = null;
+    console.error(`Baileys init error for ${emailKey}:`, err);
+    session.waStatus = 'disconnected';
+    session.qrCode = null;
   }
 }
 
@@ -174,28 +205,34 @@ async function startServer() {
     }
   });
 
-  // WA Routes
+  // WA Routes (Isolated Per User Email)
   app.get('/api/wa/status', (req, res) => {
-    res.json({ status: waStatus, connectedPhone });
+    const email = (req.query.email as string) || (req.headers['x-user-email'] as string);
+    const session = getSession(email);
+    res.json({ status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: normalizeEmail(email) });
   });
 
   app.get('/api/wa/qr', async (req, res) => {
-    if (waStatus === 'connected') {
-      return res.json({ status: 'connected', connectedPhone });
+    const email = (req.query.email as string) || (req.headers['x-user-email'] as string);
+    const session = getSession(email);
+    if (session.waStatus === 'connected') {
+      return res.json({ status: 'connected', connectedPhone: session.connectedPhone, userEmail: normalizeEmail(email) });
     }
-    if (!sock || (waStatus === 'disconnected' && !qrCode)) {
-      await connectToWhatsApp();
+    if (!session.sock || (session.waStatus === 'disconnected' && !session.qrCode)) {
+      await connectToWhatsAppForUser(email);
     }
-    res.json({ qr: qrCode, status: waStatus, connectedPhone });
+    res.json({ qr: session.qrCode, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: normalizeEmail(email) });
   });
 
   app.post('/api/wa/refresh-qr', async (req, res) => {
     try {
-      await connectToWhatsApp(true);
-      if (!qrCode) {
-        qrCode = await generateFallbackQr();
+      const email = req.body?.email || (req.query.email as string) || (req.headers['x-user-email'] as string);
+      const session = getSession(email);
+      await connectToWhatsAppForUser(email, true);
+      if (!session.qrCode) {
+        session.qrCode = await generateFallbackQr();
       }
-      res.json({ success: true, qr: qrCode, status: waStatus });
+      res.json({ success: true, qr: session.qrCode, status: session.waStatus, userEmail: normalizeEmail(email) });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -203,42 +240,46 @@ async function startServer() {
 
   // Direct Quick Connect for WhatsApp Session
   app.post('/api/wa/quick-connect', async (req, res) => {
-    const { phone } = req.body || {};
-    waStatus = 'connected';
+    const { phone, email } = req.body || {};
+    const userEmail = email || (req.query.email as string) || (req.headers['x-user-email'] as string);
+    const session = getSession(userEmail);
+    session.waStatus = 'connected';
     if (phone) {
       let clean = phone.replace(/[^0-9]/g, '');
       if (clean.startsWith('0')) clean = '62' + clean.slice(1);
-      connectedPhone = '+' + clean;
-    } else if (!connectedPhone) {
-      connectedPhone = '+6281317469744';
+      session.connectedPhone = '+' + clean;
+    } else if (!session.connectedPhone) {
+      session.connectedPhone = '+6281317469744';
     }
-    qrCode = null;
-    res.json({ success: true, status: waStatus, connectedPhone });
+    session.qrCode = null;
+    res.json({ success: true, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: normalizeEmail(userEmail) });
   });
 
   // Request Pairing Code using Baileys socket if available
   app.post('/api/wa/pair-code', async (req, res) => {
-    const { phone } = req.body || {};
+    const { phone, email } = req.body || {};
+    const userEmail = email || (req.query.email as string) || (req.headers['x-user-email'] as string);
     if (!phone) {
       return res.status(400).json({ error: 'Nomor WhatsApp wajib diisi' });
     }
 
+    const session = getSession(userEmail);
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.slice(1);
 
     try {
       const { delay } = getBaileys();
-      if (!sock || waStatus === 'disconnected') {
-        await connectToWhatsApp();
+      if (!session.sock || session.waStatus === 'disconnected') {
+        await connectToWhatsAppForUser(userEmail);
         await delay(1500);
       }
 
       let code = '';
-      if (sock && typeof sock.requestPairingCode === 'function') {
+      if (session.sock && typeof session.sock.requestPairingCode === 'function') {
         try {
-          code = await sock.requestPairingCode(cleanPhone);
+          code = await session.sock.requestPairingCode(cleanPhone);
         } catch (err) {
-          console.warn('Baileys requestPairingCode error, fallback code:', err);
+          console.warn('Baileys requestPairingCode error:', err);
         }
       }
 
@@ -251,9 +292,8 @@ async function startServer() {
         }
       }
 
-      connectedPhone = '+' + cleanPhone;
-      
-      res.json({ success: true, pairCode: code, connectedPhone });
+      session.connectedPhone = '+' + cleanPhone;
+      res.json({ success: true, pairCode: code, connectedPhone: session.connectedPhone, userEmail: normalizeEmail(userEmail) });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -261,25 +301,41 @@ async function startServer() {
 
   app.post('/api/wa/logout', async (req, res) => {
     try {
-      if (sock) {
-        try { await sock.logout(); } catch (e) { /* ignore */ }
-        const authDir = path.join(process.cwd(), 'wa_auth');
-        if (fs.existsSync(authDir)) {
-          fs.rmSync(authDir, { recursive: true, force: true });
-        }
+      const { email } = req.body || {};
+      const userEmail = email || (req.query.email as string) || (req.headers['x-user-email'] as string);
+      const emailKey = normalizeEmail(userEmail);
+      const session = getSession(emailKey);
+
+      if (session.sock) {
+        try { await session.sock.logout(); } catch (e) { /* ignore */ }
       }
-      waStatus = 'disconnected';
-      qrCode = await generateFallbackQr();
-      res.json({ success: true });
+
+      const safeFolderName = 'wa_auth_' + emailKey.replace(/[^a-z0-9]/g, '_');
+      const authDir = path.join(process.cwd(), safeFolderName);
+      if (fs.existsSync(authDir)) {
+        fs.rmSync(authDir, { recursive: true, force: true });
+      }
+
+      session.waStatus = 'disconnected';
+      session.sock = null;
+      session.connectedPhone = '';
+      session.qrCode = await generateFallbackQr();
+      res.json({ success: true, userEmail: emailKey });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
   });
 
   app.post('/api/wa/send', async (req, res) => {
-    const { recipients, message } = req.body;
-    if (waStatus !== 'connected') {
-      return res.status(400).json({ error: 'WhatsApp belum terhubung' });
+    const { recipients, message, email } = req.body || {};
+    const userEmail = email || (req.query.email as string) || (req.headers['x-user-email'] as string);
+    const emailKey = normalizeEmail(userEmail);
+    const session = getSession(emailKey);
+
+    if (session.waStatus !== 'connected') {
+      return res.status(400).json({ 
+        error: `WhatsApp belum terhubung untuk akun (${emailKey}). Setiap akun wajib mengaktifkan / scan QR barcode milik sendiri terlebih dahulu.` 
+      });
     }
 
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
@@ -287,6 +343,7 @@ async function startServer() {
     }
 
     try {
+      const { delay } = getBaileys();
       // Background blasting process
       (async () => {
         let sent = 0;
@@ -298,11 +355,11 @@ async function startServer() {
 
             const personalizedMessage = message.replace(/{name}/g, recipient.name || 'Pelanggan');
             
-            if (sock && typeof sock.sendMessage === 'function') {
+            if (session.sock && typeof session.sock.sendMessage === 'function') {
               try {
-                await sock.sendMessage(jid, { text: personalizedMessage });
+                await session.sock.sendMessage(jid, { text: personalizedMessage });
               } catch (e) {
-                console.log('Baileys send mock fallback:', e);
+                console.log('Baileys send fallback:', e);
               }
             }
             
@@ -319,11 +376,11 @@ async function startServer() {
           time: new Date().toLocaleString('id-ID'),
           recipientCount: recipients.length,
           messagePreview: message.slice(0, 60) + (message.length > 60 ? '...' : ''),
-          status: 'Selesai'
+          status: `Selesai (${emailKey})`
         });
       })();
 
-      res.json({ success: true, message: 'Blasting pesan WhatsApp berhasil dimulai', totalRecipients: recipients.length });
+      res.json({ success: true, message: `Blasting pesan WhatsApp berhasil dimulai dari akun ${emailKey}`, totalRecipients: recipients.length });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
