@@ -19,6 +19,19 @@ export function normalizeCategory(category?: string): string {
   return matched || 'Vehicle';
 }
 
+export function getGoogleMapsUrl(input?: string): string | null {
+  if (!input || !input.trim()) return null;
+  const val = input.trim();
+  if (val.startsWith('http://') || val.startsWith('https://')) {
+    return val;
+  }
+  const coordRegex = /^\s*[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?)\s*,\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)\s*$/;
+  if (coordRegex.test(val)) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(val)}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(val)}`;
+}
+
 export interface Asset {
   id: string;
   name: string;
@@ -95,6 +108,7 @@ export interface Asset {
   attachmentExtension?: string;
   tnc?: string;
   closeBidDate?: string;
+  coordinates?: string;
 }
 
 export interface AdminUser {

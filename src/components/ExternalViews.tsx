@@ -29,9 +29,10 @@ interface ExternalViewsProps {
   userEmail: string;
   userName: string;
   userPhone: string;
+  biddingRequests?: BiddingRequest[];
 }
 
-export function ExternalNotificationsView({ assets, userEmail, userName, userPhone }: ExternalViewsProps) {
+export function ExternalNotificationsView({ assets, userEmail, userName, userPhone, biddingRequests = [] }: ExternalViewsProps) {
   const { language, t } = useLanguage();
   const [selectedWinnerAsset, setSelectedWinnerAsset] = useState<Asset | null>(null);
 
@@ -57,31 +58,37 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
   const generateNotifications = () => {
     const notificationsList: Array<{
       id: string;
-      type: 'bid_success' | 'outbid' | 'won' | 'lost' | 'general';
+      type: 'bid_success' | 'outbid' | 'won' | 'lost' | 'general' | 'request_pending' | 'request_approved' | 'request_rejected';
       title: string;
       message: string;
       timestamp: string;
-      assetId: string;
-      assetName: string;
+      assetId?: string;
+      assetName?: string;
     }> = [];
 
-    assets.forEach(asset => {
-      const userBids = (asset.bids || []).filter(b => b.email.toLowerCase() === userEmail.toLowerCase());
+    const cleanUserEmail = (userEmail || '').toLowerCase();
+
+    // 1. Asset/Bid Notifications
+    (assets || []).forEach(asset => {
+      if (!asset || !asset.bids) return;
+      const userBids = asset.bids.filter(b => b && b.email && b.email.toLowerCase() === cleanUserEmail);
       if (userBids.length === 0) return;
 
       // Sort user bids by price descending
-      userBids.sort((a, b) => b.price - a.price);
+      userBids.sort((a, b) => (b.price || 0) - (a.price || 0));
       const userHighestBid = userBids[0];
 
       // Sort all bids on asset
-      const allBidsSorted = [...asset.bids].sort((a, b) => b.price - a.price);
+      const validBids = asset.bids.filter(b => b && typeof b.price === 'number');
+      if (validBids.length === 0) return;
+      const allBidsSorted = [...validBids].sort((a, b) => b.price - a.price);
       const highestBid = allBidsSorted[0];
 
-      // 1. Notification for bid placement success
+      // 1.1 Notification for bid placement success
       userBids.forEach(bid => {
         let msg = t('Penawaran Anda sebesar {price} berhasil diajukan untuk {unit}.', {
-          price: formatIDR(bid.price),
-          unit: `${asset.brand} ${asset.name}`
+          price: formatIDR(bid.price || 0),
+          unit: `${asset.brand || ''} ${asset.name || ''}`
         });
 
         if (bid.scheduleSurveyDate) {
@@ -93,9 +100,9 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
           type: 'bid_success',
           title: t('Penawaran Berhasil Diajukan'),
           message: msg,
-          timestamp: bid.timestamp,
+          timestamp: bid.timestamp || new Date().toISOString(),
           assetId: asset.id,
-          assetName: `${asset.brand} ${asset.name}`
+          assetName: `${asset.brand || ''} ${asset.name || ''}`
         });
 
         // Also add a dedicated survey booking notification if scheduled!
@@ -105,34 +112,34 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
             type: 'general',
             title: `📅 ${t('Booking Jadwal Survei Fisik')}`,
             message: t('Konfirmasi: Jadwal survei fisik Anda untuk unit {unit} telah terdaftar pada tanggal {date} pukul {time} WIB.', {
-              unit: `${asset.brand} ${asset.name}`,
+              unit: `${asset.brand || ''} ${asset.name || ''}`,
               date: bid.scheduleSurveyDate,
               time: bid.scheduleSurveyTime || '09:00'
             }),
-            timestamp: bid.timestamp,
+            timestamp: bid.timestamp || new Date().toISOString(),
             assetId: asset.id,
-            assetName: `${asset.brand} ${asset.name}`
+            assetName: `${asset.brand || ''} ${asset.name || ''}`
           });
         }
       });
 
-      // 2. Outbid Notification
-      if (asset.status === 'Open' && highestBid.email.toLowerCase() !== userEmail.toLowerCase() && userHighestBid.price < highestBid.price) {
+      // 1.2 Outbid Notification
+      if (asset.status === 'Open' && highestBid && highestBid.email && highestBid.email.toLowerCase() !== cleanUserEmail && userHighestBid && userHighestBid.price < highestBid.price) {
         notificationsList.push({
           id: `notif-outbid-${asset.id}`,
           type: 'outbid',
           title: t('⚠️ Penawaran Terlampaui!'),
           message: t('Penawar lain telah mengajukan harga lebih tinggi yaitu {price} pada {unit}. Silakan tawar kembali untuk memenangkan lelang.', {
             price: formatIDR(highestBid.price),
-            unit: `${asset.brand} ${asset.name}`
+            unit: `${asset.brand || ''} ${asset.name || ''}`
           }),
-          timestamp: highestBid.timestamp,
+          timestamp: highestBid.timestamp || new Date().toISOString(),
           assetId: asset.id,
-          assetName: `${asset.brand} ${asset.name}`
+          assetName: `${asset.brand || ''} ${asset.name || ''}`
         });
       }
 
-      // 3. Won / Lost Notification if asset is Sold
+      // 1.3 Won / Lost Notification if asset is Sold
       if (asset.status === 'Sold') {
         const isWinner = highestBid.email.toLowerCase() === userEmail.toLowerCase();
         if (isWinner) {
@@ -164,6 +171,47 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
       }
     });
 
+    // 2. Bidding Access Request Notifications
+    const userRequests = biddingRequests.filter(r => r && r.email && r.email.toLowerCase() === cleanUserEmail);
+    userRequests.forEach(req => {
+      // Notification for Request Submission
+      notificationsList.push({
+        id: `notif-req-sub-${req.id}`,
+        type: 'request_pending',
+        title: language === 'en' ? 'Bidding Access Request Submitted' : 'Permohonan Akses Bidding Diajukan',
+        message: language === 'en' 
+          ? `Your request for ${req.requestType} is pending review by the admin.`
+          : `Permohonan ${req.requestType} Anda telah diajukan dan sedang dalam peninjauan admin.`,
+        timestamp: req.createdAt,
+      });
+
+      // Notification for Approval
+      if (req.status === 'Approved') {
+        notificationsList.push({
+          id: `notif-req-app-${req.id}`,
+          type: 'request_approved',
+          title: language === 'en' ? 'Bidding Access Approved' : 'Akses Bidding Disetujui',
+          message: language === 'en'
+            ? `Congratulations! Your bidding access for ${req.requestType} has been approved.`
+            : `Selamat! Akses bidding Anda untuk ${req.requestType} telah disetujui oleh admin.`,
+          timestamp: req.updatedAt || req.createdAt,
+        });
+      }
+
+      // Notification for Rejection
+      if (req.status === 'Rejected') {
+        notificationsList.push({
+          id: `notif-req-rej-${req.id}`,
+          type: 'request_rejected',
+          title: language === 'en' ? 'Bidding Access Rejected' : 'Akses Bidding Ditolak',
+          message: language === 'en'
+            ? `Your request for ${req.requestType} was rejected. Please contact support for more details.`
+            : `Permohonan akses bidding Anda untuk ${req.requestType} telah ditolak. Hubungi panitia untuk informasi lebih lanjut.`,
+          timestamp: req.updatedAt || req.createdAt,
+        });
+      }
+    });
+
     // Sort by timestamp descending
     return notificationsList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   };
@@ -188,16 +236,17 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
             <div 
               key={notif.id}
               className={`bg-white p-5 rounded-2xl border border-slate-200/70 shadow-xs flex items-start gap-4 transition-all hover:border-blue-200 hover:shadow-md ${
-                notif.type === 'won' ? 'border-l-4 border-l-emerald-500 bg-emerald-50/10' :
-                notif.type === 'outbid' ? 'border-l-4 border-l-amber-500 bg-amber-50/10' :
+                notif.type === 'won' || notif.type === 'request_approved' ? 'border-l-4 border-l-emerald-500 bg-emerald-50/10' :
+                notif.type === 'outbid' || notif.type === 'request_rejected' ? 'border-l-4 border-l-amber-500 bg-amber-50/10' :
                 notif.id.includes('booking') ? 'border-l-4 border-l-indigo-500 bg-indigo-50/10' :
                 'border-l-4 border-l-blue-500'
               }`}
             >
               <div className="mt-1 p-2 rounded-xl bg-slate-50 border border-slate-100">
-                {notif.type === 'won' && <Trophy className="w-5 h-5 text-emerald-600" />}
-                {notif.type === 'outbid' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
+                {(notif.type === 'won' || notif.type === 'request_approved') && <Trophy className="w-5 h-5 text-emerald-600" />}
+                {(notif.type === 'outbid' || notif.type === 'request_rejected') && <AlertTriangle className="w-5 h-5 text-amber-500" />}
                 {notif.type === 'bid_success' && <CheckCircle className="w-5 h-5 text-blue-600" />}
+                {notif.type === 'request_pending' && <Clock className="w-5 h-5 text-blue-500" />}
                 {notif.type === 'lost' && <Lock className="w-5 h-5 text-slate-400" />}
                 {notif.id.includes('booking') && <Calendar className="w-5 h-5 text-indigo-600" />}
               </div>
@@ -230,11 +279,13 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
                     </div>
                   ) : null;
                 })()}
-                <div className="pt-1.5 flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase">
-                  <span>{language === 'en' ? 'UNIT ID' : 'ID UNIT'}: <span className="font-mono text-slate-700 font-extrabold">{notif.assetId}</span></span>
-                  <span>•</span>
-                  <span>{notif.assetName}</span>
-                </div>
+                {notif.assetId && (
+                  <div className="pt-1.5 flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase">
+                    <span>{language === 'en' ? 'UNIT ID' : 'ID UNIT'}: <span className="font-mono text-slate-700 font-extrabold">{notif.assetId}</span></span>
+                    <span>•</span>
+                    <span>{notif.assetName}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))
@@ -284,26 +335,32 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
       date: string;
     }> = [];
 
-    assets.forEach(asset => {
+    (assets || []).forEach(asset => {
+      if (!asset) return;
+      const cleanUserEmail = (userEmail || '').toLowerCase();
+
       // 1. Winner Letters (when asset is Sold and user is the highest bidder)
       if (asset.status === 'Sold' && asset.bids && asset.bids.length > 0) {
-        const sortedBids = [...asset.bids].sort((a, b) => b.price - a.price);
-        const winnerBid = sortedBids[0];
+        const validBids = asset.bids.filter(b => b && typeof b.price === 'number');
+        if (validBids.length > 0) {
+          const sortedBids = [...validBids].sort((a, b) => b.price - a.price);
+          const winnerBid = sortedBids[0];
 
-        if (winnerBid.email.toLowerCase() === userEmail.toLowerCase()) {
-          mailsList.push({
-            id: `mail-winner-${asset.id}`,
-            type: 'winner',
-            asset: asset,
-            highestBidPrice: winnerBid.price,
-            subject: `[PANCARAN LELANG] Pengumuman Resmi Pemenang Lelang - Unit ${asset.id}`,
-            date: winnerBid.timestamp
-          });
+          if (winnerBid && winnerBid.email && winnerBid.email.toLowerCase() === cleanUserEmail) {
+            mailsList.push({
+              id: `mail-winner-${asset.id}`,
+              type: 'winner',
+              asset: asset,
+              highestBidPrice: winnerBid.price,
+              subject: `[PANCARAN LELANG] Pengumuman Resmi Pemenang Lelang - Unit ${asset.id}`,
+              date: winnerBid.timestamp || new Date().toISOString()
+            });
+          }
         }
       }
 
       // 2. Survey Booking Letters (when user submitted a bid on this asset with a survey booking)
-      const userBids = (asset.bids || []).filter(b => b.email.toLowerCase() === userEmail.toLowerCase());
+      const userBids = (asset.bids || []).filter(b => b && b.email && b.email.toLowerCase() === cleanUserEmail);
       userBids.forEach(bid => {
         if (bid.scheduleSurveyDate) {
           mailsList.push({
@@ -313,7 +370,7 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
             bookingDate: bid.scheduleSurveyDate,
             bookingTime: bid.scheduleSurveyTime || '09:00',
             subject: `[PANCARAN LELANG] Konfirmasi Jadwal Survei Fisik - Unit ${asset.id}`,
-            date: bid.timestamp
+            date: bid.timestamp || new Date().toISOString()
           });
         }
       });
@@ -793,7 +850,7 @@ export function ExternalBiddingAccessView({ userEmail, userName, biddingRequests
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter requests submitted by the logged-in user
-  const userRequests = biddingRequests.filter(req => req.email.toLowerCase() === userEmail.toLowerCase());
+  const userRequests = (biddingRequests || []).filter(req => req && req.email && userEmail && req.email.toLowerCase() === userEmail.toLowerCase());
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1167,7 +1224,7 @@ export function ExternalRefundBiddingView({ userEmail, userName, userPhone, refu
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter requests submitted by the logged-in user
-  const userRefunds = refundRequests.filter(req => req.email.toLowerCase() === userEmail.toLowerCase());
+  const userRefunds = (refundRequests || []).filter(req => req && req.email && userEmail && req.email.toLowerCase() === userEmail.toLowerCase());
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

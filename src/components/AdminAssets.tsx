@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Asset, AssetStatus, Bid, Brand, Category, Condition, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, MAIN_CATEGORIES, normalizeCategory } from '../types';
+import { Asset, AssetStatus, Bid, Brand, Category, Condition, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, MAIN_CATEGORIES, normalizeCategory, getGoogleMapsUrl } from '../types';
 import { useLanguage } from './LanguageContext';
 import { OfficialWinnerLetterModal } from './OfficialWinnerLetterModal';
 import { 
@@ -621,6 +621,7 @@ export default function AdminAssets({
     plateNumber: '',
     condition: 'Baik' as Asset['condition'],
     location: '',
+    coordinates: '',
     description: '',
     startingPrice: '',
     imageUrl: '',
@@ -702,6 +703,7 @@ export default function AdminAssets({
       plateNumber: '',
       condition: 'Baik',
       location: '',
+      coordinates: '',
       description: '',
       startingPrice: '',
       imageUrl: '',
@@ -778,6 +780,7 @@ export default function AdminAssets({
       plateNumber: asset.plateNumber === 'N/A' ? '' : asset.plateNumber,
       condition: asset.condition,
       location: asset.location,
+      coordinates: asset.coordinates || '',
       description: asset.description,
       startingPrice: String(asset.startingPrice),
       imageUrl: asset.imageUrl || (resolvedUrls[0] || ''),
@@ -1033,6 +1036,7 @@ export default function AdminAssets({
       plateNumber: formData.plateNumber || 'N/A',
       condition: formData.condition,
       location: formData.location,
+      coordinates: formData.coordinates || '',
       description: formData.description || 'Tidak ada deskripsi tambahan.',
       startingPrice: Number(formData.startingPrice),
       imageUrl: formData.imageUrl || (resolvedUrls[0] || ''),
@@ -1113,6 +1117,7 @@ export default function AdminAssets({
       plateNumber: '',
       condition: 'Baik',
       location: '',
+      coordinates: '',
       description: '',
       startingPrice: '',
       imageUrl: '',
@@ -1682,6 +1687,24 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                     <span className="truncate" title={selectedAsset.location}>{selectedAsset.location}</span>
                   </span>
                 </div>
+                {selectedAsset.coordinates && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('TITIK KOORDINAT')}</span>
+                    {getGoogleMapsUrl(selectedAsset.coordinates) ? (
+                      <a 
+                        href={getGoogleMapsUrl(selectedAsset.coordinates)!} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 text-xs hover:underline"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate" title={selectedAsset.coordinates}>{selectedAsset.coordinates}</span>
+                      </a>
+                    ) : (
+                      <span className="font-semibold text-slate-800 text-xs">{selectedAsset.coordinates}</span>
+                    )}
+                  </div>
+                )}
                 {selectedAsset.closeBidDate && (
                   <div className="col-span-2 bg-amber-50/50 border border-amber-100 p-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2">
@@ -1699,237 +1722,268 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                     </div>
                   </div>
                 )}
-                {selectedAsset.propertyType && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE PROPERTI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.propertyType}</span>
-                  </div>
-                )}
-                {selectedAsset.auctionType && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE LELANG')}</span>
-                    <span className="font-semibold text-blue-700 text-xs font-bold">{selectedAsset.auctionType}</span>
-                  </div>
-                )}
-                {selectedAsset.landArea && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('LUAS TANAH')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.landArea}</span>
-                  </div>
-                )}
-                {selectedAsset.buildingArea && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('LUAS BANGUNAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.buildingArea}</span>
-                  </div>
+                {/* Property specifications fields - Only show for Property category */}
+                {normalizeCategory(selectedAsset.category) === 'Property' && (
+                  <>
+                    {selectedAsset.propertyType && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE PROPERTI')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.propertyType}</span>
+                      </div>
+                    )}
+                    {selectedAsset.auctionType && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE LELANG')}</span>
+                        <span className="font-semibold text-blue-700 text-xs font-bold">{selectedAsset.auctionType}</span>
+                      </div>
+                    )}
+                    {selectedAsset.landArea && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('LUAS TANAH')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.landArea}</span>
+                      </div>
+                    )}
+                    {selectedAsset.buildingArea && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('LUAS BANGUNAN')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.buildingArea}</span>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Used Part specifics display */}
-                {selectedAsset.usedPartCategory && (
-                  <div>
-                    <span className="text-[11px] text-amber-600 font-bold block">{t('SUB-KATEGORI USED PART')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.usedPartCategory}</span>
-                  </div>
-                )}
-                {selectedAsset.quantity && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('JUMLAH / KUANTITAS')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.quantity}</span>
-                  </div>
-                )}
-                {selectedAsset.salesSystem && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('SISTEM PENJUALAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.salesSystem}</span>
-                  </div>
-                )}
-                {selectedAsset.openHouseSchedule && (
-                  <div className="col-span-2">
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('JADWAL OPEN HOUSE')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.openHouseSchedule}</span>
-                  </div>
+                {normalizeCategory(selectedAsset.category) === 'Used part' && (
+                  <>
+                    {selectedAsset.usedPartCategory && (
+                      <div>
+                        <span className="text-[11px] text-amber-600 font-bold block">{t('SUB-KATEGORI USED PART')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.usedPartCategory}</span>
+                      </div>
+                    )}
+                    {selectedAsset.quantity && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('JUMLAH / KUANTITAS')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.quantity}</span>
+                      </div>
+                    )}
+                    {selectedAsset.salesSystem && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('SISTEM PENJUALAN')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.salesSystem}</span>
+                      </div>
+                    )}
+                    {selectedAsset.openHouseSchedule && (
+                      <div className="col-span-2">
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('JADWAL OPEN HOUSE')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.openHouseSchedule}</span>
+                      </div>
+                    )}
+
+                    {/* Ban fields */}
+                    {selectedAsset.usedPartCategory === 'Ban' && (
+                      <>
+                        {selectedAsset.tireBrand && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK BAN')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireBrand}</span>
+                          </div>
+                        )}
+                        {selectedAsset.tireSize && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('UKURAN BAN')}</span>
+                            <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.tireSize}</span>
+                          </div>
+                        )}
+                        {selectedAsset.tireType && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS BAN')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireType}</span>
+                          </div>
+                        )}
+                        {selectedAsset.tireTreadDepth && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('KETEBALAN KEMBANG')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireTreadDepth}</span>
+                          </div>
+                        )}
+                        {selectedAsset.tireCondition && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI BAN')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireCondition}</span>
+                          </div>
+                        )}
+                        {selectedAsset.tireDotCode && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('DOT CODE (TAHUN)')}</span>
+                            <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.tireDotCode}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Aki fields */}
+                    {selectedAsset.usedPartCategory === 'Aki' && (
+                      <>
+                        {selectedAsset.batteryBrand && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK AKI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryBrand}</span>
+                          </div>
+                        )}
+                        {selectedAsset.batteryTypeCode && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE / KODE AKI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.batteryTypeCode}</span>
+                          </div>
+                        )}
+                        {selectedAsset.batteryCapacity && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('KAPASITAS AKI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.batteryCapacity}</span>
+                          </div>
+                        )}
+                        {selectedAsset.batteryType && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS AKI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryType}</span>
+                          </div>
+                        )}
+                        {selectedAsset.batteryCondition && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI AKI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryCondition}</span>
+                          </div>
+                        )}
+                        {selectedAsset.batteryElectrolyteStatus && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('AIR AKI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryElectrolyteStatus}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Besi fields */}
+                    {selectedAsset.usedPartCategory === 'Besi' && (
+                      <>
+                        {selectedAsset.metalType && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS BESI / LOGAM')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalType}</span>
+                          </div>
+                        )}
+                        {selectedAsset.metalSalesMethod && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('METODE PENJUALAN')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalSalesMethod}</span>
+                          </div>
+                        )}
+                        {selectedAsset.metalEstimatedWeight && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('ESTIMASI BERAT')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalEstimatedWeight}</span>
+                          </div>
+                        )}
+                        {selectedAsset.metalCondition && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI BESI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalCondition}</span>
+                          </div>
+                        )}
+                        {selectedAsset.metalHandlingFacility && (
+                          <div className="col-span-2">
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('PEMOTONGAN & PENGANGKUTAN')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalHandlingFacility}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Oli fields */}
+                    {selectedAsset.usedPartCategory === 'Oli' && (
+                      <>
+                        {selectedAsset.oilBrand && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK OLI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilBrand}</span>
+                          </div>
+                        )}
+                        {selectedAsset.oilType && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS / VISKOSITAS OLI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.oilType}</span>
+                          </div>
+                        )}
+                        {selectedAsset.oilVolume && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('VOLUME / KAPASITAS')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilVolume}</span>
+                          </div>
+                        )}
+                        {selectedAsset.oilCondition && (
+                          <div>
+                            <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI OLI')}</span>
+                            <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilCondition}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
 
-                {/* Ban fields */}
-                {selectedAsset.tireBrand && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK BAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireBrand}</span>
-                  </div>
-                )}
-                {selectedAsset.tireSize && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('UKURAN BAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.tireSize}</span>
-                  </div>
-                )}
-                {selectedAsset.tireType && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS BAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireType}</span>
-                  </div>
-                )}
-                {selectedAsset.tireTreadDepth && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('KETEBALAN KEMBANG')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireTreadDepth}</span>
-                  </div>
-                )}
-                {selectedAsset.tireCondition && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI BAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.tireCondition}</span>
-                  </div>
-                )}
-                {selectedAsset.tireDotCode && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('DOT CODE (TAHUN)')}</span>
-                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.tireDotCode}</span>
-                  </div>
-                )}
-
-                {/* Aki fields */}
-                {selectedAsset.batteryBrand && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK AKI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryBrand}</span>
-                  </div>
-                )}
-                {selectedAsset.batteryTypeCode && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('TIPE / KODE AKI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.batteryTypeCode}</span>
-                  </div>
-                )}
-                {selectedAsset.batteryCapacity && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('KAPASITAS AKI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.batteryCapacity}</span>
-                  </div>
-                )}
-                {selectedAsset.batteryType && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS AKI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryType}</span>
-                  </div>
-                )}
-                {selectedAsset.batteryCondition && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI AKI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryCondition}</span>
-                  </div>
-                )}
-                {selectedAsset.batteryElectrolyteStatus && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('AIR AKI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.batteryElectrolyteStatus}</span>
-                  </div>
-                )}
-
-                {/* Besi fields */}
-                {selectedAsset.metalType && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS BESI / LOGAM')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalType}</span>
-                  </div>
-                )}
-                {selectedAsset.metalSalesMethod && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('METODE PENJUALAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalSalesMethod}</span>
-                  </div>
-                )}
-                {selectedAsset.metalEstimatedWeight && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('ESTIMASI BERAT')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalEstimatedWeight}</span>
-                  </div>
-                )}
-                {selectedAsset.metalCondition && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI BESI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalCondition}</span>
-                  </div>
-                )}
-                {selectedAsset.metalHandlingFacility && (
-                  <div className="col-span-2">
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('PEMOTONGAN & PENGANGKUTAN')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalHandlingFacility}</span>
-                  </div>
-                )}
-
-                {/* Oli fields */}
-                {selectedAsset.oilBrand && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK OLI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilBrand}</span>
-                  </div>
-                )}
-                {selectedAsset.oilType && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS / VISKOSITAS OLI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.oilType}</span>
-                  </div>
-                )}
-                {selectedAsset.oilVolume && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('VOLUME / KAPASITAS')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilVolume}</span>
-                  </div>
-                )}
-                {selectedAsset.oilCondition && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI OLI')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilCondition}</span>
-                  </div>
-                )}
-                {selectedAsset.dimensions && (
-                  <div className="col-span-2 border-t border-slate-50/50 pt-2">
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('Dimensi / Ringkasan Luas')}</span>
-                    <span className="font-semibold text-slate-800 font-mono text-xs">{selectedAsset.dimensions}</span>
-                  </div>
-                )}
-                {selectedAsset.model && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('MODEL')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.model}</span>
-                  </div>
-                )}
-                {selectedAsset.series && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('SERIES')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.series}</span>
-                  </div>
-                )}
-                {selectedAsset.axels && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('AXELS')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.axels}</span>
-                  </div>
-                )}
-                {selectedAsset.vehicleColour && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('WARNA')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{t(selectedAsset.vehicleColour)}</span>
-                  </div>
-                )}
-                {selectedAsset.fuelType && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('BAHAN BAKAR')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{t(selectedAsset.fuelType)}</span>
-                  </div>
-                )}
-                {selectedAsset.horsepower && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('Horsepower (HP)')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.horsepower}</span>
-                  </div>
-                )}
-                {selectedAsset.odometer && (
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-bold block">{t('KM Spidometer')}</span>
-                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.odometer}</span>
-                  </div>
+                {/* Vehicle specifications fields - Only show for Vehicle category */}
+                {normalizeCategory(selectedAsset.category) === 'Vehicle' && (
+                  <>
+                    {selectedAsset.dimensions && (
+                      <div className="col-span-2 border-t border-slate-50/50 pt-2">
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('Dimensi / Ringkasan Luas')}</span>
+                        <span className="font-semibold text-slate-800 font-mono text-xs">{selectedAsset.dimensions}</span>
+                      </div>
+                    )}
+                    {selectedAsset.model && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('MODEL')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.model}</span>
+                      </div>
+                    )}
+                    {selectedAsset.series && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('SERIES')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.series}</span>
+                      </div>
+                    )}
+                    {selectedAsset.axels && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('AXELS')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.axels}</span>
+                      </div>
+                    )}
+                    {selectedAsset.vehicleColour && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('WARNA')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{t(selectedAsset.vehicleColour)}</span>
+                      </div>
+                    )}
+                    {selectedAsset.fuelType && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('BAHAN BAKAR')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{t(selectedAsset.fuelType)}</span>
+                      </div>
+                    )}
+                    {selectedAsset.horsepower && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('Horsepower (HP)')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.horsepower}</span>
+                      </div>
+                    )}
+                    {selectedAsset.odometer && (
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-bold block">{t('KM Spidometer')}</span>
+                        <span className="font-semibold text-slate-800 text-xs">{selectedAsset.odometer}</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -2621,142 +2675,39 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                         </div>
 
                         {/* Model Year */}
-                        {!isProperty && (
+                        {!isProperty && !isUsedPart && !isMisc && (
                           <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-600 uppercase">
                               {t('Tahun Produksi / Pembuatan *')}
                             </label>
-                            {isUsedPart || isMisc ? (
-                              <input
-                                type="text"
-                                required
-                                placeholder={
-                                  isUsedPart ? t('Contoh: 2021 (DOT 1221) / Baru / 2018') :
-                                  t('Contoh: Pembelian 2020 / Produksi 2019 / N/A')
-                                }
-                                value={formData.modelYear}
-                                onChange={(e) => setFormData(prev => ({ ...prev, modelYear: e.target.value }))}
-                                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 bg-white"
-                              />
-                            ) : (
-                              <input
-                                type="number"
-                                min="1950"
-                                max="2027"
-                                required
-                                value={formData.modelYear}
-                                onChange={(e) => setFormData(prev => ({ ...prev, modelYear: e.target.value ? Number(e.target.value) : '' }))}
-                                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 bg-white"
-                              />
-                            )}
+                            <input
+                              type="number"
+                              min="1950"
+                              max="2027"
+                              required
+                              value={formData.modelYear}
+                              onChange={(e) => setFormData(prev => ({ ...prev, modelYear: e.target.value ? Number(e.target.value) : '' }))}
+                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 bg-white"
+                            />
                           </div>
                         )}
 
                         {/* Plate / Reg Number */}
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-600 uppercase">
-                            {isVehicle ? t('No. Registrasi / Plat Nomor') :
-                             isProperty ? t('No. Sertifikat / IMB / HGB / NOP') :
-                             isUsedPart ? t('No. Part / S/N / Seri') :
-                             t('No. Seri / Inventaris')}
-                          </label>
-                          <input
-                            type="text"
-                            placeholder={
-                              isVehicle ? t('Contoh: B 9912 PXT (kosongkan jika alat berat)') :
-                              isProperty ? t('Contoh: SHM No. 1234/Marunda') :
-                              t('Contoh: S/N 882190-X')
-                            }
-                            value={formData.plateNumber}
-                            onChange={(e) => setFormData(prev => ({ ...prev, plateNumber: e.target.value }))}
-                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-mono"
-                          />
-                        </div>
-
-                        {/* Property Specific Details Block */}
-                        {isProperty && (
-                          <div className="md:col-span-2 bg-blue-50/60 border border-blue-200/80 rounded-2xl p-4 space-y-4 my-1">
-                            <div className="flex items-center gap-2 border-b border-blue-200/60 pb-2.5">
-                              <Building2 className="w-4 h-4 text-blue-600" />
-                              <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">{t('Spesifikasi Utama Properti')}</h4>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Tipe Properti */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Tipe Properti *')}</label>
-                                <select
-                                  value={formData.propertyType || 'Gudang'}
-                                  onChange={(e) => setFormData(prev => ({ ...prev, propertyType: e.target.value }))}
-                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
-                                >
-                                  <option value="Tanah">Tanah</option>
-                                  <option value="Gudang">Gudang</option>
-                                  <option value="Kantor">Kantor</option>
-                                  <option value="Ruko">Ruko</option>
-                                  <option value="Rumah">Rumah</option>
-                                  <option value="Lahan Depo / Pool">Lahan Depo / Pool</option>
-                                  <option value="Gudang & Kantor">Gudang & Kantor</option>
-                                  <option value="Lainnya">Lainnya</option>
-                                </select>
-                              </div>
-
-                              {/* Tipe Lelang */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Tipe Lelang *')}</label>
-                                <select
-                                  value={formData.auctionType || 'Jual'}
-                                  onChange={(e) => setFormData(prev => ({ ...prev, auctionType: e.target.value }))}
-                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
-                                >
-                                  <option value="Jual">Jual (Penjualan)</option>
-                                  <option value="Sewa">Sewa (Penyewaan)</option>
-                                  <option value="Jual & Sewa">Jual & Sewa</option>
-                                </select>
-                              </div>
-
-                              {/* Luas Tanah */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Luas Tanah (m²)')}</label>
-                                <input
-                                  type="text"
-                                  placeholder={t('Contoh: 1.200 m²')}
-                                  value={formData.landArea}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setFormData(prev => {
-                                      const updatedLand = val;
-                                      const combinedDim = updatedLand || prev.buildingArea 
-                                        ? `LT ${updatedLand || '-'}, LB ${prev.buildingArea || '-'}` 
-                                        : prev.dimensions;
-                                      return { ...prev, landArea: updatedLand, dimensions: combinedDim };
-                                    });
-                                  }}
-                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
-                                />
-                              </div>
-
-                              {/* Luas Bangunan */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-700 uppercase">{t('Luas Bangunan (m²)')}</label>
-                                <input
-                                  type="text"
-                                  placeholder={t('Contoh: 600 m²')}
-                                  value={formData.buildingArea}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setFormData(prev => {
-                                      const updatedBldg = val;
-                                      const combinedDim = prev.landArea || updatedBldg 
-                                        ? `LT ${prev.landArea || '-'}, LB ${updatedBldg || '-'}` 
-                                        : prev.dimensions;
-                                      return { ...prev, buildingArea: updatedBldg, dimensions: combinedDim };
-                                    });
-                                  }}
-                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
-                                />
-                              </div>
-                            </div>
+                        {!isProperty && !isUsedPart && !isMisc && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-600 uppercase">
+                              {isVehicle ? t('No. Registrasi / Plat Nomor') : t('No. Seri / Inventaris')}
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={
+                                isVehicle ? t('Contoh: B 9912 PXT (kosongkan jika alat berat)') :
+                                t('Contoh: S/N 882190-X')
+                              }
+                              value={formData.plateNumber}
+                              onChange={(e) => setFormData(prev => ({ ...prev, plateNumber: e.target.value }))}
+                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-mono"
+                            />
                           </div>
                         )}
 
@@ -3226,6 +3177,24 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                             onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                             className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
+                        </div>
+
+                        {/* Coordinates / Map Link */}
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-xs font-bold text-slate-600 uppercase flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                            {t('Link Google Maps')}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder={t('Contoh: -6.229382, 106.820384 atau langsung tempel link Google Maps')}
+                            value={formData.coordinates || ''}
+                            onChange={(e) => setFormData(prev => ({ ...prev, coordinates: e.target.value }))}
+                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          />
+                          <p className="text-[10px] text-slate-400">
+                            {t('Masukkan titik koordinat (latitude, longitude) atau langsung tempel link Google Maps unit agar pembeli dapat langsung menuju lokasi.')}
+                          </p>
                         </div>
 
                         {/* Close Bid Date & Time */}

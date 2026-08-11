@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest } from './types';
-import { INITIAL_ASSETS, INITIAL_ADMINS } from './data/mockData';
+import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory } from './types';
+import { INITIAL_ASSETS, INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from './data/mockData';
 import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
 import AdminUsers from './components/AdminUsers';
@@ -60,8 +60,10 @@ import {
   subscribeToBiddingRequests,
   addBiddingRequest,
   updateBiddingRequest,
+  deleteBiddingRequest,
   subscribeToRefundRequests,
   updateRefundRequest,
+  deleteRefundRequest,
   addRefundRequest
 } from './firebase';
 import { 
@@ -89,7 +91,9 @@ import {
   Settings,
   ShieldCheck,
   Layers,
-  Award
+  Award,
+  Eye,
+  Lock
 } from 'lucide-react';
 
 export default function App() {
@@ -113,6 +117,8 @@ export default function App() {
   
   // Navigation inside External area
   const [externalTab, setExternalTab] = useState<'catalog' | 'notifications' | 'inbox' | 'bidding_access'>('catalog');
+  const [selectedBrand, setSelectedBrand] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   
   // Mobile menu toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -128,7 +134,7 @@ export default function App() {
   const [fuelTypes, setFuelTypes] = useState<FuelType[]>([]);
   const [attachmentCategories, setAttachmentCategories] = useState<AttachmentCategory[]>([]);
   const [attachmentTypes, setAttachmentTypes] = useState<AttachmentType[]>([]);
-  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>(INITIAL_REGISTERED_USERS);
   const [biddingRequests, setBiddingRequests] = useState<BiddingRequest[]>([]);
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
   
@@ -562,26 +568,31 @@ export default function App() {
 
       unsubscribeRegisteredUsers = subscribeToRegisteredUsers((updatedUsers) => {
         if (updatedUsers) {
-          setRegisteredUsers(updatedUsers);
+          const safeUsers = updatedUsers.filter(u => u && u.email);
+          setRegisteredUsers(safeUsers);
+          try {
+            localStorage.setItem('pancaran_users_cache', JSON.stringify(safeUsers));
+          } catch (e) {}
 
           if (!registeredUsersLoadedRef.current) {
-            prevRegisteredUsersRef.current = updatedUsers;
+            prevRegisteredUsersRef.current = safeUsers;
             registeredUsersLoadedRef.current = true;
           } else {
-            const prevUsers = prevRegisteredUsersRef.current;
+            const prevUsers = prevRegisteredUsersRef.current || [];
 
-            updatedUsers.forEach(user => {
-              const prevUser = prevUsers.find(pu => pu.email === user.email);
+            safeUsers.forEach(user => {
+              if (!user || !user.email) return;
+              const prevUser = prevUsers.find(pu => pu && pu.email && pu.email.toLowerCase() === user.email.toLowerCase());
               if (user.status === 'Menunggu Persetujuan' && (!prevUser || prevUser.status !== 'Menunggu Persetujuan')) {
                 addNotification(
                   'info',
                   t('Persetujuan Registrasi Baru'),
-                  `${user.name} (${user.email}) ${t('menunggu persetujuan akses.')}`
+                  `${user.name || user.email} (${user.email}) ${t('menunggu persetujuan akses.')}`
                 );
               }
             });
 
-            prevRegisteredUsersRef.current = updatedUsers;
+            prevRegisteredUsersRef.current = safeUsers;
           }
         }
       });
@@ -616,6 +627,11 @@ export default function App() {
         setIsAdminLoggedIn(true);
         setLoggedInAdminEmail(storedSession);
       }
+      
+      // Auto-show the bidding rules popup on session restoration (one-time or every refresh as requested)
+      setTimeout(() => {
+        setSelectedGuideModal('ikut');
+      }, 1000);
     }
 
     return () => {
@@ -765,7 +781,10 @@ export default function App() {
       if (!request) return;
 
       // 1. Update request status in bidding_requests collection
-      await updateBiddingRequest(requestId, { status: 'Approved' });
+      await updateBiddingRequest(requestId, { 
+        status: 'Approved',
+        updatedAt: new Date().toISOString()
+      });
 
       // 2. Set the user's canBid flag to true in registered_users collection
       await updateRegisteredUser(request.email, { canBid: true });
@@ -794,7 +813,10 @@ export default function App() {
       if (!request) return;
 
       // 1. Update request status to Rejected
-      await updateBiddingRequest(requestId, { status: 'Rejected' });
+      await updateBiddingRequest(requestId, { 
+        status: 'Rejected',
+        updatedAt: new Date().toISOString()
+      });
 
       // 2. System Notification/Toast
       addNotification('warning', t('Akses Bidding Ditolak'), `Permohonan akses bidding dari ${request.userName} (${request.email}) telah ditolak.`);
@@ -928,6 +950,26 @@ export default function App() {
     }
   };
 
+  const handleDeleteBiddingRequest = async (requestId: string) => {
+    try {
+      await deleteBiddingRequest(requestId);
+      addNotification('success', t('Permohonan Dihapus'), t('Data permohonan akses bidding berhasil dihapus.'));
+    } catch (error) {
+      console.error("Failed to delete bidding request", error);
+      addNotification('warning', t('Gagal Menghapus'), t('Gagal menghapus data permohonan akses bidding.'));
+    }
+  };
+
+  const handleDeleteRefundRequest = async (requestId: string) => {
+    try {
+      await deleteRefundRequest(requestId);
+      addNotification('success', t('Permohonan Dihapus'), t('Data permohonan refund berhasil dihapus.'));
+    } catch (error) {
+      console.error("Failed to delete refund request", error);
+      addNotification('warning', t('Gagal Menghapus'), t('Gagal menghapus data permohonan refund.'));
+    }
+  };
+
   // 3. Business Actions (External Operations)
 
   // Input Bid Price & Input Time Survey
@@ -970,7 +1012,9 @@ export default function App() {
     localStorage.setItem('pancaran_session_type', 'admin');
     setRole('internal'); // Switch to internal dashboard on login
     setAdminTab('dashboard');
-    setSelectedGuideModal('ikut');
+    setTimeout(() => {
+      setSelectedGuideModal('ikut');
+    }, 400);
   };
 
   const handleExternalLoginSuccess = (email: string, name: string, phone?: string) => {
@@ -987,7 +1031,10 @@ export default function App() {
       localStorage.removeItem('pancaran_session_phone');
     }
     setRole('external');
-    setSelectedGuideModal('ikut');
+    setExternalTab('catalog');
+    setTimeout(() => {
+      setSelectedGuideModal('ikut');
+    }, 400);
   };
 
   const handleLogout = () => {
@@ -1010,54 +1057,92 @@ export default function App() {
     setAdminTab('assets');
   };
 
-  const matchedAdmin = admins.find(a => a.email.toLowerCase() === loggedInAdminEmail.toLowerCase());
+  const matchedAdmin = (admins || []).find(a => a && a.email && loggedInAdminEmail && a.email.toLowerCase() === loggedInAdminEmail.toLowerCase());
   const adminName = matchedAdmin ? matchedAdmin.name : 'Admin Digital Solution';
   const adminRole = matchedAdmin ? matchedAdmin.role : 'Super Admin';
 
   const getLoggedInUserEmail = () => {
     return isUserLoggedIn ? loggedInUserEmail : (isAdminLoggedIn ? loggedInAdminEmail : '');
   };
-  const activeUserEmail = getLoggedInUserEmail().toLowerCase();
+  const activeUserEmail = (getLoggedInUserEmail() || '').toLowerCase();
+
+  const currentUserObj = (registeredUsers || []).find(u => u && u.email && (loggedInUserEmail || '').toLowerCase() === (u.email || '').toLowerCase());
+  const isUserCanBid = isAdminLoggedIn || (isUserLoggedIn && (currentUserObj ? ((currentUserObj.status === 'Disetujui' || currentUserObj.status === 'Approved') && currentUserObj.canBid !== false) : true));
 
   // Helper to get won assets
-  const winningAssets = activeUserEmail ? assets.filter(asset => {
-    if (asset.status !== 'Sold') return false;
+  const winningAssets = activeUserEmail ? (assets || []).filter(asset => {
+    if (!asset || asset.status !== 'Sold') return false;
     if (!asset.bids || asset.bids.length === 0) return false;
-    const highestBid = asset.bids.reduce((prev, current) => (prev.price > current.price) ? prev : current);
-    return highestBid.email.toLowerCase() === activeUserEmail;
+    const validBids = asset.bids.filter(b => b && b.email && typeof b.price === 'number');
+    if (validBids.length === 0) return false;
+    const highestBid = validBids.reduce((prev, current) => ((prev.price || 0) > (current.price || 0)) ? prev : current);
+    return highestBid && highestBid.email && highestBid.email.toLowerCase() === activeUserEmail;
   }) : [];
 
   const externalInboxCount = winningAssets.length;
 
   // Let's also compute the outbid notifications for the badge count
-  const outbidCount = activeUserEmail ? assets.filter(asset => {
-    if (asset.status !== 'Open') return false;
+  const outbidCount = activeUserEmail ? (assets || []).filter(asset => {
+    if (!asset || asset.status !== 'Open') return false;
     if (!asset.bids || asset.bids.length === 0) return false;
     
     // Check if user has bid on this asset
-    const userBids = asset.bids.filter(b => b.email.toLowerCase() === activeUserEmail);
+    const userBids = asset.bids.filter(b => b && b.email && b.email.toLowerCase() === activeUserEmail);
     if (userBids.length === 0) return false;
 
-    const highestBid = [...asset.bids].sort((a, b) => b.price - a.price)[0];
+    const validBids = asset.bids.filter(b => b && b.email && typeof b.price === 'number');
+    if (validBids.length === 0) return false;
+    const sortedAllBids = [...validBids].sort((a, b) => b.price - a.price);
+    const highestBid = sortedAllBids[0];
     const userHighestBid = [...userBids].sort((a, b) => b.price - a.price)[0];
 
-    return highestBid.email.toLowerCase() !== activeUserEmail && userHighestBid.price < highestBid.price;
+    return highestBid && highestBid.email && userHighestBid && highestBid.email.toLowerCase() !== activeUserEmail && userHighestBid.price < highestBid.price;
   }).length : 0;
 
   const externalNotificationsCount = outbidCount + winningAssets.length;
 
+  // Derived filter options for navbar
+  const openAssets = (assets || []).filter(a => a && a.status === 'Open');
+  const uniqueBrands = Array.from(new Set(openAssets.map(a => a.brand || '').filter(Boolean)));
+  const uniqueCategories = Array.from(new Set([...MAIN_CATEGORIES, ...openAssets.map(a => normalizeCategory(a.category || ''))]));
+
   const renderExternalNavigationTabs = (isDarkTheme = false) => {
     if (!isUserLoggedIn && !isAdminLoggedIn) return null;
     
+    const currentUserCanBid = isAdminLoggedIn
+      ? true
+      : (() => {
+          if (!isUserLoggedIn || !loggedInUserEmail) return true;
+          const user = (registeredUsers || []).find(
+            (u) => u && u.email && u.email.toLowerCase() === loggedInUserEmail.toLowerCase()
+          );
+          if (!user) return true;
+          const isApproved = user.status === 'Disetujui' || user.status === 'Approved';
+          return isApproved && user.canBid !== false;
+        })();
+
     return (
-      <div 
-        className={`flex p-1 rounded-2xl max-w-md mx-auto ${
-          isDarkTheme 
-            ? 'border border-white/10 bg-slate-950/40 backdrop-blur-md shadow-lg' 
-            : 'border border-slate-200 bg-white shadow-sm'
-        }`} 
-        id="external-navigation-tabs"
-      >
+      <div className="space-y-3 max-w-md mx-auto">
+        {!currentUserCanBid && (
+          <button 
+            onClick={() => setSelectedGuideModal('ikut')}
+            className={`flex items-center justify-center gap-1.5 py-1 px-3 rounded-full text-[9px] font-bold uppercase tracking-wider mx-auto w-max shadow-sm border transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+            isDarkTheme 
+              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 backdrop-blur-sm hover:bg-amber-500/30' 
+              : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+          }`}>
+            <Lock className="w-3 h-3" />
+            <span>{t('Mode Hanya Lihat (Bidding Terkunci)')}</span>
+          </button>
+        )}
+        <div 
+          className={`flex p-1 rounded-2xl ${
+            isDarkTheme 
+              ? 'border border-white/10 bg-slate-950/40 backdrop-blur-md shadow-lg' 
+              : 'border border-slate-200 bg-white shadow-sm'
+          }`} 
+          id="external-navigation-tabs"
+        >
         <button
           onClick={() => setExternalTab('catalog')}
           className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -1129,6 +1214,7 @@ export default function App() {
           <span>{t('Akses Bidding')}</span>
         </button>
       </div>
+      </div>
     );
   };
 
@@ -1171,6 +1257,33 @@ export default function App() {
                   <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent font-extrabold drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">PLATINUM</span>
                 </span>
               </div>
+
+              {/* Filters next to Logo (only on catalog) */}
+              {role === 'external' && externalTab === 'catalog' && (
+                <div className="hidden lg:flex items-center gap-2 ml-4">
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                    className="px-2 py-1 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
+                  >
+                    <option value="all" className="bg-slate-900">{t('Semua Brand')}</option>
+                    {uniqueBrands.sort().map(b => (
+                      <option key={b} value={b} className="bg-slate-900">{b}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-2 py-1 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
+                  >
+                    <option value="all" className="bg-slate-900">{t('Semua Kategori')}</option>
+                    {uniqueCategories.sort().map(c => (
+                      <option key={c} value={c} className="bg-slate-900">{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Desktop Navigation Toggles */}
@@ -1477,8 +1590,17 @@ export default function App() {
                 </div>
               )}
 
-              {/* Logged In Info */}
+              {/* Logged In Info with Bidding Rules Toggle */}
               <div className="flex items-center gap-4">
+                {(isAdminLoggedIn || (isUserLoggedIn && isUserCanBid)) && (
+                  <button
+                    onClick={() => setSelectedGuideModal('ikut')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer group shadow-sm hover:scale-105 active:scale-95"
+                  >
+                    <Lock className="w-3 h-3 group-hover:rotate-12 transition-transform" />
+                    <span>{t('Aturan Bidding')}</span>
+                  </button>
+                )}
                 {isAdminLoggedIn ? (
                   <div className="flex items-center gap-3">
                     <div className="text-right">
@@ -1502,19 +1624,11 @@ export default function App() {
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <div className="flex items-center gap-1.5 justify-end">
-                        {(() => {
-                          const currentRegUser = registeredUsers.find(u => u.email.toLowerCase() === loggedInUserEmail.toLowerCase());
-                          const canBid = currentRegUser ? (currentRegUser.canBid !== false) : true;
-                          return canBid ? (
-                            <span className="bg-emerald-500/20 text-emerald-300 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border border-emerald-500/30 uppercase tracking-wider">
-                              {t('Bisa Menawar')}
-                            </span>
-                          ) : (
-                            <span className="bg-amber-500/30 text-amber-300 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border border-amber-500/40 uppercase tracking-wider flex items-center gap-0.5">
-                              <Lock className="w-2.5 h-2.5 text-amber-400" /> {t('Hanya Lihat')}
-                            </span>
-                          );
-                        })()}
+                        {isUserCanBid ? (
+                          <span className="bg-emerald-500/20 text-emerald-300 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border border-emerald-500/30 uppercase tracking-wider">
+                            {t('Bisa Menawar')}
+                          </span>
+                        ) : null}
                         <p className="text-white text-xs font-semibold">{loggedInUserName}</p>
                       </div>
                       <p className="text-slate-400 text-[10px] truncate max-w-[280px] font-mono mt-0.5">{loggedInUserEmail}</p>
@@ -1915,6 +2029,18 @@ export default function App() {
             {role === 'external' && (isUserLoggedIn || isAdminLoggedIn) && (
               <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">{t('Menu Eksternal')}</p>
+                {isUserCanBid && (
+                  <button
+                    onClick={() => {
+                      setSelectedGuideModal('ikut');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 shadow-sm"
+                  >
+                    <Lock className="w-4 h-4 text-amber-600" /> 
+                    <span>{t('Informasi & Aturan Bidding')}</span>
+                  </button>
+                )}
                 <button
                   onClick={() => { setExternalTab('catalog'); setIsMobileMenuOpen(false); }}
                   className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
@@ -2127,9 +2253,11 @@ export default function App() {
                   biddingRequests={biddingRequests}
                   onApproveBiddingRequest={handleApproveBiddingAccess}
                   onRejectBiddingRequest={handleRejectBiddingAccess}
+                  onDeleteBiddingRequest={handleDeleteBiddingRequest}
                   refundRequests={refundRequests}
                   onApproveRefundRequest={handleApproveRefundRequest}
                   onRejectRefundRequest={handleRejectRefundRequest}
+                  onDeleteRefundRequest={handleDeleteRefundRequest}
                   onCreateRefundRequest={handleCreateRefundRequest}
                 />
               )}
@@ -2171,16 +2299,11 @@ export default function App() {
                   loggedInUserPhone={isUserLoggedIn ? loggedInUserPhone : ''}
                   onOpenGuideModal={(guide) => setSelectedGuideModal(guide)}
                   navigationTabs={renderExternalNavigationTabs(true)}
-                  canBid={
-                    isAdminLoggedIn
-                      ? true
-                      : (() => {
-                          const user = registeredUsers.find(
-                            (u) => u.email.toLowerCase() === loggedInUserEmail.toLowerCase()
-                          );
-                          return user ? user.canBid !== false : true;
-                        })()
-                  }
+                  selectedBrand={selectedBrand}
+                  setSelectedBrand={setSelectedBrand}
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={setSelectedCategory}
+                  canBid={isUserCanBid}
                 />
               ) : externalTab === 'notifications' ? (
                 <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -2189,6 +2312,7 @@ export default function App() {
                     userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
                     userName={isUserLoggedIn ? loggedInUserName : adminName}
                     userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
+                    biddingRequests={biddingRequests}
                   />
                 </div>
               ) : externalTab === 'inbox' ? (

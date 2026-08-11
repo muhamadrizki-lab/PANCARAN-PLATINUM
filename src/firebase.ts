@@ -14,7 +14,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { Asset, AdminUser, Bid, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, ToastNotification, normalizeCategory, BiddingRequest, RefundRequest } from './types';
-import { INITIAL_ASSETS, INITIAL_ADMINS } from './data/mockData';
+import { INITIAL_ASSETS, INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from './data/mockData';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize the standard client-side Firebase app
@@ -312,6 +312,16 @@ export async function seedDatabaseIfEmpty() {
         });
       }
       console.log('Attachment types successfully seeded.');
+    }
+
+    // Seed Initial Registered Users
+    const registeredUsersSnapshot = await getDocs(collection(db, REGISTERED_USERS_COLLECTION));
+    if (registeredUsersSnapshot.empty) {
+      console.log('Seeding initial registered users to Firestore...');
+      for (const regUser of INITIAL_REGISTERED_USERS) {
+        await setDoc(doc(db, REGISTERED_USERS_COLLECTION, regUser.email.toLowerCase()), sanitizeData(regUser));
+      }
+      console.log('Registered users successfully seeded.');
     }
 
     // Mark as seeded in Firestore
@@ -1169,7 +1179,7 @@ export function subscribeToRegisteredUsers(callback: (users: RegisteredUser[]) =
       snapshot.forEach((docSnap) => {
         users.push(docSnap.data() as RegisteredUser);
       });
-      const sorted = users.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const sorted = users.sort((a, b) => String(b?.createdAt || '').localeCompare(String(a?.createdAt || '')));
       if (typeof window !== 'undefined') {
         try { localStorage.setItem('pancaran_users_cache', JSON.stringify(sorted)); } catch (e) {}
       }
@@ -1394,6 +1404,18 @@ export async function updateBiddingRequest(id: string, updates: Partial<BiddingR
 }
 
 /**
+ * Delete a bidding access request.
+ */
+export async function deleteBiddingRequest(id: string): Promise<void> {
+  const path = `${BIDDING_REQUESTS_COLLECTION}/${id}`;
+  try {
+    await deleteDoc(doc(db, BIDDING_REQUESTS_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+/**
  * Subscribe to realtime updates for bidding access requests.
  */
 export function subscribeToBiddingRequests(callback: (requests: BiddingRequest[]) => void) {
@@ -1404,7 +1426,7 @@ export function subscribeToBiddingRequests(callback: (requests: BiddingRequest[]
       snapshot.forEach((docSnap) => {
         requests.push(docSnap.data() as BiddingRequest);
       });
-      const sorted = requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const sorted = requests.sort((a, b) => String(b?.createdAt || '').localeCompare(String(a?.createdAt || '')));
       if (typeof window !== 'undefined') {
         try { localStorage.setItem('pancaran_bidding_requests_cache', JSON.stringify(sorted)); } catch (e) {}
       }
@@ -1449,6 +1471,18 @@ export async function updateRefundRequest(id: string, updates: Partial<RefundReq
 }
 
 /**
+ * Delete a refund request.
+ */
+export async function deleteRefundRequest(id: string): Promise<void> {
+  const path = `${REFUND_REQUESTS_COLLECTION}/${id}`;
+  try {
+    await deleteDoc(doc(db, REFUND_REQUESTS_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+/**
  * Subscribe to realtime updates for refund requests.
  */
 export function subscribeToRefundRequests(callback: (requests: RefundRequest[]) => void) {
@@ -1459,7 +1493,7 @@ export function subscribeToRefundRequests(callback: (requests: RefundRequest[]) 
       snapshot.forEach((docSnap) => {
         requests.push(docSnap.data() as RefundRequest);
       });
-      const sorted = requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const sorted = requests.sort((a, b) => String(b?.createdAt || '').localeCompare(String(a?.createdAt || '')));
       if (typeof window !== 'undefined') {
         try { localStorage.setItem('pancaran_refund_requests_cache', JSON.stringify(sorted)); } catch (e) {}
       }

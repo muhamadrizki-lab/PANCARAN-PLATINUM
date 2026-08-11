@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Asset, Bid, MAIN_CATEGORIES, normalizeCategory } from '../types';
+import { Asset, Bid, MAIN_CATEGORIES, normalizeCategory, getGoogleMapsUrl } from '../types';
 import { useLanguage } from './LanguageContext';
+import { MiniMapPreview } from './MiniMapPreview';
 import { 
   Search, 
   Filter, 
@@ -27,7 +28,8 @@ import {
   ZoomIn,
   ZoomOut,
   Lock,
-  GripHorizontal
+  GripHorizontal,
+  Eye
 } from 'lucide-react';
 
 interface CatalogViewProps {
@@ -43,6 +45,10 @@ interface CatalogViewProps {
   canBid?: boolean;
   onOpenGuideModal?: (guide: 'ikut' | 'titip' | 'online') => void;
   navigationTabs?: React.ReactNode;
+  selectedBrand?: string;
+  setSelectedBrand?: (brand: string) => void;
+  selectedCategory?: string;
+  setSelectedCategory?: (category: string) => void;
 }
 
 interface CatalogCardProps {
@@ -162,7 +168,8 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
     setActiveImgIdx(prev => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const highestOffer = Math.max(asset.startingPrice, ...(asset.bids || []).map(b => b.price));
+  const validBidPrices = (asset.bids || []).filter(b => b && typeof b.price === 'number' && !isNaN(b.price)).map(b => b.price);
+  const highestOffer = Math.max(asset.startingPrice || 0, ...validBidPrices, 0);
   const isExpired = asset.closeBidDate ? new Date() > new Date(asset.closeBidDate) : false;
 
   return (
@@ -232,7 +239,12 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
         </div>
 
         <div className="absolute top-3 right-3 z-10">
-          {isExpired ? (
+          {asset.status === 'Sold' ? (
+            <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-600 text-white px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              {t('TERJUAL')}
+            </span>
+          ) : isExpired ? (
             <span className="text-[9px] font-bold uppercase tracking-wider bg-rose-600 text-white px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-rose-300 rounded-full"></span>
               {t('Close Bid')}
@@ -258,9 +270,23 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
           </h3>
           
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {asset.location.split(',')[1] || asset.location}
-            </span>
+            {asset.coordinates && getGoogleMapsUrl(asset.coordinates) ? (
+              <a
+                href={getGoogleMapsUrl(asset.coordinates)!}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer group/loc"
+              >
+                <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0 group-hover/loc:scale-110 transition-transform" />
+                <span>{asset.location.split(',')[1] || asset.location}</span>
+                <ArrowUpRight className="w-3 h-3 opacity-60 group-hover/loc:opacity-100 group-hover/loc:translate-x-0.5 group-hover/loc:-translate-y-0.5 transition-all" />
+              </a>
+            ) : (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {asset.location.split(',')[1] || asset.location}
+              </span>
+            )}
             <span>•</span>
             <span>{t('Kondisi')}: <strong>{t(asset.condition)}</strong></span>
             <span>•</span>
@@ -322,9 +348,9 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
             {isUserLoggedIn ? `${asset.bids.length} ${t('Penawaran Masuk')}` : `🔒 ${t('Gabung untuk menawar')}`}
           </span>
           <button
-            disabled={isExpired}
+            disabled={isExpired || asset.status === 'Sold'}
             onClick={(e) => {
-              if (isExpired) return;
+              if (isExpired || asset.status === 'Sold') return;
               e.stopPropagation();
               if (isUserLoggedIn) {
                 onSelectAsset(asset.id);
@@ -333,16 +359,21 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
               }
             }}
             className={`${
-              isExpired
+              isExpired || asset.status === 'Sold'
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed border border-slate-200'
                 : canBid === false && isUserLoggedIn
                 ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/10'
                 : 'bg-blue-600 hover:bg-blue-700 text-white group-hover:shadow-md shadow-blue-500/10'
             } px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5`}
           >
-            {canBid === false && isUserLoggedIn ? (
+            {asset.status === 'Sold' ? (
               <>
-                <Lock className="w-3.5 h-3.5 shrink-0 text-amber-100" />
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>{t('Terjual')}</span>
+              </>
+            ) : canBid === false && isUserLoggedIn ? (
+              <>
+                <Eye className="w-3.5 h-3.5 shrink-0 text-amber-100" />
                 <span>{t('Lihat Detail')}</span>
               </>
             ) : (
@@ -423,7 +454,11 @@ export default function CatalogView({
   loggedInUserPhone = '',
   canBid = true,
   onOpenGuideModal,
-  navigationTabs
+  navigationTabs,
+  selectedBrand = 'all',
+  setSelectedBrand,
+  selectedCategory = 'all',
+  setSelectedCategory
 }: CatalogViewProps) {
   const { language, t } = useLanguage();
   const [internalSelectedAssetId, setInternalSelectedAssetId] = useState<string | null>(null);
@@ -431,9 +466,6 @@ export default function CatalogView({
   const selectedAssetId = propSelectedAssetId !== undefined ? propSelectedAssetId : internalSelectedAssetId;
   const setSelectedAssetId = propOnSelectAsset !== undefined ? propOnSelectAsset : setInternalSelectedAssetId;
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [showBiddingGuide, setShowBiddingGuide] = useState(true);
   
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -510,6 +542,7 @@ export default function CatalogView({
   const [formSuccess, setFormSuccess] = useState(false);
   const [isFormFocused, setIsFormFocused] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showBidConfirmModal, setShowBidConfirmModal] = useState(false);
 
   // States for modal image carousel and fullscreen lightbox
   const [modalImageIdx, setModalImageIdx] = useState(0);
@@ -544,28 +577,31 @@ export default function CatalogView({
   }, [lightboxIndex, lightboxImages]);
 
   // We only show "Open" assets in the public catalog
-  const openAssets = assets.filter(a => a.status === 'Open');
+  const openAssets = (assets || []).filter(a => a && a.status === 'Open');
 
   // Filter logic
   const filteredAssets = openAssets.filter(asset => {
+    if (!asset) return false;
     const matchesBrand = selectedBrand === 'all' || asset.brand === selectedBrand;
     const matchesCategory = selectedCategory === 'all' || asset.category === selectedCategory;
+    const q = (searchQuery || '').toLowerCase();
     const matchesSearch = 
-      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.id.toLowerCase().includes(searchQuery.toLowerCase());
+      (asset.name || '').toLowerCase().includes(q) ||
+      (asset.brand || '').toLowerCase().includes(q) ||
+      (asset.category || '').toLowerCase().includes(q) ||
+      (asset.description || '').toLowerCase().includes(q) ||
+      (asset.id || '').toLowerCase().includes(q);
 
     return matchesBrand && matchesCategory && matchesSearch;
   });
 
-  const uniqueBrands = Array.from(new Set(openAssets.map(a => a.brand)));
-  const uniqueCategories = Array.from(new Set([...MAIN_CATEGORIES, ...openAssets.map(a => normalizeCategory(a.category))]));
+  const uniqueBrands = Array.from(new Set(openAssets.map(a => a.brand || '').filter(Boolean)));
+  const uniqueCategories = Array.from(new Set([...MAIN_CATEGORIES, ...openAssets.map(a => normalizeCategory(a.category || ''))]));
 
-  const selectedAsset = assets.find(a => a.id === selectedAssetId);
+  const selectedAsset = (assets || []).find(a => a && a.id === selectedAssetId);
+  const selectedAssetBids = (selectedAsset?.bids || []).filter(b => b && typeof b.price === 'number' && !isNaN(b.price)).map(b => b.price);
   const currentHighestBid = selectedAsset 
-    ? Math.max(selectedAsset.startingPrice, ...(selectedAsset.bids || []).map(b => b.price))
+    ? Math.max(selectedAsset.startingPrice || 0, ...selectedAssetBids, 0)
     : 0;
 
   const formatIDR = (value: number) => {
@@ -629,8 +665,8 @@ export default function CatalogView({
     ? new Date() > new Date(selectedAsset.closeBidDate) 
     : false;
 
-  const handleBidSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleBidSubmit = (e?: React.FormEvent, forceConfirm: boolean = false) => {
+    if (e) e.preventDefault();
     setFormError('');
     setFormSuccess(false);
 
@@ -671,6 +707,16 @@ export default function CatalogView({
       }
     }
 
+    // Check if bid price is 50% or more above the starting price or current highest bid
+    const startingPrice = selectedAsset.startingPrice || 0;
+    const isHighBidThanStarting = startingPrice > 0 && bidPriceNum >= (startingPrice * 1.5);
+    const isHighBidThanCurrent = currentHighestBid > 0 && bidPriceNum >= (currentHighestBid * 1.5);
+
+    if ((isHighBidThanStarting || isHighBidThanCurrent) && !forceConfirm) {
+      setShowBidConfirmModal(true);
+      return;
+    }
+
     // 2. Submit
     onPlaceBid(selectedAssetId, {
       name: bidForm.name,
@@ -681,6 +727,7 @@ export default function CatalogView({
       scheduleSurveyTime: bidForm.requestSurvey ? bidForm.surveyTime : undefined,
     });
 
+    setShowBidConfirmModal(false);
     setFormSuccess(true);
     setFormError('');
 
@@ -844,117 +891,31 @@ export default function CatalogView({
             </div>
           </div>
 
-          {/* Right Side: How It Works & Cara Ikut Lelang Side-by-Side */}
+          {/* Right Side: How It Works Card */}
           <div className="flex flex-col sm:flex-row items-stretch gap-4 shrink-0 w-full lg:w-auto lg:absolute lg:top-[62%] lg:-translate-y-[38%] lg:right-8 lg:z-20 lg:bottom-auto">
-            {/* Box 2: Cara Ikut Lelang Card - Only visible for Digital Solution account when logged in */}
-            {(() => {
-              const isDigitalSolutionAccount = Boolean(
-                isUserLoggedIn && (
-                  (loggedInUserEmail && (
-                    loggedInUserEmail.toLowerCase().includes('digital.solution') ||
-                    loggedInUserEmail.toLowerCase().includes('digitalsolution') ||
-                    loggedInUserEmail.toLowerCase().includes('digital_solution')
-                  )) ||
-                  (loggedInUserName && (
-                    loggedInUserName.toLowerCase().includes('digital solution') ||
-                    loggedInUserName.toLowerCase().includes('digital.solution') ||
-                    loggedInUserName.toLowerCase().includes('digitalsolution')
-                  ))
-                )
-              );
-
-              if (!isUserLoggedIn || !isDigitalSolutionAccount) {
-                return (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="bg-transparent text-white rounded-3xl p-5 sm:p-6 border border-slate-800/60 shadow-none max-w-sm w-full sm:w-80 flex flex-col justify-between gap-3.5 z-30 select-none relative group"
-                    id="how-it-works-before-login-card"
-                  >
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base sm:text-lg">💡</span>
-                        <h3 className="text-white font-extrabold text-sm sm:text-base tracking-tight uppercase">
-                          {t('Step By Step Lelang ?')}
-                        </h3>
-                      </div>
-                      <p className="text-slate-300 font-medium text-[11px] sm:text-xs leading-relaxed">
-                        {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between border-t border-slate-800/80 pt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                      <span>Pancaran Platinum</span>
-                    </div>
-                  </motion.div>
-                );
-              }
-
-              if (!showBiddingGuide) {
-                return (
-                  <motion.button
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    onClick={() => setShowBiddingGuide(true)}
-                    className="bg-blue-600/95 hover:bg-blue-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-full shadow-lg border border-blue-500/40 flex items-center gap-2 transition-all hover:scale-105 z-30 self-center sm:self-end"
-                    id="reopen-bidding-guide-btn"
-                  >
-                    <span>📋</span> {t('Syarat & Ketentuan Akses Bidding')}
-                  </motion.button>
-                );
-              }
-
-              return (
-                <motion.div 
-                  drag
-                  dragMomentum={false}
-                  onTap={() => onOpenGuideModal?.('ikut')}
-                  className="bg-white/95 backdrop-blur-md text-slate-900 rounded-3xl shadow-2xl border-2 border-blue-500/40 overflow-hidden flex-1 w-full sm:w-64 md:w-72 flex flex-col items-center pt-3 pb-4 cursor-grab active:cursor-grabbing hover:bg-white transition-colors duration-300 select-none z-30 touch-none relative group"
-                  id="draggable-bidding-guide-card"
-                  style={{ touchAction: 'none' }}
-                >
-                  {/* Close button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowBiddingGuide(false);
-                    }}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    className="absolute top-3 right-3 p-1.5 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200/50 transition-colors z-40 shadow-xs"
-                    title={t('Tutup')}
-                    id="close-bidding-guide-btn"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-
-                  {/* Premium Drag Indicator Handle */}
-                  <div className="flex items-center gap-1.5 bg-slate-100 hover:bg-blue-50 px-3 py-1 rounded-full mb-2 transition-colors border border-slate-200/50">
-                    <GripHorizontal className="w-4 h-4 text-slate-500 group-hover:text-blue-600" />
-                    <span className="text-[9px] font-extrabold text-slate-500 group-hover:text-blue-600 uppercase tracking-widest font-sans">
-                      {t('Tarik / Geser')}
-                    </span>
-                  </div>
-
-                  <h3 className="text-blue-950 font-extrabold text-xs sm:text-sm md:text-base tracking-tight text-center px-4 mb-2">
-                    {t('Syarat & Ketentuan Akses Bidding')}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-transparent text-white rounded-3xl p-5 sm:p-6 border border-slate-800/60 shadow-none max-w-sm w-full sm:w-80 flex flex-col justify-between gap-3.5 z-30 select-none relative group"
+              id="how-it-works-before-login-card"
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-base sm:text-lg">💡</span>
+                  <h3 className="text-white font-extrabold text-sm sm:text-base tracking-tight uppercase">
+                    {t('Step By Step Lelang ?')}
                   </h3>
-                  <div className="w-full h-36 sm:h-40 bg-slate-50 overflow-hidden flex items-center justify-center border-y border-slate-100 pointer-events-none select-none">
-                    <img 
-                      src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN" 
-                      alt={t('Syarat & Ketentuan Akses Bidding')}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 pointer-events-none select-none"
-                      referrerPolicy="no-referrer"
-                      draggable={false}
-                      onDragStart={(e) => e.preventDefault()}
-                    />
-                  </div>
-                  <p className="text-blue-950 font-semibold text-[10px] sm:text-xs leading-relaxed pt-3 px-4 text-center">
-                    {t('Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.')}
-                  </p>
-                </motion.div>
-              );
-            })()}
+                </div>
+                <p className="text-slate-300 font-medium text-[11px] sm:text-xs leading-relaxed">
+                  {t('Pilih armada aktif di bawah, ajukan penawaran harga Anda, dan pilih waktu survei fisik untuk memeriksa kondisi mesin langsung di Pool kami sebelum lelang ditutup.')}
+                </p>
+              </div>
+              
+              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <span>Pancaran Platinum</span>
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -965,6 +926,36 @@ export default function CatalogView({
         {/* Left Side: Public Catalog Grid */}
         <div className="space-y-6 lg:col-span-3" id="public-catalog-catalog-col">
           
+          {/* Mode Hanya Lihat Informational Banner */}
+          {isUserLoggedIn && canBid === false && (
+            <div className="p-4 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-xs uppercase tracking-wider text-amber-950">
+                      {t('Akses Hanya Lihat (Katalog & Postingan Terbuka)')}
+                    </h4>
+                    <span className="bg-amber-200/80 text-amber-900 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-amber-300/60 uppercase">
+                      {t('Akses Terbuka')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800 font-medium mt-0.5">
+                    {t('Anda dapat menjelajahi seluruh katalog secara bebas. Untuk melakukan bidding, diperlukan deposit jaminan Rp10.000.000 (Refundable 100%).')}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => onOpenGuideModal && onOpenGuideModal('ikut')}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-extrabold rounded-xl transition shadow-sm shrink-0 uppercase tracking-wider"
+              >
+                {t('Pelajari Cara Ikut Lelang')}
+              </button>
+            </div>
+          )}
+
           {/* Public Filters Header */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 border-l-[6px] border-l-slate-300 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -986,29 +977,32 @@ export default function CatalogView({
                 />
               </div>
 
-              {/* Brand Select */}
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="all">{t('Semua Brand')}</option>
-                {uniqueBrands.map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
+              {/* Desktop filters are now in the top navbar per user request */}
+              <div className="lg:hidden flex gap-2 w-full">
+                {/* Brand Select - Visible on mobile only since desktop moved to navbar */}
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand && setSelectedBrand(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="all">{t('Semua Brand')}</option>
+                  {uniqueBrands.map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
 
-              {/* Category Select */}
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="all">{t('Semua Kategori')}</option>
-                {uniqueCategories.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                {/* Category Select - Visible on mobile only */}
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory && setSelectedCategory(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="all">{t('Semua Kategori')}</option>
+                  {uniqueCategories.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1263,15 +1257,35 @@ export default function CatalogView({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5 text-slate-600">
-                        <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-                          <MapPin className="w-4 h-4 text-blue-600" />
+                      {selectedAsset.coordinates && getGoogleMapsUrl(selectedAsset.coordinates) ? (
+                        <a 
+                          href={getGoogleMapsUrl(selectedAsset.coordinates)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 text-slate-600 hover:text-blue-600 transition-colors group cursor-pointer"
+                        >
+                          <div className="p-2 bg-blue-50 border border-blue-100 group-hover:bg-blue-100 group-hover:border-blue-200 rounded-xl transition-all">
+                            <MapPin className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="text-xs font-semibold">
+                            <p className="text-slate-400 text-[9px] uppercase tracking-wide flex items-center gap-1">
+                              {t('Lokasi Pool')}
+                              <ArrowUpRight className="w-3 h-3 text-blue-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                            </p>
+                            <p className="text-blue-600 font-bold line-clamp-1 underline decoration-blue-200 hover:decoration-blue-600">{selectedAsset.location.split(',')[0]}</p>
+                          </div>
+                        </a>
+                      ) : (
+                        <div className="flex items-center gap-2.5 text-slate-600">
+                          <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
+                            <MapPin className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="text-xs font-semibold">
+                            <p className="text-slate-400 text-[9px] uppercase tracking-wide">{t('Lokasi Pool')}</p>
+                            <p className="text-slate-700 line-clamp-1">{selectedAsset.location.split(',')[0]}</p>
+                          </div>
                         </div>
-                        <div className="text-xs font-semibold">
-                          <p className="text-slate-400 text-[9px] uppercase tracking-wide">{t('Lokasi Pool')}</p>
-                          <p className="text-slate-700 line-clamp-1">{selectedAsset.location.split(',')[0]}</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
@@ -1310,241 +1324,278 @@ export default function CatalogView({
                           <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Lokasi Detail')}</span>
                           <strong className="text-slate-900 font-bold text-sm line-clamp-1">{selectedAsset.location}</strong>
                         </div>
+                        {selectedAsset.coordinates && (
+                          <div className="col-span-3 mt-1.5">
+                            <MiniMapPreview 
+                              coordinates={selectedAsset.coordinates} 
+                              t={t} 
+                            />
+                          </div>
+                        )}
                         
-                        {/* Property specifications fields */}
-                        {selectedAsset.propertyType && (
-                          <div className="bg-blue-50/60 p-3 rounded-xl border border-blue-100/80">
-                            <span className="text-blue-600 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Tipe Properti')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.propertyType}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.auctionType && (
-                          <div className="bg-blue-50/60 p-3 rounded-xl border border-blue-100/80">
-                            <span className="text-blue-600 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Tipe Lelang')}</span>
-                            <strong className="text-blue-700 font-bold text-sm">{selectedAsset.auctionType}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.landArea && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Luas Tanah')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.landArea}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.buildingArea && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Luas Bangunan')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.buildingArea}</strong>
-                          </div>
+                        {/* Property specifications fields - Only show for Property category */}
+                        {normalizeCategory(selectedAsset.category) === 'Property' && (
+                          <>
+                            {selectedAsset.propertyType && (
+                              <div className="bg-blue-50/60 p-3 rounded-xl border border-blue-100/80">
+                                <span className="text-blue-600 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Tipe Properti')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.propertyType}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.auctionType && (
+                              <div className="bg-blue-50/60 p-3 rounded-xl border border-blue-100/80">
+                                <span className="text-blue-600 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Tipe Lelang')}</span>
+                                <strong className="text-blue-700 font-bold text-sm">{selectedAsset.auctionType}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.landArea && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Luas Tanah')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.landArea}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.buildingArea && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Luas Bangunan')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.buildingArea}</strong>
+                              </div>
+                            )}
+                          </>
                         )}
 
                         {/* Used Part Specifics */}
-                        {selectedAsset.usedPartCategory && (
-                          <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70">
-                            <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Sub-Kategori Used Part')}</span>
-                            <strong className="text-amber-950 font-bold text-sm">{selectedAsset.usedPartCategory}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.quantity && (
-                          <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70">
-                            <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kuantitas / Jumlah')}</span>
-                            <strong className="text-amber-950 font-bold text-sm">{selectedAsset.quantity}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.salesSystem && (
-                          <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70">
-                            <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Sistem Penjualan')}</span>
-                            <strong className="text-amber-950 font-bold text-sm">{selectedAsset.salesSystem}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.openHouseSchedule && (
-                          <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70 col-span-1 sm:col-span-2">
-                            <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jadwal Open House')}</span>
-                            <strong className="text-amber-950 font-bold text-sm">{selectedAsset.openHouseSchedule}</strong>
-                          </div>
+                        {normalizeCategory(selectedAsset.category) === 'Used part' && (
+                          <>
+                            {selectedAsset.usedPartCategory && (
+                              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70">
+                                <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Sub-Kategori Used Part')}</span>
+                                <strong className="text-amber-950 font-bold text-sm">{selectedAsset.usedPartCategory}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.quantity && (
+                              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70">
+                                <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kuantitas / Jumlah')}</span>
+                                <strong className="text-amber-950 font-bold text-sm">{selectedAsset.quantity}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.salesSystem && (
+                              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70">
+                                <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Sistem Penjualan')}</span>
+                                <strong className="text-amber-950 font-bold text-sm">{selectedAsset.salesSystem}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.openHouseSchedule && (
+                              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200/70 col-span-1 sm:col-span-2">
+                                <span className="text-amber-800 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jadwal Open House')}</span>
+                                <strong className="text-amber-950 font-bold text-sm">{selectedAsset.openHouseSchedule}</strong>
+                              </div>
+                            )}
+
+                            {/* Ban Specs */}
+                            {selectedAsset.usedPartCategory === 'Ban' && (
+                              <>
+                                {selectedAsset.tireBrand && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Merek Ban')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireBrand}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.tireSize && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Ukuran Ban')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.tireSize}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.tireType && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis Ban')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireType}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.tireTreadDepth && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Ketebalan Kembang')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireTreadDepth}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.tireCondition && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Ban')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireCondition}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.tireDotCode && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('DOT Code (Tahun)')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.tireDotCode}</strong>
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* Aki Specs */}
+                            {selectedAsset.usedPartCategory === 'Aki' && (
+                              <>
+                                {selectedAsset.batteryBrand && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Merek Aki')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryBrand}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.batteryTypeCode && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kode Aki')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.batteryTypeCode}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.batteryCapacity && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kapasitas Aki')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.batteryCapacity}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.batteryType && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis Aki')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryType}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.batteryCondition && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Aki')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryCondition}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.batteryElectrolyteStatus && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Air Aki')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryElectrolyteStatus}</strong>
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* Besi Specs */}
+                            {selectedAsset.usedPartCategory === 'Besi' && (
+                              <>
+                                {selectedAsset.metalType && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis Besi / Logam')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalType}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.metalSalesMethod && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Metode Penjualan')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalSalesMethod}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.metalEstimatedWeight && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Estimasi Berat')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalEstimatedWeight}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.metalCondition && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Besi')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalCondition}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.metalHandlingFacility && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85 col-span-1 sm:col-span-2">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Pemotongan & Pengangkutan')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalHandlingFacility}</strong>
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* Oli Specs */}
+                            {selectedAsset.usedPartCategory === 'Oli' && (
+                              <>
+                                {selectedAsset.oilBrand && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Merek Oli')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilBrand}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.oilType && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis / Viskositas Oli')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.oilType}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.oilVolume && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Volume / Kapasitas')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilVolume}</strong>
+                                  </div>
+                                )}
+                                {selectedAsset.oilCondition && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                    <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Oli')}</span>
+                                    <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilCondition}</strong>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </>
                         )}
 
-                        {/* Ban Specs */}
-                        {selectedAsset.tireBrand && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Merek Ban')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireBrand}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.tireSize && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Ukuran Ban')}</span>
-                            <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.tireSize}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.tireType && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis Ban')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireType}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.tireTreadDepth && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Ketebalan Kembang')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireTreadDepth}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.tireCondition && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Ban')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.tireCondition}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.tireDotCode && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('DOT Code (Tahun)')}</span>
-                            <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.tireDotCode}</strong>
-                          </div>
-                        )}
 
-                        {/* Aki Specs */}
-                        {selectedAsset.batteryBrand && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Merek Aki')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryBrand}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.batteryTypeCode && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kode Aki')}</span>
-                            <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.batteryTypeCode}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.batteryCapacity && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kapasitas Aki')}</span>
-                            <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.batteryCapacity}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.batteryType && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis Aki')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryType}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.batteryCondition && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Aki')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryCondition}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.batteryElectrolyteStatus && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Air Aki')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.batteryElectrolyteStatus}</strong>
-                          </div>
-                        )}
-
-                        {/* Besi Specs */}
-                        {selectedAsset.metalType && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis Besi / Logam')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalType}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.metalSalesMethod && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Metode Penjualan')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalSalesMethod}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.metalEstimatedWeight && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Estimasi Berat')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalEstimatedWeight}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.metalCondition && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Besi')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalCondition}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.metalHandlingFacility && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85 col-span-1 sm:col-span-2">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Pemotongan & Pengangkutan')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.metalHandlingFacility}</strong>
-                          </div>
-                        )}
-
-                        {/* Oli Specs */}
-                        {selectedAsset.oilBrand && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Merek Oli')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilBrand}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.oilType && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis / Viskositas Oli')}</span>
-                            <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.oilType}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.oilVolume && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Volume / Kapasitas')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilVolume}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.oilCondition && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Oli')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilCondition}</strong>
-                          </div>
-                        )}
-
-                        {/* New specifications fields */}
-                        {selectedAsset.model && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Model')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.model}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.series && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Series')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.series}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.axels && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Axels')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.axels}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.vehicleColour && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Warna')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{t(selectedAsset.vehicleColour)}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.fuelType && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Bahan Bakar')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{t(selectedAsset.fuelType)}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.horsepower && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Horsepower (HP)')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.horsepower}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.odometer && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('KM Spidometer')}</span>
-                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.odometer}</strong>
-                          </div>
-                        )}
-                        {selectedAsset.dimensions && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
-                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Dimensi Unit')}</span>
-                            <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.dimensions}</strong>
-                          </div>
+                        {/* Vehicle specific specifications - Only show for Vehicle category */}
+                        {normalizeCategory(selectedAsset.category) === 'Vehicle' && (
+                          <>
+                            {selectedAsset.model && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Model')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.model}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.series && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Series')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.series}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.axels && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Axels')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.axels}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.vehicleColour && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Warna')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{t(selectedAsset.vehicleColour)}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.fuelType && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Bahan Bakar')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{t(selectedAsset.fuelType)}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.horsepower && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Horsepower (HP)')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.horsepower}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.odometer && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('KM Spidometer')}</span>
+                                <strong className="text-slate-900 font-bold text-sm">{selectedAsset.odometer}</strong>
+                              </div>
+                            )}
+                            {selectedAsset.dimensions && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                                <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Dimensi Unit')}</span>
+                                <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.dimensions}</strong>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -1812,11 +1863,11 @@ export default function CatalogView({
                       >
                         {canBid === false && (
                           <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 text-amber-800 rounded-2xl text-xs font-semibold flex items-start gap-2.5 shadow-2xs">
-                            <Lock className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                            <Eye className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
                             <div className="space-y-1">
-                              <p className="font-extrabold text-[10px] uppercase tracking-wider text-amber-900">{t('Mode Hanya Lihat Aktif')}</p>
+                              <p className="font-extrabold text-[10px] uppercase tracking-wider text-amber-900">{t('Mode Hanya Lihat (Katalog Terbuka)')}</p>
                               <p className="text-[10px] font-medium text-amber-800 leading-normal">
-                                {t('Akun Anda saat ini diatur sebagai "Hanya Lihat". Anda dapat melihat spesifikasi lengkap unit, namun tidak dapat melakukan penawaran lelang.')}
+                                {t('Akun Anda saat ini diatur sebagai "Hanya Lihat". Anda dapat melihat spesifikasi lengkap unit dan postingan, namun tidak dapat melakukan penawaran lelang.')}
                               </p>
                               <p className="text-[10px] text-amber-900/80 font-bold pt-1 border-t border-amber-200/40">
                                 {t('Hubungi Administrator jika membutuhkan akses menawar.')}
@@ -2349,6 +2400,71 @@ export default function CatalogView({
                 ? t('Klik gambar untuk memperkecil • Geser untuk menjelajah detail') 
                 : t('Klik gambar untuk memperbesar • Klik di luar untuk kembali')}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* High Bid Confirmation Pop-up Modal */}
+      {showBidConfirmModal && selectedAsset && (
+        <div className="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-amber-100 space-y-5 animate-zoom-in relative">
+            <button
+              onClick={() => setShowBidConfirmModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-200/80 shadow-xs">
+              <ShieldAlert className="w-8 h-8 animate-pulse" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-base font-bold text-slate-900 uppercase tracking-wide">
+                {t('Konfirmasi Penawaran')}
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {t('Penawaran Anda terdeteksi 50% atau lebih di atas harga dasar unit. Mohon pastikan nominal penawaran sudah benar untuk menghindari kesalahan ketik.')}
+              </p>
+            </div>
+
+            <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between items-center text-slate-600">
+                <span className="font-medium">{t('Unit Lelang')}:</span>
+                <span className="font-bold text-slate-800 truncate max-w-[200px]">{selectedAsset.name}</span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span className="font-medium">{t('Harga Starting')}:</span>
+                <span className="font-semibold text-slate-700">{formatIDR(selectedAsset.startingPrice)}</span>
+              </div>
+              <div className="border-t border-amber-200/60 pt-2 flex justify-between items-center text-amber-900 font-bold">
+                <span>{t('Nominal Penawaran Anda')}:</span>
+                <span className="text-sm font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/80">
+                  {formatIDR(Number(bidForm.price))}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-center font-medium text-slate-600">
+              {t('Anda yakin sudah benar dengan penawaran sebesar')} <strong className="text-blue-700 font-extrabold">{formatIDR(Number(bidForm.price))}</strong>?
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowBidConfirmModal(false)}
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs transition-all cursor-pointer"
+              >
+                {t('Periksa Kembali')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBidSubmit(undefined, true)}
+                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                {t('Ya, Saya Yakin')}
+              </button>
+            </div>
           </div>
         </div>
       )}

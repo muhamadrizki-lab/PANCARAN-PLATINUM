@@ -1,4 +1,4 @@
-import { Asset, AdminUser } from '../types';
+import { Asset, AdminUser, RegisteredUser } from '../types';
 
 export const INITIAL_ADMINS: AdminUser[] = [
   {
@@ -12,6 +12,48 @@ export const INITIAL_ADMINS: AdminUser[] = [
     name: 'Budi Hartono',
     role: 'Admin Keuangan',
     createdAt: '2026-02-10'
+  }
+];
+
+export const INITIAL_REGISTERED_USERS: RegisteredUser[] = [
+  {
+    email: 'angga@gmail.com',
+    name: 'Angga Prahadi',
+    phone: '081234567890',
+    password: '12345678',
+    company: 'PT Pancaran Logistics',
+    address: 'Jakarta, Indonesia',
+    status: 'Disetujui',
+    canBid: true,
+    emailVerified: true,
+    verificationCode: '123456',
+    createdAt: '2026-01-20T10:00:00Z'
+  },
+  {
+    email: 'andi.wijaya@gmail.com',
+    name: 'Andi Wijaya',
+    phone: '081234567890',
+    password: '12345678',
+    company: 'CV Wijaya Express',
+    address: 'Jakarta Utara',
+    status: 'Disetujui',
+    canBid: true,
+    emailVerified: true,
+    verificationCode: '123456',
+    createdAt: '2026-02-01T10:00:00Z'
+  },
+  {
+    email: 'agus.salim99@gmail.com',
+    name: 'Agus Salim',
+    phone: '087812345678',
+    password: '12345678',
+    company: 'PT Trans Logistics',
+    address: 'Bekasi',
+    status: 'Disetujui',
+    canBid: true,
+    emailVerified: true,
+    verificationCode: '123456',
+    createdAt: '2026-02-15T10:00:00Z'
   }
 ];
 
