@@ -2007,16 +2007,6 @@ export default function App() {
                 >
                   WA Blasting
                 </button>
-                <button
-                  onClick={() => { setAdminTab('settings'); setIsMobileMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold ${
-                    adminTab === 'settings' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
-                  }`}
-                >
-                  {t('Pengaturan Sistem')}
-                </button>
-
-
               </div>
             )}
 
@@ -2187,18 +2177,6 @@ export default function App() {
                   >
                     <Phone className="w-4 h-4 shrink-0" />
                     <span>WA Blasting</span>
-                  </button>
-
-                  <button
-                    onClick={() => setAdminTab('settings')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
-                      adminTab === 'settings'
-                        ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <Settings className="w-4 h-4 shrink-0" />
-                    <span>{t('Pengaturan Sistem')}</span>
                   </button>
                 </nav>
               </div>
