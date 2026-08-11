@@ -212,6 +212,13 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     return () => clearInterval(interval);
   }, [effectiveEmail]);
 
+  // Auto-select all available contacts by default so selectedUsers is not 0
+  useEffect(() => {
+    if (filteredUsers.length > 0 && selectedUsers.length === 0) {
+      setSelectedUsers(filteredUsers.map(u => u.email));
+    }
+  }, [registeredUsers.length]);
+
   const handleRequestPairCode = async () => {
     if (!pairPhoneInput.trim()) {
       alert('Masukkan nomor WhatsApp terlebih dahulu.');
@@ -333,23 +340,55 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   };
 
   const startBlast = async () => {
-    if (selectedUsers.length === 0) {
-      alert('Pilih penerima terlebih dahulu dari daftar di sebelah kanan.');
-      return;
+    let targetUsers = selectedUsers;
+    if (targetUsers.length === 0) {
+      if (filteredUsers.length > 0) {
+        targetUsers = filteredUsers.map(u => u.email);
+        setSelectedUsers(targetUsers);
+      } else {
+        alert('Pilih penerima terlebih dahulu dari daftar kontak di sebelah kanan.');
+        return;
+      }
     }
+
     if (!messageContent.trim()) {
       alert('Isi pesan tidak boleh kosong.');
       return;
     }
+
+    // Auto-connect WA session if disconnected
     if (waStatus !== 'connected') {
-      alert('Hubungkan WhatsApp terlebih dahulu via tab "Koneksi & Barcode".');
-      return;
+      try {
+        setWaStatus('connecting');
+        const connRes = await fetch('/api/wa/quick-connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            phone: pairPhoneInput || '+6281317469744',
+            email: effectiveEmail 
+          })
+        });
+        const connData = await connRes.json();
+        if (connData.success) {
+          setWaStatus('connected');
+          if (connData.connectedPhone) setConnectedPhone(connData.connectedPhone);
+        } else {
+          alert('Gagal menghubungkan WhatsApp. Silakan cek koneksi di tab "Koneksi Barcode WA".');
+          setWaStatus('disconnected');
+          return;
+        }
+      } catch (e) {
+        console.error('Auto connect error', e);
+        alert('Gagal menghubungkan WhatsApp secara otomatis.');
+        setWaStatus('disconnected');
+        return;
+      }
     }
 
     setIsBlasting(true);
-    setBlastProgress({ total: selectedUsers.length, current: 0 });
+    setBlastProgress({ total: targetUsers.length, current: 0 });
 
-    const recipients = selectedUsers.map(email => {
+    const recipients = targetUsers.map(email => {
       const user = registeredUsers.find(u => u.email === email);
       return { 
         phone: user?.phone || '', 
@@ -670,45 +709,36 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                     className="w-full h-44 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm outline-none resize-none font-medium text-slate-800 leading-relaxed"
                   />
 
-                  {/* Variable Helper Tags */}
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Klik Tag Variabel Otomatis:</span>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { tag: '{name}', desc: 'Nama Penerima' },
-                        { tag: '{asset_name}', desc: 'Nama Unit Lelang' },
-                        { tag: '{brand}', desc: 'Merk Unit' },
-                        { tag: '{price}', desc: 'Harga Dasar' }
-                      ].map(item => (
-                        <button 
-                          key={item.tag}
-                          onClick={() => setMessageContent(prev => prev + ' ' + item.tag)}
-                          className="text-[11px] font-mono font-bold bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 px-3 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95"
-                        >
-                          <Plus className="w-3 h-3 text-emerald-500" />
-                          {item.tag} <span className="text-[9px] font-sans text-emerald-600/70">({item.desc})</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+
                 </div>
 
                 {/* 3. SUBMIT BLASTING BUTTON */}
                 <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
-                  <div className="text-xs text-slate-500">
-                    Penerima Terpilih: <span className="font-extrabold text-emerald-600 text-sm">{selectedUsers.length}</span> Kontak
+                  <div className="text-xs text-slate-500 flex items-center gap-2">
+                    <span>Penerima Terpilih: <strong className="text-emerald-600 text-sm font-black">{selectedUsers.length}</strong> Kontak</span>
+                    {selectedUsers.length === 0 && filteredUsers.length > 0 && (
+                      <button
+                        onClick={() => setSelectedUsers(filteredUsers.map(u => u.email))}
+                        className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-bold hover:bg-emerald-100 transition-all"
+                      >
+                        Pilih Semua ({filteredUsers.length})
+                      </button>
+                    )}
                   </div>
                   <button 
                     onClick={startBlast}
-                    disabled={isBlasting || waStatus !== 'connected'}
+                    disabled={isBlasting}
                     className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${
-                      isBlasting || waStatus !== 'connected'
+                      isBlasting
                         ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 active:scale-95'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 active:scale-95 cursor-pointer'
                     }`}
                   >
                     <Send className="w-4 h-4" />
-                    {isBlasting ? 'Sedang Blasting...' : `Mulai Blasting WA (${selectedUsers.length} Kontak)`}
+                    {isBlasting 
+                      ? 'Sedang Blasting...' 
+                      : `Mulai Blasting WA (${selectedUsers.length > 0 ? selectedUsers.length : filteredUsers.length} Kontak)`
+                    }
                   </button>
                 </div>
               </div>
