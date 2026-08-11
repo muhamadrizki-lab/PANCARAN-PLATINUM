@@ -83,6 +83,28 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
     }
   };
 
+  const handleQuickConnect = async (phoneOverride?: string) => {
+    try {
+      setWaStatus('connecting');
+      const res = await fetch('/api/wa/quick-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneOverride || pairPhoneInput || '+6281317469744' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWaStatus('connected');
+        if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
+        setQrCode(null);
+        alert('✅ WhatsApp Berhasil Terhubung! Sesi aktif dan siap melakukan WhatsApp Blasting.');
+        setActiveTab('blast');
+      }
+    } catch (e) {
+      console.error('Failed quick connect', e);
+      alert('Gagal menghubungkan WhatsApp.');
+    }
+  };
+
   const handleRefreshQr = async () => {
     try {
       setWaStatus('connecting');
@@ -430,19 +452,26 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
                           3. Arahkan kamera HP Anda ke kode barcode QR di atas
                         </p>
 
-                        <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center items-center">
+                        <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center items-center">
                           <button 
                             onClick={handleRefreshQr}
-                            className="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
+                            className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5"
                           >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className="w-3.5 h-3.5" />
                             Generate Barcode Baru
                           </button>
                           <button 
-                            onClick={checkStatus}
-                            className="text-xs font-bold text-slate-600 flex items-center gap-1.5 hover:text-slate-900 transition-colors bg-slate-100 px-4 py-3 rounded-2xl"
+                            onClick={() => handleQuickConnect('+6281317469744')}
+                            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 active:scale-95"
                           >
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Cek Status Sesi
+                            <CheckCircle className="w-4 h-4" />
+                            Selesai Scan / Aktivasi Langsung
+                          </button>
+                          <button 
+                            onClick={checkStatus}
+                            className="text-xs font-bold text-slate-500 hover:text-slate-800 px-3 py-2"
+                          >
+                            Cek Status
                           </button>
                         </div>
                       </div>

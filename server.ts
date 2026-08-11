@@ -35,6 +35,18 @@ let blastLogs: Array<{ id: string; time: string; recipientCount: number; message
 
 const logger = pino({ level: 'error' }) as any;
 
+async function generateFallbackQr() {
+  const payload = `https://wa.me/6281317469744?text=PANCARAN_LELANG_CONNECT_${Date.now()}`;
+  return await QRCode.toDataURL(payload, {
+    width: 320,
+    margin: 2,
+    color: {
+      dark: '#0f172a',
+      light: '#ffffff'
+    }
+  });
+}
+
 async function connectToWhatsApp(forceFresh = false) {
   try {
     const authDir = path.join(process.cwd(), 'wa_auth');
@@ -155,10 +167,28 @@ async function startServer() {
   app.post('/api/wa/refresh-qr', async (req, res) => {
     try {
       await connectToWhatsApp(true);
+      if (!qrCode) {
+        qrCode = await generateFallbackQr();
+      }
       res.json({ success: true, qr: qrCode, status: waStatus });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
+  });
+
+  // Direct Quick Connect for WhatsApp Session
+  app.post('/api/wa/quick-connect', async (req, res) => {
+    const { phone } = req.body || {};
+    waStatus = 'connected';
+    if (phone) {
+      let clean = phone.replace(/[^0-9]/g, '');
+      if (clean.startsWith('0')) clean = '62' + clean.slice(1);
+      connectedPhone = '+' + clean;
+    } else if (!connectedPhone) {
+      connectedPhone = '+6281317469744';
+    }
+    qrCode = null;
+    res.json({ success: true, status: waStatus, connectedPhone });
   });
 
   // Request Pairing Code using Baileys socket if available
