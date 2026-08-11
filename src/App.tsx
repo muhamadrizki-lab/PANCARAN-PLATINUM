@@ -1218,16 +1218,16 @@ export default function App() {
         </button>
         <button
           onClick={() => setSelectedGuideModal('ikut')}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer relative ${
+          className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer relative ${
             isDarkTheme
-              ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300 border border-amber-500/30'
-              : 'bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 border border-amber-300/80 shadow-xs'
+              ? 'text-slate-200 hover:text-white hover:bg-white/10'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
-          title={t('Aturan Bidding')}
         >
-          <Lock className="w-3.5 h-3.5 text-amber-500" />
+          <Lock className="w-4 h-4" />
           <span>{t('Aturan Bidding')}</span>
         </button>
+
       </div>
       </div>
     );
@@ -1580,17 +1580,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* Logged In Info with Bidding Rules Toggle */}
+              {/* Logged In Info */}
               <div className="flex items-center gap-4">
-                {(isAdminLoggedIn || (isUserLoggedIn && isUserCanBid)) && (
-                  <button
-                    onClick={() => setSelectedGuideModal('ikut')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer group shadow-sm hover:scale-105 active:scale-95"
-                  >
-                    <Lock className="w-3 h-3 group-hover:rotate-12 transition-transform" />
-                    <span>{t('Aturan Bidding')}</span>
-                  </button>
-                )}
                 {isAdminLoggedIn ? (
                   <div className="flex items-center gap-3">
                     <div className="text-right">
@@ -2025,52 +2016,6 @@ export default function App() {
             {role === 'external' && (isUserLoggedIn || isAdminLoggedIn) && (
               <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">{t('Menu Eksternal')}</p>
-                {isUserCanBid && (
-                  <button
-                    onClick={() => {
-                      setSelectedGuideModal('ikut');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 shadow-sm"
-                  >
-                    <Lock className="w-4 h-4 text-amber-600" /> 
-                    <span>{t('Informasi & Aturan Bidding')}</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => { setExternalTab('catalog'); setIsMobileMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
-                    externalTab === 'catalog' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
-                  }`}
-                >
-                  <span>{t('Katalog')}</span>
-                </button>
-                <button
-                  onClick={() => { setExternalTab('notifications'); setIsMobileMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
-                    externalTab === 'notifications' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
-                  }`}
-                >
-                  <span>{t('Notifikasi Saya')}</span>
-                  {externalNotificationsCount > 0 && (
-                    <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
-                      {externalNotificationsCount}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => { setExternalTab('inbox'); setIsMobileMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
-                    externalTab === 'inbox' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
-                  }`}
-                >
-                  <span>Inbox / Surat Masuk</span>
-                  {externalInboxCount > 0 && (
-                    <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
-                      {externalInboxCount}
-                    </span>
-                  )}
-                </button>
                 <button
                   onClick={() => { setExternalTab('bidding_access'); setIsMobileMenuOpen(false); }}
                   className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-between ${
@@ -2078,6 +2023,16 @@ export default function App() {
                   }`}
                 >
                   <span>{t('Akses Bidding')}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedGuideModal('ikut');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <Lock className="w-4 h-4 text-slate-500" /> 
+                  <span>{t('Aturan Bidding')}</span>
                 </button>
               </div>
             )}
