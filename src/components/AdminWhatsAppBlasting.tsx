@@ -900,23 +900,6 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                       <p className="text-[11px] text-slate-400">Tampilan persis yang akan diterima oleh pelanggan di aplikasi WhatsApp.</p>
                     </div>
                   </div>
-
-                  {/* Sample Asset Selector */}
-                  <div className="flex items-center gap-2 bg-slate-800 p-1.5 px-3 rounded-xl border border-slate-700">
-                    <span className="text-[10px] font-bold text-slate-400 shrink-0">Simulasi Unit:</span>
-                    <select 
-                      value={selectedAssetForSample?.id || ''}
-                      onChange={(e) => {
-                        const found = assets.find(a => a.id === e.target.value);
-                        if (found) setSelectedAssetForSample(found);
-                      }}
-                      className="bg-transparent text-xs font-bold text-emerald-400 focus:outline-none cursor-pointer max-w-[180px] truncate"
-                    >
-                      {assets.map(a => (
-                        <option key={a.id} value={a.id} className="bg-slate-900 text-white">{a.name}</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 {/* Smartphone Screen Simulator */}
