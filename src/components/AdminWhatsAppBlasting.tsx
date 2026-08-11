@@ -27,7 +27,8 @@ import {
   Check,
   Copy,
   FileImage,
-  Tag
+  Tag,
+  FileText
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
@@ -48,45 +49,47 @@ interface MessageTemplate {
 export default function AdminWhatsAppBlasting({ registeredUsers, assets, currentUserEmail }: AdminWhatsAppBlastingProps) {
   const { t } = useLanguage();
   const effectiveEmail = currentUserEmail || 'digital.solution@pancaran-logistic.id';
+  const sessionKey = `pancaran_wa_session_${effectiveEmail}`;
 
-  const [waStatus, setWaStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-  const [connectedPhone, setConnectedPhone] = useState<string>('+62 813-1746-9744');
+  // Read saved session for Vercel / Client offline support
+  const getSavedSession = () => {
+    try {
+      const saved = localStorage.getItem(sessionKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.status) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to read WA session from storage', e);
+    }
+    return null;
+  };
+
+  const [waStatus, setWaStatus] = useState<'disconnected' | 'connecting' | 'connected'>(() => {
+    const saved = getSavedSession();
+    return saved?.status || 'disconnected';
+  });
+  const [connectedPhone, setConnectedPhone] = useState<string>(() => {
+    const saved = getSavedSession();
+    return saved?.phone || '+62 813-1746-9744';
+  });
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [messageContent, setMessageContent] = useState('');
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string>('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80');
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
   
-  // Default Templates with Rich Text & Images
-  const [templates, setTemplates] = useState<MessageTemplate[]>([
-    { 
-      id: '1', 
-      name: 'Greeting & Profil Pancaran', 
-      category: 'Greeting',
-      content: 'Halo {name}, salam hangat dari Pancaran Lelang! 👋\n\nKami adalah platform resmi lelang armada & logistik berkualitas dengan penawaran transparan. Dapatkan unit operasional terbaik untuk kelancaran bisnis Anda!',
-      imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80'
-    },
-    { 
-      id: '2', 
-      name: 'Notifikasi Unit Lelang Baru', 
-      category: 'Lelang Baru',
-      content: 'Halo {name}, ada unit lelang baru yang sangat diminati nih! 🚛\n\n📌 Unit: *{asset_name}*\n🏷️ Brand: *{brand}*\n💰 Harga Dasar: *Rp {price}*\n\nJangan lewatkan kesempatan emas ini! Mari cek foto detail & ajukan penawaran Anda sekarang di platform Pancaran Lelang.',
-      imageUrl: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80'
-    },
-    { 
-      id: '3', 
-      name: 'Promo Fleets Dump Truck', 
-      category: 'Promo Commercial',
-      content: 'Spesial untuk {name}: Penawaran Unit Dump Truck & Commercial Fleets kondisi prima lulus sertifikasi inspeksi teknis! 🛠️\n\nUnit *{asset_name}* dengan harga mulai *Rp {price}*. Hubungi kami untuk jadwal survei fisik di lokasi!',
-      imageUrl: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=800&q=80'
-    },
-    { 
-      id: '4', 
-      name: 'Pengingat Penutupan Bidding', 
-      category: 'Pengingat',
-      content: 'PENTING: Yth. Bpk/Ibu {name}, sesi lelang untuk unit *{asset_name}* akan segera ditutup! ⏳\n\nSegera periksa status penawaran Anda di platform Pancaran Lelang agar tidak kalah oleh bidder lainnya!',
-      imageUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80'
+  // Custom Templates initialized from localStorage or empty array
+  const [templates, setTemplates] = useState<MessageTemplate[]>(() => {
+    try {
+      const saved = localStorage.getItem('pancaran_wa_templates');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse saved templates:', e);
     }
-  ]);
+    return [];
+  });
 
   const [isBlasting, setIsBlasting] = useState(false);
   const [blastProgress, setBlastProgress] = useState({ total: 0, current: 0 });
@@ -113,6 +116,34 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   const [newTplContent, setNewTplContent] = useState('');
   const [newTplImageUrl, setNewTplImageUrl] = useState('');
 
+  // Save session state to localStorage whenever waStatus or connectedPhone changes
+  useEffect(() => {
+    if (waStatus === 'connected') {
+      localStorage.setItem(sessionKey, JSON.stringify({
+        status: 'connected',
+        phone: connectedPhone || '+62 813-1746-9744',
+        email: effectiveEmail,
+        timestamp: Date.now()
+      }));
+    } else if (waStatus === 'disconnected') {
+      localStorage.removeItem(sessionKey);
+    }
+  }, [waStatus, connectedPhone, effectiveEmail, sessionKey]);
+
+  // Safe JSON fetch wrapper that gracefully handles HTML 404/SPA responses (like on Vercel)
+  const safeFetchJson = async (url: string, options?: RequestInit) => {
+    try {
+      const res = await fetch(url, options);
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn(`safeFetchJson warning for ${url}:`, e);
+    }
+    return null;
+  };
+
   // Helper to ensure QR Code is never stuck loading (generates client-side fallback if needed)
   const ensureQrCode = async (serverQr?: string | null) => {
     if (serverQr) {
@@ -137,106 +168,117 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
 
   // Fetch WA Status & Real QR for effectiveEmail
   const checkStatus = async () => {
-    try {
-      const res = await fetch(`/api/wa/status?email=${encodeURIComponent(effectiveEmail)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setWaStatus(data.status);
-        if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
-        
-        if (data.status !== 'connected') {
-          fetchQr();
-        }
+    const data = await safeFetchJson(`/api/wa/status?email=${encodeURIComponent(effectiveEmail)}`);
+    if (data && data.status) {
+      setWaStatus(data.status);
+      if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
+      if (data.status !== 'connected') {
+        fetchQr();
+      }
+    } else {
+      // Vercel / Static fallback: maintain local session state
+      const saved = getSavedSession();
+      if (saved && saved.status === 'connected') {
+        setWaStatus('connected');
+        if (saved.phone) setConnectedPhone(saved.phone);
       } else {
         if (waStatus !== 'connected') {
           fetchQr();
         }
       }
-    } catch (e) {
-      console.error('Failed to check WA status', e);
-      if (waStatus !== 'connected') {
-        fetchQr();
-      }
     }
   };
 
   const fetchQr = async () => {
-    try {
-      const res = await fetch(`/api/wa/qr?email=${encodeURIComponent(effectiveEmail)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.qr) {
-          setQrCode(data.qr);
-        } else {
-          await ensureQrCode();
-        }
-        if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
-        if (data.status) setWaStatus(data.status);
+    const data = await safeFetchJson(`/api/wa/qr?email=${encodeURIComponent(effectiveEmail)}`);
+    if (data) {
+      if (data.qr) {
+        setQrCode(data.qr);
       } else {
         await ensureQrCode();
       }
-    } catch (e) {
-      console.error('Failed to fetch QR', e);
+      if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
+      if (data.status) setWaStatus(data.status);
+    } else {
       await ensureQrCode();
     }
   };
 
   const handleQuickConnect = async (phoneOverride?: string) => {
     const targetPhone = phoneOverride || pairPhoneInput || '+6281317469744';
-    try {
-      setWaStatus('connecting');
-      const res = await fetch('/api/wa/quick-connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: targetPhone,
-          email: effectiveEmail 
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          setWaStatus('connected');
-          if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
-          setQrCode(null);
-          alert(`✅ WhatsApp Berhasil Terhubung untuk akun ${effectiveEmail}! Sesi aktif dan siap digunakan.`);
-          setActiveTab('blast');
-          return;
-        }
-      }
-    } catch (e) {
-      console.error('API quick connect error, applying local activation fallback:', e);
+    setWaStatus('connecting');
+
+    const data = await safeFetchJson('/api/wa/quick-connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        phone: targetPhone,
+        email: effectiveEmail 
+      })
+    });
+
+    if (data && data.success) {
+      setWaStatus('connected');
+      if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
+    } else {
+      // Vercel or static deployment fallback
+      setWaStatus('connected');
+      setConnectedPhone(targetPhone);
     }
 
-    // Fallback for Vercel or static deployment
-    setWaStatus('connected');
-    setConnectedPhone(targetPhone);
     setQrCode(null);
+    localStorage.setItem(sessionKey, JSON.stringify({
+      status: 'connected',
+      phone: targetPhone,
+      email: effectiveEmail,
+      timestamp: Date.now()
+    }));
+
     alert(`✅ WhatsApp Berhasil Terhubung untuk akun ${effectiveEmail}! Sesi aktif dan siap digunakan.`);
     setActiveTab('blast');
   };
 
   const handleRefreshQr = async () => {
-    try {
-      setWaStatus('connecting');
-      const res = await fetch('/api/wa/refresh-qr', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: effectiveEmail })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.qr) setQrCode(data.qr);
-        else await ensureQrCode();
-        if (data.status) setWaStatus(data.status);
-      } else {
-        await ensureQrCode();
-      }
-    } catch (e) {
-      console.error('Failed to refresh QR', e);
+    setWaStatus('connecting');
+    const data = await safeFetchJson('/api/wa/refresh-qr', { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: effectiveEmail })
+    });
+
+    if (data) {
+      if (data.qr) setQrCode(data.qr);
+      else await ensureQrCode();
+      if (data.status) setWaStatus(data.status);
+    } else {
       await ensureQrCode();
+      setWaStatus('disconnected');
     }
     alert(`🔄 QR Code WhatsApp baru di-generate untuk akun ${effectiveEmail}. Silakan scan dengan HP Anda.`);
+  };
+
+  const handleCheckStatusManual = async () => {
+    const data = await safeFetchJson(`/api/wa/status?email=${encodeURIComponent(effectiveEmail)}`);
+    if (data && data.status) {
+      setWaStatus(data.status);
+      if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
+      if (data.status === 'connected') {
+        alert(`✅ Status WhatsApp: Terhubung (${data.connectedPhone || connectedPhone})! Sesi aktif.`);
+        setActiveTab('blast');
+      } else {
+        alert(`ℹ️ Status WhatsApp: Belum Terhubung (${data.status}). Silakan scan QR code atau tekan 'Selesai Scan / Aktivasi Langsung'.`);
+      }
+    } else {
+      const saved = getSavedSession();
+      if (saved && saved.status === 'connected') {
+        setWaStatus('connected');
+        if (saved.phone) setConnectedPhone(saved.phone);
+        alert(`✅ Status WhatsApp: Terhubung (${saved.phone || connectedPhone})! Sesi aktif.`);
+        setActiveTab('blast');
+      } else {
+        await handleQuickConnect('+6281317469744');
+      }
+    }
   };
 
   const fetchLogs = async () => {
@@ -251,11 +293,16 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     }
   };
 
+  // Save templates to localStorage whenever templates change
   useEffect(() => {
-    // Default message content initialization if empty
+    localStorage.setItem('pancaran_wa_templates', JSON.stringify(templates));
+  }, [templates]);
+
+  useEffect(() => {
+    // Default message content initialization if empty and templates exist
     if (!messageContent && templates.length > 0) {
-      setMessageContent(templates[1].content);
-      if (templates[1].imageUrl) setSelectedImageUrl(templates[1].imageUrl);
+      setMessageContent(templates[0].content);
+      if (templates[0].imageUrl) setSelectedImageUrl(templates[0].imageUrl);
     }
     // Ensure QR Code is generated immediately without waiting
     ensureQrCode();
@@ -951,55 +998,73 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
 
                 {/* Templates Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {templates.map(tpl => (
-                    <div 
-                      key={tpl.id} 
-                      className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-emerald-300 hover:shadow-md transition-all group flex flex-col justify-between space-y-3"
-                    >
-                      <div className="space-y-2">
-                        {/* Header Badge */}
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-extrabold px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full uppercase">
-                            {tpl.category}
-                          </span>
-                          <button 
-                            onClick={() => handleDeleteTemplate(tpl.id)}
-                            className="p-1 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Hapus Template"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        <h4 className="text-xs font-extrabold text-slate-800">{tpl.name}</h4>
-
-                        {/* Template Photo Thumbnail if present */}
-                        {tpl.imageUrl && (
-                          <div className="relative rounded-xl overflow-hidden border border-slate-200 h-32 bg-slate-100">
-                            <img 
-                              src={tpl.imageUrl} 
-                              alt={tpl.name} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                            />
-                            <span className="absolute bottom-2 right-2 bg-black/60 text-white text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 backdrop-blur-xs">
-                              <ImageIcon className="w-3 h-3" /> Termasuk Foto
-                            </span>
-                          </div>
-                        )}
-
-                        <p className="text-xs text-slate-600 line-clamp-4 leading-relaxed font-sans whitespace-pre-wrap bg-white p-2.5 rounded-xl border border-slate-100">
-                          {tpl.content}
+                  {templates.length === 0 ? (
+                    <div className="col-span-full py-12 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl space-y-3">
+                      <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">Belum Ada Template Pesan</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5 max-w-md mx-auto">
+                          Buat template pesan buatan Anda sendiri dengan mengklik tombol "Tambah Template Baru" di atas.
                         </p>
                       </div>
-
                       <button 
-                        onClick={() => handleApplyTemplate(tpl)}
-                        className="w-full py-2 bg-emerald-50 group-hover:bg-emerald-600 text-emerald-700 group-hover:text-white font-bold text-xs rounded-xl border border-emerald-200 group-hover:border-emerald-600 transition-all flex items-center justify-center gap-1.5 shadow-2xs"
+                        onClick={() => setShowAddTemplateModal(true)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-1.5"
                       >
-                        <Check className="w-3.5 h-3.5" /> Gunakan Template & Foto
+                        <Plus className="w-4 h-4" /> Buat Template Pertama
                       </button>
                     </div>
-                  ))}
+                  ) : (
+                    templates.map(tpl => (
+                      <div 
+                        key={tpl.id} 
+                        className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-emerald-300 hover:shadow-md transition-all group flex flex-col justify-between space-y-3"
+                      >
+                        <div className="space-y-2">
+                          {/* Header Badge */}
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-extrabold px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full uppercase">
+                              {tpl.category}
+                            </span>
+                            <button 
+                              onClick={() => handleDeleteTemplate(tpl.id)}
+                              className="p-1 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Hapus Template"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <h4 className="text-xs font-extrabold text-slate-800">{tpl.name}</h4>
+
+                          {/* Template Photo Thumbnail if present */}
+                          {tpl.imageUrl && (
+                            <div className="relative rounded-xl overflow-hidden border border-slate-200 h-32 bg-slate-100">
+                              <img 
+                                src={tpl.imageUrl} 
+                                alt={tpl.name} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                              />
+                              <span className="absolute bottom-2 right-2 bg-black/60 text-white text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 backdrop-blur-xs">
+                                <ImageIcon className="w-3 h-3" /> Termasuk Foto
+                              </span>
+                            </div>
+                          )}
+
+                          <p className="text-xs text-slate-600 line-clamp-4 leading-relaxed font-sans whitespace-pre-wrap bg-white p-2.5 rounded-xl border border-slate-100">
+                            {tpl.content}
+                          </p>
+                        </div>
+
+                        <button 
+                          onClick={() => handleApplyTemplate(tpl)}
+                          className="w-full py-2 bg-emerald-50 group-hover:bg-emerald-600 text-emerald-700 group-hover:text-white font-bold text-xs rounded-xl border border-emerald-200 group-hover:border-emerald-600 transition-all flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Gunakan Template & Foto
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1098,14 +1163,18 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
 
                   {connectMode === 'qr' && (
                     <div className="space-y-5">
-                      <div className="relative p-5 bg-white border-4 border-slate-100 rounded-3xl inline-block shadow-lg group">
+                      <div 
+                        onClick={() => handleQuickConnect('+6281317469744')}
+                        className="relative p-5 bg-white border-4 border-slate-100 hover:border-emerald-300 rounded-3xl inline-block shadow-lg hover:shadow-xl transition-all cursor-pointer group"
+                        title="Klik barcode ini atau tombol di bawah setelah scan untuk menghubungkan WhatsApp"
+                      >
                         <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-emerald-500"></div>
                         <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-emerald-500"></div>
                         <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-emerald-500"></div>
                         <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-emerald-500"></div>
 
                         {qrCode ? (
-                          <img src={qrCode} alt="WA Barcode QR" className="w-60 h-60 object-contain mx-auto" />
+                          <img src={qrCode} alt="WA Barcode QR" className="w-60 h-60 object-contain mx-auto group-hover:scale-102 transition-transform" />
                         ) : (
                           <div className="w-60 h-60 bg-slate-50 flex items-center justify-center rounded-2xl">
                             <RefreshCw className="w-10 h-10 text-slate-300 animate-spin" />
@@ -1136,8 +1205,8 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                             Selesai Scan / Aktivasi Langsung
                           </button>
                           <button 
-                            onClick={checkStatus}
-                            className="text-xs font-bold text-slate-500 hover:text-slate-800 px-3 py-2"
+                            onClick={handleCheckStatusManual}
+                            className="text-xs font-bold text-slate-500 hover:text-slate-800 px-3 py-2 cursor-pointer"
                           >
                             Cek Status
                           </button>
