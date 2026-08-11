@@ -41,7 +41,7 @@ export interface Asset {
   landArea?: string;
   buildingArea?: string;
   // Used Part specific fields
-  usedPartCategory?: 'Ban' | 'Aki' | 'Besi' | 'Lainnya' | string;
+  usedPartCategory?: 'Ban' | 'Aki' | 'Besi' | 'Oli' | 'Lainnya' | string;
   quantity?: string;
   salesSystem?: string;
   openHouseSchedule?: string;
@@ -65,6 +65,11 @@ export interface Asset {
   metalEstimatedWeight?: string;
   metalCondition?: string;
   metalHandlingFacility?: string;
+  // Oli fields
+  oilBrand?: string;
+  oilType?: string;
+  oilCondition?: string;
+  oilVolume?: string;
   model?: string;
   series?: string;
   axels?: string;

@@ -53,7 +53,8 @@ import {
   Package,
   Disc,
   BatteryCharging,
-  Layers
+  Layers,
+  Droplet
 } from 'lucide-react';
 
 interface AdminAssetsProps {
@@ -651,6 +652,10 @@ export default function AdminAssets({
     metalEstimatedWeight: '',
     metalCondition: '',
     metalHandlingFacility: 'Pemenang Lelang wajib potong dan angkut sendiri',
+    oilBrand: '',
+    oilType: '',
+    oilVolume: '',
+    oilCondition: 'Baru (Dalam Kemasan Segel)',
     model: '',
     series: '',
     axels: '',
@@ -727,6 +732,10 @@ export default function AdminAssets({
       metalEstimatedWeight: '',
       metalCondition: '',
       metalHandlingFacility: 'Pemenang Lelang wajib potong dan angkut sendiri',
+      oilBrand: '',
+      oilType: '',
+      oilVolume: '',
+      oilCondition: 'Baru (Dalam Kemasan Segel)',
       model: '',
       series: '440',
       axels: '',
@@ -799,6 +808,10 @@ export default function AdminAssets({
       metalEstimatedWeight: asset.metalEstimatedWeight || '',
       metalCondition: asset.metalCondition || '',
       metalHandlingFacility: asset.metalHandlingFacility || 'Pemenang Lelang wajib potong dan angkut sendiri',
+      oilBrand: asset.oilBrand || '',
+      oilType: asset.oilType || '',
+      oilVolume: asset.oilVolume || '',
+      oilCondition: asset.oilCondition || 'Baru (Dalam Kemasan Segel)',
       model: asset.model || asset.name || '',
       series: asset.series || '440',
       axels: asset.axels || '',
@@ -1050,6 +1063,10 @@ export default function AdminAssets({
       metalEstimatedWeight: formData.metalEstimatedWeight || '',
       metalCondition: formData.metalCondition || '',
       metalHandlingFacility: formData.metalHandlingFacility || '',
+      oilBrand: formData.oilBrand || '',
+      oilType: formData.oilType || '',
+      oilVolume: formData.oilVolume || '',
+      oilCondition: formData.oilCondition || '',
       model: formData.model || '',
       series: formData.series || '',
       axels: formData.axels || '',
@@ -1838,6 +1855,32 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                   <div className="col-span-2">
                     <span className="text-[11px] text-slate-400 font-bold block">{t('PEMOTONGAN & PENGANGKUTAN')}</span>
                     <span className="font-semibold text-slate-800 text-xs">{selectedAsset.metalHandlingFacility}</span>
+                  </div>
+                )}
+
+                {/* Oli fields */}
+                {selectedAsset.oilBrand && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('MEREK OLI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilBrand}</span>
+                  </div>
+                )}
+                {selectedAsset.oilType && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('JENIS / VISKOSITAS OLI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs font-mono">{selectedAsset.oilType}</span>
+                  </div>
+                )}
+                {selectedAsset.oilVolume && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('VOLUME / KAPASITAS')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilVolume}</span>
+                  </div>
+                )}
+                {selectedAsset.oilCondition && (
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">{t('KONDISI OLI')}</span>
+                    <span className="font-semibold text-slate-800 text-xs">{selectedAsset.oilCondition}</span>
                   </div>
                 )}
                 {selectedAsset.dimensions && (
@@ -2733,11 +2776,12 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                             {/* Sub-Category Selection Pills */}
                             <div className="space-y-1.5">
                               <label className="text-xs font-bold text-amber-900 uppercase block">{t('Pilih Sub-Kategori Barang *')}</label>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                 {[
                                   { id: 'Ban', label: t('Ban (Tyre)'), icon: Disc },
                                   { id: 'Aki', label: t('Aki (Battery)'), icon: BatteryCharging },
                                   { id: 'Besi', label: t('Besi (Scrap Metal)'), icon: Layers },
+                                  { id: 'Oli', label: t('Oli (Oil)'), icon: Droplet },
                                   { id: 'Lainnya', label: t('Sparepart Lain'), icon: Wrench },
                                 ].map((subCat) => {
                                   const isSelected = (formData.usedPartCategory || 'Ban') === subCat.id;
@@ -3039,6 +3083,65 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                     >
                                       <option value="Penyedia Lelang menyiapkan alat angkut">Penyedia Lelang menyiapkan alat angkut</option>
                                       <option value="Pemenang Lelang wajib potong dan angkut sendiri">Pemenang Lelang wajib potong dan angkut sendiri</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {formData.usedPartCategory === 'Oli' && (
+                              <div className="bg-white/90 rounded-xl p-3.5 border border-amber-200/80 space-y-3.5">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 border-b border-slate-100 pb-2">
+                                  <Droplet className="w-4 h-4 text-amber-600" />
+                                  <span>{t('D. Spesifikasi Lelang Oli (Oil & Lubricants)')}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                  {/* Merek Oli */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Merek Oli')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: Meditran, Shell, Pertamina')}
+                                      value={formData.oilBrand || ''}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, oilBrand: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Jenis / Viskositas Oli */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Jenis / Viskositas Oli')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: SAE 40, 15W-40, Gear Oil')}
+                                      value={formData.oilType || ''}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, oilType: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-mono"
+                                    />
+                                  </div>
+
+                                  {/* Volume / Kapasitas */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Volume / Kapasitas')}</label>
+                                    <input
+                                      type="text"
+                                      placeholder={t('Contoh: Drum 200 Liter, Jerrycan 20 Liter')}
+                                      value={formData.oilVolume || ''}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, oilVolume: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    />
+                                  </div>
+
+                                  {/* Kondisi Oli */}
+                                  <div className="space-y-1">
+                                    <label className="font-bold text-slate-700 uppercase">{t('Kondisi Oli')}</label>
+                                    <select
+                                      value={formData.oilCondition || 'Baru (Dalam Kemasan Segel)'}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, oilCondition: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
+                                    >
+                                      <option value="Baru (Dalam Kemasan Segel)">{t('Baru (Dalam Kemasan Segel)')}</option>
+                                      <option value="Bekas / Waste Oil (Untuk Daur Ulang)">{t('Bekas / Waste Oil (Untuk Daur Ulang)')}</option>
                                     </select>
                                   </div>
                                 </div>

@@ -970,6 +970,7 @@ export default function App() {
     localStorage.setItem('pancaran_session_type', 'admin');
     setRole('internal'); // Switch to internal dashboard on login
     setAdminTab('dashboard');
+    setSelectedGuideModal('ikut');
   };
 
   const handleExternalLoginSuccess = (email: string, name: string, phone?: string) => {
@@ -986,6 +987,7 @@ export default function App() {
       localStorage.removeItem('pancaran_session_phone');
     }
     setRole('external');
+    setSelectedGuideModal('ikut');
   };
 
   const handleLogout = () => {
@@ -2505,7 +2507,7 @@ export default function App() {
 
                 <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
                   <p className="font-medium text-slate-800">
-                    {t('Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan')} <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">{t('deposit jaminan sebesar Rp10.000.000,-')}</span> {t('sebagai syarat aktif untuk melakukan penawaran (ngebid).')}
+                    {t('Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan')} <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">{t('deposit jaminan sebesar Rp10.000.000,-')}</span> {t('sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.')}
                   </p>
 
                   <div className="p-4 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1.5">

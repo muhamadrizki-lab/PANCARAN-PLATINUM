@@ -286,7 +286,14 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
           <div>
             <span className="text-[10px] text-slate-400 font-bold uppercase">{t('Harga Pembuka')}</span>
-            <p className="text-xs font-semibold text-slate-800">{formatIDR(asset.startingPrice)}</p>
+            {isUserLoggedIn ? (
+              <p className="text-xs font-semibold text-slate-800">{formatIDR(asset.startingPrice)}</p>
+            ) : (
+              <p className="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>Rp ••••••••</span>
+              </p>
+            )}
           </div>
           {isUserLoggedIn ? (
             <div className="text-right">
@@ -628,6 +635,11 @@ export default function CatalogView({
     setFormSuccess(false);
 
     if (!selectedAssetId || !selectedAsset) return;
+
+    if (canBid === false) {
+      setFormError(t('Akun Anda saat ini diatur sebagai "Hanya Lihat". Anda tidak dapat melakukan penawaran lelang.'));
+      return;
+    }
 
     if (isAuctionClosed) {
       setFormError(t('Maaf, lelang untuk unit ini sudah ditutup karena telah melewati batas waktu penutupan.'));
@@ -1459,6 +1471,32 @@ export default function CatalogView({
                           </div>
                         )}
 
+                        {/* Oli Specs */}
+                        {selectedAsset.oilBrand && (
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Merek Oli')}</span>
+                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilBrand}</strong>
+                          </div>
+                        )}
+                        {selectedAsset.oilType && (
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Jenis / Viskositas Oli')}</span>
+                            <strong className="text-slate-900 font-bold text-sm font-mono">{selectedAsset.oilType}</strong>
+                          </div>
+                        )}
+                        {selectedAsset.oilVolume && (
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Volume / Kapasitas')}</span>
+                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilVolume}</strong>
+                          </div>
+                        )}
+                        {selectedAsset.oilCondition && (
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
+                            <span className="text-slate-400 text-[9px] block uppercase mb-0.5 font-bold tracking-wider">{t('Kondisi Oli')}</span>
+                            <strong className="text-slate-900 font-bold text-sm">{selectedAsset.oilCondition}</strong>
+                          </div>
+                        )}
+
                         {/* New specifications fields */}
                         {selectedAsset.model && (
                           <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/85">
@@ -1686,8 +1724,9 @@ export default function CatalogView({
                     <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-l-[6px] border-l-slate-300 shadow-xs space-y-4">
                       <div className="space-y-1 pb-2 border-b border-slate-100">
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{t('Harga Awal')}</p>
-                        <h2 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
-                          {formatIDR(selectedAsset.startingPrice)}
+                        <h2 className="text-xl md:text-2xl font-bold text-slate-400 tracking-tight flex items-center gap-1.5">
+                          <Lock className="w-5 h-5 text-amber-500 shrink-0" />
+                          <span>Rp ••••••••</span>
                         </h2>
                       </div>
                       <div className="flex flex-col items-center py-2 text-center space-y-2">
@@ -1760,24 +1799,6 @@ export default function CatalogView({
                           {t('Penawaran untuk unit ini telah ditutup karena melewati batas waktu penutupan lelang.')}
                         </p>
                       </div>
-                    ) : canBid === false ? (
-                      <div className="py-6 text-center space-y-3.5 bg-amber-50/60 rounded-2xl border border-amber-200/80 p-5 shadow-2xs">
-                        <div className="w-12 h-12 bg-amber-100 border border-amber-200/80 rounded-2xl flex items-center justify-center mx-auto text-amber-700 shadow-2xs">
-                          <Lock className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-extrabold bg-amber-200/80 text-amber-900 px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-amber-300/60">
-                            {t('Mode Hanya Lihat')}
-                          </span>
-                          <h4 className="font-bold text-slate-800 text-sm mt-2">{t('Akses Bidding Nonaktif')}</h4>
-                        </div>
-                        <p className="text-xs text-slate-600 max-w-[260px] mx-auto leading-relaxed">
-                          {t('Akun Anda saat ini diatur sebagai "Hanya Lihat". Anda dapat melihat spesifikasi lengkap unit, namun tidak dapat melakukan penawaran lelang.')}
-                        </p>
-                        <div className="pt-2 text-[11px] text-amber-800/80 font-medium border-t border-amber-200/60">
-                          {t('Hubungi Administrator jika membutuhkan akses menawar.')}
-                        </div>
-                      </div>
                     ) : !formSuccess ? (
                       <form 
                         onSubmit={handleBidSubmit}
@@ -1789,6 +1810,20 @@ export default function CatalogView({
                         }}
                         className="space-y-4"
                       >
+                        {canBid === false && (
+                          <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 text-amber-800 rounded-2xl text-xs font-semibold flex items-start gap-2.5 shadow-2xs">
+                            <Lock className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                            <div className="space-y-1">
+                              <p className="font-extrabold text-[10px] uppercase tracking-wider text-amber-900">{t('Mode Hanya Lihat Aktif')}</p>
+                              <p className="text-[10px] font-medium text-amber-800 leading-normal">
+                                {t('Akun Anda saat ini diatur sebagai "Hanya Lihat". Anda dapat melihat spesifikasi lengkap unit, namun tidak dapat melakukan penawaran lelang.')}
+                              </p>
+                              <p className="text-[10px] text-amber-900/80 font-bold pt-1 border-t border-amber-200/40">
+                                {t('Hubungi Administrator jika membutuhkan akses menawar.')}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                         {formError && (
                           <div className="p-3.5 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-xs font-semibold flex items-start gap-2 animate-shake">
                             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -1805,6 +1840,7 @@ export default function CatalogView({
                               type="text"
                               ref={nameInputRef}
                               required
+                              disabled={canBid === false}
                               placeholder={t('Contoh: PT Samudera Transport')}
                               value={bidForm.name}
                               onChange={(e) => setBidForm(prev => ({ ...prev, name: e.target.value }))}
@@ -1812,7 +1848,7 @@ export default function CatalogView({
                                 setIsFormFocused(true);
                                 e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                               }}
-                              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                             />
                           </div>
                         </div>
@@ -1825,6 +1861,7 @@ export default function CatalogView({
                             <input
                               type="email"
                               required
+                              disabled={canBid === false}
                               placeholder="name@company.co.id"
                               value={bidForm.email}
                               onChange={(e) => setBidForm(prev => ({ ...prev, email: e.target.value }))}
@@ -1832,7 +1869,7 @@ export default function CatalogView({
                                 setIsFormFocused(true);
                                 e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                               }}
-                              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono font-medium disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                             />
                           </div>
                         </div>
@@ -1845,6 +1882,7 @@ export default function CatalogView({
                             <input
                               type="tel"
                               required
+                              disabled={canBid === false}
                               placeholder={t('Contoh: 0812XXXXXXXX')}
                               value={bidForm.contact}
                               onChange={(e) => setBidForm(prev => ({ ...prev, contact: e.target.value }))}
@@ -1852,7 +1890,7 @@ export default function CatalogView({
                                 setIsFormFocused(true);
                                 e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                               }}
-                              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                             />
                           </div>
                         </div>
@@ -1866,6 +1904,7 @@ export default function CatalogView({
                               type="text"
                               inputMode="numeric"
                               required
+                              disabled={canBid === false}
                               placeholder={formatNumberWithDots(String(currentHighestBid + 5000000))}
                               value={formatNumberWithDots(bidForm.price)}
                               onChange={(e) => {
@@ -1879,7 +1918,7 @@ export default function CatalogView({
                                 setIsFormFocused(true);
                                 e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                               }}
-                              className="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              className="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                             />
                           </div>
                           <div className="flex items-center justify-between mt-1">
@@ -1888,8 +1927,13 @@ export default function CatalogView({
                             </p>
                             <button
                               type="button"
+                              disabled={canBid === false}
                               onClick={() => setBidForm(prev => ({ ...prev, price: String(currentHighestBid) }))}
-                              className="text-[9px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md transition-all cursor-pointer"
+                              className={`text-[9px] font-bold px-2 py-0.5 rounded-md transition-all ${
+                                canBid === false
+                                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                  : 'text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 cursor-pointer'
+                              }`}
                             >
                               {t('Gunakan')}
                             </button>
@@ -1901,6 +1945,7 @@ export default function CatalogView({
                           <label className="flex items-center gap-2.5 cursor-pointer select-none">
                             <input
                               type="checkbox"
+                              disabled={canBid === false}
                               checked={bidForm.requestSurvey}
                               onChange={(e) => {
                                 const isChecked = e.target.checked;
@@ -1919,7 +1964,7 @@ export default function CatalogView({
                                   }, 150);
                                 }
                               }}
-                              className="w-4.5 h-4.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                              className="w-4.5 h-4.5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                             />
                             <div className="text-xs">
                               <p className="font-bold text-slate-800">{t('Booking Jadwal Survei Fisik')}</p>
@@ -1941,6 +1986,7 @@ export default function CatalogView({
                                 <label className="text-[10px] font-bold text-slate-400 uppercase">{t('Pilih Tanggal Kunjungan')}</label>
                                 <input
                                   type="date"
+                                  disabled={canBid === false}
                                   min={new Date().toISOString().split('T')[0]}
                                   value={bidForm.surveyDate}
                                   onChange={(e) => {
@@ -1957,7 +2003,7 @@ export default function CatalogView({
                                       return { ...prev, surveyDate: newDate, surveyTime: nextTime };
                                     });
                                   }}
-                                  className="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-slate-700"
+                                  className="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-slate-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                   required={bidForm.requestSurvey}
                                 />
                               </div>
@@ -1982,10 +2028,10 @@ export default function CatalogView({
                                       <button
                                         key={session.id}
                                         type="button"
-                                        disabled={booked}
+                                        disabled={booked || canBid === false}
                                         onClick={() => setBidForm(prev => ({ ...prev, surveyTime: session.id }))}
                                         className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all relative ${
-                                          booked
+                                          booked || canBid === false
                                             ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
                                             : selected
                                             ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-500/10 text-blue-950'
@@ -2034,9 +2080,10 @@ export default function CatalogView({
                             <input
                               type="checkbox"
                               required
+                              disabled={canBid === false}
                               checked={agreedToTerms}
                               onChange={(e) => setAgreedToTerms(e.target.checked)}
-                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 mt-0.5 cursor-pointer"
+                              className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 mt-0.5 cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                             />
                             <span className="text-[11px] text-slate-600 leading-normal">
                               {t('Saya telah membaca, memahami, dan menyetujui seluruh Syarat dan Ketentuan Lelang yang berlaku.')}
@@ -2047,10 +2094,23 @@ export default function CatalogView({
                         {/* Submit Bid Button */}
                         <button
                           type="submit"
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold shadow-md shadow-blue-500/15 hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                          disabled={canBid === false}
+                          className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider ${
+                            canBid === false
+                              ? 'bg-slate-300 text-slate-500 cursor-not-allowed border-none shadow-none hover:bg-slate-300 hover:shadow-none'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/15 hover:shadow-blue-500/30 cursor-pointer'
+                          }`}
                         >
-                          <ArrowUpRight className="w-4 h-4" />
-                          <span>{bidForm.requestSurvey ? t('Kirim Penawaran & Booking') : t('Kirim Penawaran')}</span>
+                          {canBid === false ? (
+                            <Lock className="w-4 h-4 shrink-0 text-slate-400" />
+                          ) : (
+                            <ArrowUpRight className="w-4 h-4" />
+                          )}
+                          <span>
+                            {canBid === false
+                              ? t('Akses Bidding Terkunci')
+                              : (bidForm.requestSurvey ? t('Kirim Penawaran & Booking') : t('Kirim Penawaran'))}
+                          </span>
                         </button>
                       </form>
                     ) : (
