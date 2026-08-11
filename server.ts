@@ -3,15 +3,34 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
-import makeWASocket, { 
-  useMultiFileAuthState, 
-  DisconnectReason, 
-  fetchLatestBaileysVersion,
-  delay
-} from '@whiskeysockets/baileys';
+import * as BaileysModule from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
 import pino from 'pino';
 import fs from 'fs';
+
+// Safely extract Baileys functions across ESM / CJS bundlers
+function getBaileys() {
+  const mod: any = BaileysModule;
+  const rawDefault = mod.default;
+  let makeWASocketFn = typeof mod === 'function' ? mod : (typeof rawDefault === 'function' ? rawDefault : rawDefault?.default || mod.makeWASocket || mod.default?.makeWASocket);
+  
+  if (typeof makeWASocketFn !== 'function') {
+    makeWASocketFn = mod.makeWASocket || mod.default?.makeWASocket || mod.default;
+  }
+
+  const useMultiFileAuthState = mod.useMultiFileAuthState || rawDefault?.useMultiFileAuthState;
+  const DisconnectReason = mod.DisconnectReason || rawDefault?.DisconnectReason;
+  const fetchLatestBaileysVersion = mod.fetchLatestBaileysVersion || rawDefault?.fetchLatestBaileysVersion;
+  const delay = mod.delay || rawDefault?.delay || ((ms: number) => new Promise(res => setTimeout(res, ms)));
+
+  return {
+    makeWASocket: makeWASocketFn,
+    useMultiFileAuthState,
+    DisconnectReason,
+    fetchLatestBaileysVersion,
+    delay
+  };
+}
 
 // Fix for bundled CJS: import.meta.url is not available in CJS
 let __filename: string;
@@ -49,6 +68,12 @@ async function generateFallbackQr() {
 
 async function connectToWhatsApp(forceFresh = false) {
   try {
+    const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = getBaileys();
+
+    if (typeof makeWASocket !== 'function') {
+      throw new Error('makeWASocket resolution failed: not a function');
+    }
+
     const authDir = path.join(process.cwd(), 'wa_auth');
     if (forceFresh && fs.existsSync(authDir)) {
       try {
@@ -202,6 +227,7 @@ async function startServer() {
     if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.slice(1);
 
     try {
+      const { delay } = getBaileys();
       if (!sock || waStatus === 'disconnected') {
         await connectToWhatsApp();
         await delay(1500);

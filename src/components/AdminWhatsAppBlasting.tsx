@@ -52,6 +52,8 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
   const [pairCodeResult, setPairCodeResult] = useState<string | null>(null);
   const [isPairing, setIsPairing] = useState(false);
   const [blastLogs, setBlastLogs] = useState<Array<{ id: string; time: string; recipientCount: number; messagePreview: string; status: string }>>([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successInfo, setSuccessInfo] = useState<{ count: number; preview: string; time: string } | null>(null);
 
   // Fetch WA Status & Real QR
   const checkStatus = async () => {
@@ -261,10 +263,15 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
       
       const data = await res.json();
       if (data.success) {
-        alert(`🚀 Blasting WA berhasil dikirim ke ${recipients.length} penerima!`);
+        setSuccessInfo({
+          count: recipients.length,
+          preview: messageContent.slice(0, 120) + (messageContent.length > 120 ? '...' : ''),
+          time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+        });
+        setShowSuccessModal(true);
         fetchLogs();
       } else {
-        alert('Gagal memulai blasting: ' + data.error);
+        alert('Gagal memulai blasting: ' + (data.error || 'Server error'));
       }
     } catch (e) {
       console.error('Failed to start blast', e);
@@ -716,6 +723,48 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets }: Admin
           </div>
         </div>
       </div>
+
+      {/* Pop-Up Modal Notifikasi Berhasil Blast WA */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-emerald-100 text-center space-y-5 relative animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle className="w-10 h-10 animate-bounce" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-slate-900">Blasting Pesan Berhasil!</h3>
+              <p className="text-xs text-slate-500">Pesan WhatsApp telah terkirim melalui gateway server.</p>
+            </div>
+
+            {successInfo && (
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left space-y-2 text-xs">
+                <div className="flex justify-between items-center text-slate-600 font-medium pb-2 border-b border-slate-200/60">
+                  <span>Jumlah Penerima:</span>
+                  <span className="font-extrabold text-emerald-600 text-sm">{successInfo.count} Kontak</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-600 font-medium">
+                  <span>Waktu Kirim:</span>
+                  <span className="font-bold text-slate-800">{successInfo.time} WIB</span>
+                </div>
+                <div className="pt-1">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Pratinjau Pesan:</p>
+                  <p className="text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200/80 italic font-mono text-[11px] leading-relaxed">
+                    "{successInfo.preview}"
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-emerald-600/25 transition-all active:scale-95"
+            >
+              Tutup & Lanjutkan
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
