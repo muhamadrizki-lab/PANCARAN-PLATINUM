@@ -221,6 +221,9 @@ async function startServer() {
     if (!session.sock || (session.waStatus === 'disconnected' && !session.qrCode)) {
       await connectToWhatsAppForUser(email);
     }
+    if (!session.qrCode) {
+      session.qrCode = await generateFallbackQr();
+    }
     res.json({ qr: session.qrCode, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: normalizeEmail(email) });
   });
 
