@@ -5,6 +5,7 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
 import AdminUsers from './components/AdminUsers';
 import AdminSettings from './components/AdminSettings';
+import AdminWhatsAppBlasting from './components/AdminWhatsAppBlasting';
 import CatalogView from './components/CatalogView';
 import LoginModal from './components/LoginModal';
 import { useLanguage } from './components/LanguageContext';
@@ -113,12 +114,13 @@ export default function App() {
   const [selectedGuideModal, setSelectedGuideModal] = useState<'ikut' | 'titip' | 'online' | null>(null);
   
   // Navigation inside Admin area
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'settings'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'settings' | 'whatsapp'>('dashboard');
   
   // Navigation inside External area
   const [externalTab, setExternalTab] = useState<'catalog' | 'notifications' | 'inbox' | 'bidding_access'>('catalog');
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Mobile menu toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -1260,11 +1262,24 @@ export default function App() {
 
               {/* Filters next to Logo (only on catalog) */}
               {role === 'external' && externalTab === 'catalog' && (
-                <div className="hidden lg:flex items-center gap-2 ml-4">
+                <div className="hidden lg:flex items-center gap-2 ml-6">
+                  <div className="relative group">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      type="text"
+                      placeholder={t('Cari armada...')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-8 pr-4 py-1.5 bg-blue-900/40 border border-blue-500/30 rounded-xl text-[10px] font-bold text-blue-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-400 w-44 transition-all focus:w-56"
+                    />
+                  </div>
+
+                  <div className="h-4 w-[1px] bg-blue-500/20 mx-1"></div>
+
                   <select
                     value={selectedBrand}
                     onChange={(e) => setSelectedBrand(e.target.value)}
-                    className="px-2 py-1 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
+                    className="px-2 py-1.5 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer hover:bg-blue-800/40 transition-colors"
                   >
                     <option value="all" className="bg-slate-900">{t('Semua Brand')}</option>
                     {uniqueBrands.sort().map(b => (
@@ -1275,7 +1290,7 @@ export default function App() {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-2 py-1 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
+                    className="px-2 py-1.5 bg-blue-900/40 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer hover:bg-blue-800/40 transition-colors"
                   >
                     <option value="all" className="bg-slate-900">{t('Semua Kategori')}</option>
                     {uniqueCategories.sort().map(c => (
@@ -2021,6 +2036,22 @@ export default function App() {
                     </span>
                   )}
                 </button>
+                <button
+                  onClick={() => { setAdminTab('whatsapp'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold ${
+                    adminTab === 'whatsapp' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600'
+                  }`}
+                >
+                  WA Blasting
+                </button>
+                <button
+                  onClick={() => { setAdminTab('settings'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold ${
+                    adminTab === 'settings' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
+                  }`}
+                >
+                  {t('Pengaturan Sistem')}
+                </button>
 
 
               </div>
@@ -2182,6 +2213,30 @@ export default function App() {
                       </span>
                     )}
                   </button>
+
+                  <button
+                    onClick={() => setAdminTab('whatsapp')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
+                      adminTab === 'whatsapp'
+                        ? 'bg-emerald-50 text-emerald-600 font-bold shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <span>WA Blasting</span>
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab('settings')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
+                      adminTab === 'settings'
+                        ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 shrink-0" />
+                    <span>{t('Pengaturan Sistem')}</span>
+                  </button>
                 </nav>
               </div>
 
@@ -2261,7 +2316,13 @@ export default function App() {
                   onCreateRefundRequest={handleCreateRefundRequest}
                 />
               )}
-              {adminTab === 'settings' && (
+              {adminTab === 'whatsapp' && (
+          <AdminWhatsAppBlasting 
+            registeredUsers={registeredUsers} 
+            assets={assets} 
+          />
+        )}
+        {adminTab === 'settings' && (
                 <AdminSettings 
                   onShowNotification={(msg, type) => {
                     const mappedType = type === 'error' ? 'warning' : type;
@@ -2303,6 +2364,8 @@ export default function App() {
                   setSelectedBrand={setSelectedBrand}
                   selectedCategory={selectedCategory}
                   setSelectedCategory={setSelectedCategory}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
                   canBid={isUserCanBid}
                 />
               ) : externalTab === 'notifications' ? (

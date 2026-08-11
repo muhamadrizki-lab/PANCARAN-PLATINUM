@@ -49,6 +49,8 @@ interface CatalogViewProps {
   setSelectedBrand?: (brand: string) => void;
   selectedCategory?: string;
   setSelectedCategory?: (category: string) => void;
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
 }
 
 interface CatalogCardProps {
@@ -458,14 +460,15 @@ export default function CatalogView({
   selectedBrand = 'all',
   setSelectedBrand,
   selectedCategory = 'all',
-  setSelectedCategory
+  setSelectedCategory,
+  searchQuery = '',
+  setSearchQuery
 }: CatalogViewProps) {
   const { language, t } = useLanguage();
   const [internalSelectedAssetId, setInternalSelectedAssetId] = useState<string | null>(null);
 
   const selectedAssetId = propSelectedAssetId !== undefined ? propSelectedAssetId : internalSelectedAssetId;
   const setSelectedAssetId = propOnSelectAsset !== undefined ? propOnSelectAsset : setInternalSelectedAssetId;
-  const [searchQuery, setSearchQuery] = useState('');
   
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -739,7 +742,8 @@ export default function CatalogView({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in" id="public-catalog-container">
+    <div id="catalog-view-root">
+      <div className="space-y-8 animate-fade-in" id="public-catalog-container">
       
 
       {/* Premium Hero Banner for Public Bidders */}
@@ -963,8 +967,8 @@ export default function CatalogView({
               <p className="text-xs text-slate-500 mt-0.5">{t('Semua armada di bawah siap dilepas dengan penawaran harga terbaik.')}</p>
             </div>
 
-            {/* Quick Filter Controls */}
-            <div className="flex flex-wrap gap-2.5 w-full md:w-auto">
+            {/* Quick Filter Controls - Desktop filters are now in the top navbar per user request */}
+            <div className="flex flex-wrap gap-2.5 w-full md:w-auto lg:hidden">
               {/* Search */}
               <div className="relative flex-1 md:w-52 md:flex-initial">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -1053,7 +1057,7 @@ export default function CatalogView({
         </div>
       </div>
       </div>
-
+      </div>
       {/* Right Side Overlay: OLX-inspired Beautiful Detail Page View */}
       {selectedAsset && (
         <>
@@ -1085,101 +1089,103 @@ export default function CatalogView({
                )}
               
               {/* Top Section: Immersive Dark Image Carousel */}
-              {(() => {
-                const detailImages = selectedAsset.imageUrls && selectedAsset.imageUrls.length > 0 
-                  ? selectedAsset.imageUrls 
-                  : (selectedAsset.imageUrl ? [selectedAsset.imageUrl] : []);
+              <div className="relative bg-slate-950 h-[300px] md:h-[400px] flex items-center justify-center group/modal-img border-b border-slate-800">
+                {/* Absolute Back & Close Buttons */}
+                <button 
+                  onClick={() => setSelectedAssetId(null)}
+                  className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm hover:bg-white text-slate-800 px-4 py-2 rounded-full text-xs font-bold shadow-md transition-all cursor-pointer border border-slate-200/50"
+                  title={t('Kembali ke Katalog')}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>{t('Kembali')}</span>
+                </button>
+
+                <button 
+                  onClick={() => setSelectedAssetId(null)}
+                  className="absolute top-4 right-4 z-20 flex items-center justify-center bg-white/95 backdrop-blur-sm hover:bg-white text-slate-600 hover:text-slate-900 w-10 h-10 rounded-full shadow-md transition-all cursor-pointer border border-slate-200/50"
+                  title={t('Tutup')}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                {(() => {
+                  const detailImages = selectedAsset.imageUrls && selectedAsset.imageUrls.length > 0 
+                    ? selectedAsset.imageUrls 
+                    : (selectedAsset.imageUrl ? [selectedAsset.imageUrl] : []);
+                  
+                  return (
+                    <>
+                {detailImages.length > 0 ? (
+                  <img 
+                    src={detailImages[modalImageIdx] || "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80"} 
+                    alt={`${selectedAsset.name} - ${modalImageIdx + 1}`} 
+                    className="h-full w-auto max-w-full object-contain cursor-zoom-in hover:scale-[1.01] transition-transform duration-300" 
+                    referrerPolicy="no-referrer"
+                    onClick={() => {
+                      setLightboxImages(detailImages);
+                      setLightboxIndex(modalImageIdx);
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80";
+                    }}
+                  />
+                ) : (
+                  <div className="text-slate-500 text-xs font-mono">{t('Tidak ada foto')}</div>
+                )}
                 
-                return (
-                  <div className="relative bg-slate-950 h-[300px] md:h-[400px] flex items-center justify-center group/modal-img border-b border-slate-800">
-                    {/* Absolute Back & Close Buttons */}
-                    <button 
-                      onClick={() => setSelectedAssetId(null)}
-                      className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm hover:bg-white text-slate-800 px-4 py-2 rounded-full text-xs font-bold shadow-md transition-all cursor-pointer border border-slate-200/50"
-                      title={t('Kembali ke Katalog')}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      <span>{t('Kembali')}</span>
-                    </button>
+                {/* Zoom overlay button to see the image full */}
+                {detailImages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxImages(detailImages);
+                      setLightboxIndex(modalImageIdx);
+                    }}
+                    className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 bg-black/60 hover:bg-black/85 text-white px-3.5 py-2 rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer shadow-lg hover:scale-105"
+                    title={t('Lihat Gambar Full')}
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                    <span>{t('Lihat Gambar Full')}</span>
+                  </button>
+                )}
 
-                    <button 
-                      onClick={() => setSelectedAssetId(null)}
-                      className="absolute top-4 right-4 z-20 flex items-center justify-center bg-white/95 backdrop-blur-sm hover:bg-white text-slate-600 hover:text-slate-900 w-10 h-10 rounded-full shadow-md transition-all cursor-pointer border border-slate-200/50"
-                      title={t('Tutup')}
+                {/* Prev/Next Overlay buttons */}
+                {detailImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModalImageIdx(prev => (prev === 0 ? detailImages.length - 1 : prev - 1));
+                      }}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/85 text-white p-2.5 rounded-full transition-all group-hover/modal-img:scale-105 flex items-center justify-center w-10 h-10"
+                      title={t('Sebelumnya')}
                     >
-                      <X className="w-5 h-5" />
+                      <ChevronLeft className="w-5 h-5" />
                     </button>
-
-                    {detailImages.length > 0 ? (
-                      <img 
-                        src={detailImages[modalImageIdx] || "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80"} 
-                        alt={`${selectedAsset.name} - ${modalImageIdx + 1}`} 
-                        className="h-full w-auto max-w-full object-contain cursor-zoom-in hover:scale-[1.01] transition-transform duration-300" 
-                        referrerPolicy="no-referrer"
-                        onClick={() => {
-                          setLightboxImages(detailImages);
-                          setLightboxIndex(modalImageIdx);
-                        }}
-                        onError={(e) => {
-                          e.currentTarget.src = "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80";
-                        }}
-                      />
-                    ) : (
-                      <div className="text-slate-500 text-xs font-mono">{t('Tidak ada foto')}</div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModalImageIdx(prev => (prev === detailImages.length - 1 ? 0 : prev + 1));
+                      }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/85 text-white p-2.5 rounded-full transition-all group-hover/modal-img:scale-105 flex items-center justify-center w-10 h-10"
+                      title={t('Berikutnya')}
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
                     
-                    {/* Zoom overlay button to see the image full */}
-                    {detailImages.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setLightboxImages(detailImages);
-                          setLightboxIndex(modalImageIdx);
-                        }}
-                        className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 bg-black/60 hover:bg-black/85 text-white px-3.5 py-2 rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer shadow-lg hover:scale-105"
-                        title={t('Lihat Gambar Full')}
-                      >
-                        <ZoomIn className="w-4 h-4" />
-                        <span>{t('Lihat Gambar Full')}</span>
-                      </button>
-                    )}
-
-                    {/* Prev/Next Overlay buttons */}
-                    {detailImages.length > 1 && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setModalImageIdx(prev => (prev === 0 ? detailImages.length - 1 : prev - 1));
-                          }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/85 text-white p-2.5 rounded-full transition-all group-hover/modal-img:scale-105 flex items-center justify-center w-10 h-10"
-                          title={t('Sebelumnya')}
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setModalImageIdx(prev => (prev === detailImages.length - 1 ? 0 : prev + 1));
-                          }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/85 text-white p-2.5 rounded-full transition-all group-hover/modal-img:scale-105 flex items-center justify-center w-10 h-10"
-                          title={t('Berikutnya')}
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
-                        
-                        {/* Image position label */}
-                        <span className="absolute bottom-4 right-4 bg-black/75 backdrop-blur-xs text-white text-[11px] px-3 py-1.5 rounded-lg font-mono font-bold border border-white/10">
-                          {modalImageIdx + 1} / {detailImages.length}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
+                    {/* Image position label */}
+                    <span className="absolute bottom-4 right-4 bg-black/75 backdrop-blur-xs text-white text-[11px] px-3 py-1.5 rounded-lg font-mono font-bold border border-white/10">
+                      {modalImageIdx + 1} / {detailImages.length}
+                    </span>
+                  </>
+                )}
+                    </>
+                  );
+                })()}
+              </div>
 
               {/* Bottom Layout: Two-Column Responsive Grid */}
               <div className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
@@ -1797,24 +1803,25 @@ export default function CatalogView({
                     </div>
                   )}
 
-                  {/* Interactive Bidding & Survey Scheduler Form */}
-                  <div 
-                    id="bid-form-card"
-                    className={`bg-white p-6 rounded-2xl border border-l-[6px] border-l-slate-300 transition-all duration-300 space-y-4 cursor-pointer ${
-                      isFormFocused 
-                        ? 'relative z-40 border-blue-500 shadow-2xl ring-2 ring-blue-500/20 scale-[1.02] bg-white cursor-default' 
-                        : 'relative z-10 border-slate-200/80 shadow-xs hover:border-blue-300'
-                    }`}
-                    onClick={(e) => {
-                      if (!isFormFocused) {
-                        setIsFormFocused(true);
-                        if (nameInputRef.current) {
-                          nameInputRef.current.focus();
+          {/* Interactive Bidding & Survey Scheduler Form */}
+                  {canBid !== false && (
+                    <div 
+                      id="bid-form-card"
+                      className={`bg-white p-6 rounded-2xl border border-l-[6px] border-l-slate-300 transition-all duration-300 space-y-4 cursor-pointer ${
+                        isFormFocused 
+                          ? 'relative z-40 border-blue-500 shadow-2xl ring-2 ring-blue-500/20 scale-[1.02] bg-white cursor-default' 
+                          : 'relative z-10 border-slate-200/80 shadow-xs hover:border-blue-300'
+                      }`}
+                      onClick={(e) => {
+                        if (!isFormFocused) {
+                          setIsFormFocused(true);
+                          if (nameInputRef.current) {
+                            nameInputRef.current.focus();
+                          }
                         }
-                      }
-                    }}
-                  >
-                    {!isUserLoggedIn ? (
+                      }}
+                    >
+                      {!isUserLoggedIn ? (
                       <div className="py-6 text-center space-y-3.5">
                         <Lock className="w-8 h-8 text-amber-500 mx-auto animate-bounce" />
                         <h4 className="font-bold text-slate-800 text-sm">{t('Formulir Penawaran Terkunci')}</h4>
@@ -2203,27 +2210,22 @@ export default function CatalogView({
                         {t('Setiap pengiriman penawaran dijamin aman & tunduk pada Syarat Ketentuan Lelang Pancaran.')}
                       </span>
                     </div>
-                  </>
-                )}
-
-                    {/* Extra mobile focus bottom spacer inside form card to prevent virtual keyboard occlusion */}
-                    {isFormFocused && (
-                      <div className="h-[20vh] md:hidden" />
-                    )}
-                  </div>
-
-                  {/* Extra mobile padding inside the scrollable container layout */}
-                  {isFormFocused && (
-                    <div className="h-[25vh] md:hidden" />
+                    </>
                   )}
 
+                  {/* Extra mobile focus bottom spacer inside form card to prevent virtual keyboard occlusion */}
+                  {isFormFocused && (
+                    <div className="h-[20vh] md:hidden" />
+                  )}
                 </div>
-
-              </div>
-
+              )}
             </div>
-
-            {/* Mobile Floating Action Button to jump directly to form when scrolled away */}
+          </div>
+        </div>
+      </div>
+      </div>
+      </div>
+      </div>
             {!formSuccess && !isFormFocused && (
               <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[55] animate-bounce">
                 <button
@@ -2244,11 +2246,6 @@ export default function CatalogView({
                 </button>
               </div>
             )}
-
-          </div>
-        </div>
-
-        {/* Focused Description Overlay Modal - Dark dimmed background */}
         {showFullDesc && (
           <div 
             className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fade-in"
@@ -2404,7 +2401,6 @@ export default function CatalogView({
         </div>
       )}
 
-      {/* High Bid Confirmation Pop-up Modal */}
       {showBidConfirmModal && selectedAsset && (
         <div className="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-amber-100 space-y-5 animate-zoom-in relative">
@@ -2470,5 +2466,6 @@ export default function CatalogView({
       )}
 
     </div>
+  </div>
   );
 }
