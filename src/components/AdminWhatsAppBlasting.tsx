@@ -151,10 +151,33 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     }
   }, [waStatus, connectedPhone, effectiveEmail, sessionKey]);
 
+  // Backend Server URL Configuration for Vercel / External Deployments
+  const DEFAULT_CLOUD_RUN_URL = 'https://ais-dev-cjfz5uuzs2j47up4ldjitn-177659165187.asia-east1.run.app';
+  const [backendServerUrl, setBackendServerUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('wa_backend_server_url');
+      if (saved) return saved;
+      if (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('pancaran-one.com')) {
+        return DEFAULT_CLOUD_RUN_URL;
+      }
+    }
+    return DEFAULT_CLOUD_RUN_URL;
+  });
+
+  const handleSaveBackendUrl = (newUrl: string) => {
+    setBackendServerUrl(newUrl);
+    localStorage.setItem('wa_backend_server_url', newUrl);
+  };
+
   // Safe JSON fetch wrapper that gracefully handles HTML 404/SPA responses (like on Vercel)
   const safeFetchJson = async (url: string, options?: RequestInit) => {
     try {
-      const res = await fetch(url, options);
+      let targetUrl = url;
+      if (!url.startsWith('http')) {
+        const base = backendServerUrl.trim().replace(/\/+$/, '');
+        targetUrl = base ? `${base}${url}` : url;
+      }
+      const res = await fetch(targetUrl, options);
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         return await res.json();
@@ -1306,6 +1329,33 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                   <div>
                     <h3 className="text-2xl font-extrabold text-slate-800">Hubungkan WhatsApp</h3>
                     <p className="text-slate-500 text-xs mt-1">Scan kode QR barcode di bawah atau gunakan Kode Pasangkan untuk mengaktifkan WhatsApp Blasting.</p>
+                  </div>
+
+                  {/* Vercel & Cloud Run Live Backend Engine Banner */}
+                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-left space-y-2 max-w-lg w-full">
+                    <div className="flex items-center gap-2 text-emerald-900 font-extrabold text-xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Penting untuk Vercel / Deploy External:</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 leading-relaxed">
+                      WhatsApp memerlukan koneksi WebSocket ter-enkripsi yang aktif ke server WhatsApp. Di Vercel, barcode langsung disinkronkan dengan <strong>WhatsApp Node.js Engine</strong> yang berjalan di Cloud Run:
+                    </p>
+                    <div className="flex gap-2 items-center pt-1">
+                      <input
+                        type="text"
+                        value={backendServerUrl}
+                        onChange={(e) => handleSaveBackendUrl(e.target.value)}
+                        placeholder="https://ais-dev-cjfz5uuzs2j47up4ldjitn-177659165187.asia-east1.run.app"
+                        className="flex-1 text-[11px] font-mono bg-white border border-emerald-300 rounded-xl px-3 py-1.5 text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveBackendUrl(DEFAULT_CLOUD_RUN_URL)}
+                        className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] rounded-xl shrink-0"
+                      >
+                        Reset URL
+                      </button>
+                    </div>
                   </div>
 
                   {/* Mode Selector */}
