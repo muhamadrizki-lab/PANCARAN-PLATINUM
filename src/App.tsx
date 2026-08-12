@@ -215,6 +215,13 @@ export default function App() {
     const newNotif: ToastNotification = { id, type, title, message, timestamp: new Date(), assetId, read: false };
     setNotifications(prev => [newNotif, ...prev].slice(0, 5));
     
+    // Update local state and localStorage for real-time notification history
+    setNotificationHistory(prev => {
+      const updated = [newNotif, ...prev.filter(n => n.id !== id)];
+      localStorage.setItem('pancaran_notification_history', JSON.stringify(updated));
+      return updated;
+    });
+
     // Save to persistent notification history in Firestore
     addNotificationToDb(newNotif);
 
@@ -419,7 +426,17 @@ export default function App() {
 
       unsubscribeAssets = subscribeToAssets((updatedAssets) => {
         if (updatedAssets) {
-          const sortedAssets = [...updatedAssets].sort((a, b) => b.id.localeCompare(a.id));
+          const sanitizedAssets = updatedAssets.map(asset => {
+            const validPublicBids = (asset.bids || []).filter(b => b && typeof b.price === 'number' && b.price < 1000000000);
+            const highestBid = validPublicBids.length > 0
+              ? Math.max(...validPublicBids.map(b => b.price), asset.startingPrice || 0)
+              : (asset.startingPrice || 0);
+            return {
+              ...asset,
+              highestBid
+            };
+          });
+          const sortedAssets = [...sanitizedAssets].sort((a, b) => b.id.localeCompare(a.id));
           setAssets(sortedAssets);
 
           // Real-time comparison for notifications
@@ -977,6 +994,15 @@ export default function App() {
 
   // Input Bid Price & Input Time Survey
   const handlePlaceBid = async (assetId: string, bidData: Omit<Bid, 'id' | 'timestamp'>) => {
+    if (!isUserCanBid) {
+      addNotification(
+        'warning',
+        'Akses Terbatas (Tidak Bisa Menawar)',
+        'Akun Anda berstatus Hanya Lihat. Anda tidak memiliki hak akses untuk melakukan penawaran lelang.'
+      );
+      return;
+    }
+
     const nextBidId = `B-${Math.floor(100 + Math.random() * 900)}`;
     const newBid: Bid = {
       ...bidData,
@@ -984,12 +1010,17 @@ export default function App() {
       timestamp: new Date().toISOString()
     };
 
-    // Optimistic update
+    const targetAsset = assets.find(a => a.id === assetId);
+    const assetTitle = targetAsset ? `${targetAsset.brand} ${targetAsset.name}` : assetId;
+    const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(bidData.price);
+
+    // Optimistic update - filter out test 1 Billion bids from inflating public asset card
     setAssets(prev => prev.map(a => {
       if (a.id === assetId) {
         const updatedBids = [...(a.bids || []), newBid];
-        const highestBid = updatedBids.length > 0
-          ? Math.max(...updatedBids.map(b => b.price), a.startingPrice)
+        const validPublicBids = updatedBids.filter(b => b.price < 1000000000);
+        const highestBid = validPublicBids.length > 0
+          ? Math.max(...validPublicBids.map(b => b.price), a.startingPrice)
           : a.startingPrice;
         return {
           ...a,
@@ -999,6 +1030,14 @@ export default function App() {
       }
       return a;
     }));
+
+    // Send notification to Super Admin Inbox Log
+    addNotification(
+      'bid',
+      'Penawaran Lelang Baru Masuk (Inbox Super Admin)',
+      `Penawaran sebesar ${formattedPrice} untuk unit "${assetTitle}" dari ${bidData.name} (${bidData.email} - HP: ${bidData.contact}) telah dikonfirmasi dan tercatat di Inbox Super Admin.`,
+      assetId
+    );
 
     try {
       await addBidToAsset(assetId, newBid);
@@ -1254,9 +1293,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex justify-between h-16 items-center">
             
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-white rounded flex items-center justify-center shadow-md shadow-blue-500/10 overflow-hidden">
+            {/* Logo & Filter Dropdowns */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 bg-white rounded flex items-center justify-center shadow-md shadow-blue-500/10 overflow-hidden shrink-0">
                 <img 
                   src="https://lh3.googleusercontent.com/d/1LmpjB5qAX8ev5_JRzYQDwjM58RxHl18X" 
                   alt="Pancaran Logo" 
@@ -1267,12 +1306,40 @@ export default function App() {
                   }}
                 />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col shrink-0">
                 <span className="text-white font-bold text-lg tracking-tight">
                   <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent font-extrabold drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">PLATINUM</span>
                 </span>
               </div>
 
+              {/* Top Filter Dropdowns (Right next to PLATINUM text - visible only on external catalog tab) */}
+              {role === 'external' && externalTab === 'catalog' && (
+                <div className="flex items-center gap-1.5 sm:gap-2 ml-1 sm:ml-3">
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                    className="px-2.5 sm:px-3 py-1.5 bg-white text-slate-800 border border-slate-200/90 rounded-full sm:rounded-2xl text-[11px] sm:text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer shadow-sm hover:bg-slate-50 transition-all max-w-[115px] sm:max-w-none text-ellipsis overflow-hidden"
+                    aria-label={t('Pilih Brand')}
+                  >
+                    <option value="all">{t('Semua Brand')}</option>
+                    {uniqueBrands.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-2.5 sm:px-3 py-1.5 bg-white text-slate-800 border border-slate-200/90 rounded-full sm:rounded-2xl text-[11px] sm:text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer shadow-sm hover:bg-slate-50 transition-all max-w-[125px] sm:max-w-none text-ellipsis overflow-hidden"
+                    aria-label={t('Pilih Kategori')}
+                  >
+                    <option value="all">{t('Semua Kategori')}</option>
+                    {uniqueCategories.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
             </div>
 
@@ -2294,6 +2361,7 @@ export default function App() {
                     userEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
                     userName={isUserLoggedIn ? loggedInUserName : adminName}
                     userPhone={isUserLoggedIn ? loggedInUserPhone : ''}
+                    isAdmin={isAdminLoggedIn}
                   />
                 </div>
               ) : (

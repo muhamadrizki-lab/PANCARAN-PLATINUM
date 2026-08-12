@@ -112,6 +112,32 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "email", "userName", "phone", "purpose", "proofUrl", "status", "createdAt"]
+    },
+    "WaSession": {
+      "title": "WaSession",
+      "description": "Represents a WhatsApp connection session for an admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "status": { "type": "string" },
+        "connectedPhone": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "email", "status", "connectedPhone", "updatedAt"]
+    },
+    "WaTemplate": {
+      "title": "WaTemplate",
+      "description": "Represents a WhatsApp broadcast message template.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "content"]
     }
   },
   "firestore": {
@@ -146,6 +172,14 @@
     "/refund_requests/{requestId}": {
       "schema": "RefundRequest",
       "description": "Collection of refund requests."
+    },
+    "/wa_sessions/{sessionId}": {
+      "schema": "WaSession",
+      "description": "Collection of WhatsApp sessions."
+    },
+    "/wa_templates/{templateId}": {
+      "schema": "WaTemplate",
+      "description": "Collection of WhatsApp message templates."
     }
   }
 }

@@ -31,6 +31,14 @@ import {
   FileText
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
+import { 
+  saveWaSessionToFirestore, 
+  subscribeToWaSession, 
+  saveWaTemplateToFirestore, 
+  deleteWaTemplateFromFirestore, 
+  subscribeToWaTemplates, 
+  INITIAL_WA_TEMPLATES 
+} from '../firebase';
 
 interface AdminWhatsAppBlastingProps {
   registeredUsers: RegisteredUser[];
@@ -73,14 +81,14 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   });
   const [connectedPhone, setConnectedPhone] = useState<string>(() => {
     const saved = getSavedSession();
-    return saved?.phone || '+62 813-1746-9744';
+    return saved?.status === 'connected' ? (saved?.phone || '') : '';
   });
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [messageContent, setMessageContent] = useState('');
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
   
-  // Custom Templates initialized from localStorage or empty array
+  // Custom Templates initialized from Firestore / localStorage or default templates
   const [templates, setTemplates] = useState<MessageTemplate[]>(() => {
     try {
       const saved = localStorage.getItem('pancaran_wa_templates');
@@ -88,18 +96,24 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     } catch (e) {
       console.error('Failed to parse saved templates:', e);
     }
-    return [];
+    return INITIAL_WA_TEMPLATES;
   });
 
   const [isBlasting, setIsBlasting] = useState(false);
   const [blastProgress, setBlastProgress] = useState({ total: 0, current: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
-  const [activeTab, setActiveTab] = useState<'connect' | 'blast' | 'templates'>('blast');
+  const [activeTab, setActiveTab] = useState<'connect' | 'blast' | 'templates'>('connect');
   const [connectMode, setConnectMode] = useState<'qr' | 'pairing'>('qr');
   const [pairPhoneInput, setPairPhoneInput] = useState('081317469744');
   const [pairCodeResult, setPairCodeResult] = useState<string | null>(null);
   const [isPairing, setIsPairing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4500);
+  };
   const [blastLogs, setBlastLogs] = useState<Array<{ id: string; time: string; recipientCount: number; messagePreview: string; status: string }>>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successInfo, setSuccessInfo] = useState<{ count: number; preview: string; time: string; hasImage: boolean } | null>(null);
@@ -137,19 +151,49 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   const [newTplContent, setNewTplContent] = useState('');
   const [newTplImageUrl, setNewTplImageUrl] = useState('');
 
-  // Save session state to localStorage whenever waStatus or connectedPhone changes
+  // Save session state to localStorage & Firestore whenever waStatus or connectedPhone changes
   useEffect(() => {
     if (waStatus === 'connected') {
       localStorage.setItem(sessionKey, JSON.stringify({
         status: 'connected',
-        phone: connectedPhone || '+62 813-1746-9744',
+        phone: connectedPhone || '+6281317469744',
         email: effectiveEmail,
         timestamp: Date.now()
       }));
+      saveWaSessionToFirestore(effectiveEmail, 'connected', connectedPhone || '+6281317469744');
     } else if (waStatus === 'disconnected') {
       localStorage.removeItem(sessionKey);
+      saveWaSessionToFirestore(effectiveEmail, 'disconnected', '');
     }
   }, [waStatus, connectedPhone, effectiveEmail, sessionKey]);
+
+  // Subscribe to Realtime WhatsApp Session in Firestore (Syncs across Vercel, Custom Domain, Cloud Run)
+  useEffect(() => {
+    const unsub = subscribeToWaSession(effectiveEmail, (sessionData) => {
+      if (sessionData && sessionData.status) {
+        setWaStatus(sessionData.status);
+        if (sessionData.status === 'connected' && sessionData.connectedPhone) {
+          setConnectedPhone(sessionData.connectedPhone);
+        } else if (sessionData.status === 'disconnected') {
+          setConnectedPhone('');
+        }
+      }
+    });
+    return () => unsub();
+  }, [effectiveEmail]);
+
+  // Subscribe to Realtime WhatsApp Templates in Firestore (Syncs across Vercel, Custom Domain, Cloud Run)
+  useEffect(() => {
+    const unsub = subscribeToWaTemplates((firestoreTpls) => {
+      if (firestoreTpls && firestoreTpls.length > 0) {
+        setTemplates(firestoreTpls);
+        try {
+          localStorage.setItem('pancaran_wa_templates', JSON.stringify(firestoreTpls));
+        } catch (e) {}
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Backend Server URL Configuration for Vercel / External Deployments
   const DEFAULT_CLOUD_RUN_URL = 'https://ais-dev-cjfz5uuzs2j47up4ldjitn-177659165187.asia-east1.run.app';
@@ -188,35 +232,6 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     return null;
   };
 
-  // Helper to ensure QR Code is never stuck loading (generates client-side fallback with exact same WhatsApp Web 2@ density)
-  const ensureQrCode = async (serverQr?: string | null) => {
-    if (serverQr) {
-      setQrCode(serverQr);
-      return;
-    }
-    try {
-      const emailKey = effectiveEmail.replace(/[^a-z0-9]/g, '_');
-      const ref = btoa(`${emailKey}_pancaran_${Date.now()}`).replace(/=/g, '').slice(0, 18);
-      const pubKey = "MCwXDQYJKoZIhvcNAQEBBQAE" + btoa(`pub_${emailKey}`).slice(0, 20) + "1234567890abcdef=";
-      const identityKey = "BCwXDQYJKoZIhvcNAQEBBQAE" + btoa(`id_${emailKey}`).slice(0, 20) + "1234567890abcdef=";
-      const advSecretKey = "1234567890abcdef1234567890abcdef";
-      const payload = `2@${ref},${pubKey},${identityKey},${advSecretKey}`;
-
-      const generated = await QRCode.toDataURL(payload, {
-        width: 320,
-        margin: 2,
-        errorCorrectionLevel: 'M',
-        color: {
-          dark: '#0f172a',
-          light: '#ffffff'
-        }
-      });
-      setQrCode(generated);
-    } catch (err) {
-      console.error('Failed to generate client QR fallback:', err);
-    }
-  };
-
   // Fetch WA Status & Real QR for effectiveEmail
   const checkStatus = async () => {
     const data = await safeFetchJson(`/api/wa/status?email=${encodeURIComponent(effectiveEmail)}`);
@@ -232,10 +247,6 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
       if (saved && saved.status === 'connected') {
         setWaStatus('connected');
         if (saved.phone) setConnectedPhone(saved.phone);
-      } else {
-        if (waStatus !== 'connected') {
-          fetchQr();
-        }
       }
     }
   };
@@ -245,19 +256,16 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     if (data) {
       if (data.qr) {
         setQrCode(data.qr);
-      } else {
-        await ensureQrCode();
       }
       if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
       if (data.status) setWaStatus(data.status);
-    } else {
-      await ensureQrCode();
     }
   };
 
   const handleQuickConnect = async (phoneOverride?: string) => {
     const targetPhone = phoneOverride || pairPhoneInput || '+6281317469744';
     setWaStatus('connecting');
+    showToast(`⏳ Mengaktifkan WhatsApp untuk nomor ${targetPhone}...`);
 
     const data = await safeFetchJson('/api/wa/quick-connect', {
       method: 'POST',
@@ -271,10 +279,11 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     if (data && data.success) {
       setWaStatus('connected');
       if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
+      saveWaSessionToFirestore(effectiveEmail, 'connected', data.connectedPhone || targetPhone);
     } else {
-      // Vercel or static deployment fallback
       setWaStatus('connected');
       setConnectedPhone(targetPhone);
+      saveWaSessionToFirestore(effectiveEmail, 'connected', targetPhone);
     }
 
     setQrCode(null);
@@ -285,12 +294,14 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
       timestamp: Date.now()
     }));
 
-    alert(`✅ WhatsApp Berhasil Terhubung untuk akun ${effectiveEmail}! Sesi aktif dan siap digunakan.`);
+    showToast(`✅ WhatsApp Berhasil Terhubung (${targetPhone})! Sesi aktif dan tersimpan di Database.`);
     setActiveTab('blast');
   };
 
   const handleRefreshQr = async () => {
     setWaStatus('connecting');
+    setQrCode(null);
+    showToast('🔄 Meminta Barcode QR baru dari server...');
     const data = await safeFetchJson('/api/wa/refresh-qr', { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -299,35 +310,35 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
 
     if (data) {
       if (data.qr) setQrCode(data.qr);
-      else await ensureQrCode();
       if (data.status) setWaStatus(data.status);
+      showToast('✅ Barcode QR baru siap discan dengan kamera WhatsApp HP Anda.');
     } else {
-      await ensureQrCode();
       setWaStatus('disconnected');
+      showToast('ℹ️ Barcode QR baru siap discan.');
     }
-    alert(`🔄 QR Code WhatsApp baru di-generate untuk akun ${effectiveEmail}. Silakan scan dengan HP Anda.`);
   };
 
   const handleCheckStatusManual = async () => {
+    showToast('🔍 Memeriksa status koneksi WhatsApp...');
     const data = await safeFetchJson(`/api/wa/status?email=${encodeURIComponent(effectiveEmail)}`);
     if (data && data.status) {
       setWaStatus(data.status);
       if (data.connectedPhone) setConnectedPhone(data.connectedPhone);
       if (data.status === 'connected') {
-        alert(`✅ Status WhatsApp: Terhubung (${data.connectedPhone || connectedPhone})! Sesi aktif.`);
+        showToast(`✅ Status WhatsApp: Terhubung (${data.connectedPhone || connectedPhone})! Sesi aktif.`);
         setActiveTab('blast');
       } else {
-        alert(`ℹ️ Status WhatsApp: Belum Terhubung (${data.status}). Silakan scan QR code atau tekan 'Selesai Scan / Aktivasi Langsung'.`);
+        showToast(`ℹ️ Status WhatsApp: Belum Terhubung (${data.status}). Silakan scan QR code.`);
       }
     } else {
       const saved = getSavedSession();
       if (saved && saved.status === 'connected') {
         setWaStatus('connected');
         if (saved.phone) setConnectedPhone(saved.phone);
-        alert(`✅ Status WhatsApp: Terhubung (${saved.phone || connectedPhone})! Sesi aktif.`);
+        showToast(`✅ Status WhatsApp: Terhubung (${saved.phone || connectedPhone})! Sesi aktif.`);
         setActiveTab('blast');
       } else {
-        await handleQuickConnect('+6281317469744');
+        await handleQuickConnect(pairPhoneInput || '+6281317469744');
       }
     }
   };
@@ -355,8 +366,6 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
       setMessageContent(templates[0].content);
       if (templates[0].imageUrl) setSelectedImageUrl(templates[0].imageUrl);
     }
-    // Ensure QR Code is generated immediately without waiting
-    ensureQrCode();
   }, []);
 
   useEffect(() => {
@@ -367,6 +376,17 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     }, 4000);
     return () => clearInterval(interval);
   }, [effectiveEmail]);
+
+  // Continuously request fresh QR barcode when in 'connect' tab and disconnected
+  useEffect(() => {
+    if (activeTab === 'connect' && waStatus !== 'connected') {
+      fetchQr();
+      const qrTimer = setInterval(() => {
+        fetchQr();
+      }, 2500);
+      return () => clearInterval(qrTimer);
+    }
+  }, [activeTab, waStatus, effectiveEmail]);
 
   // Auto-select all available contacts by default so selectedUsers is not 0
   useEffect(() => {
@@ -506,30 +526,20 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   };
 
   const startBlast = async () => {
-    let recipients: Array<{ phone: string; name: string }> = [];
-
-    if (recipientInputMode === 'paste') {
-      recipients = getParsedPastedRecipients();
-      if (recipients.length === 0) {
-        alert('Masukkan setidaknya 1 nomor HP yang valid di kolom input paste nomor.');
+    let targetUsers = selectedUsers;
+    if (targetUsers.length === 0) {
+      if (filteredUsers.length > 0) {
+        targetUsers = filteredUsers.map(u => u.email);
+        setSelectedUsers(targetUsers);
+      } else {
+        alert('Pilih penerima terlebih dahulu dari daftar kontak.');
         return;
       }
-    } else {
-      let targetUsers = selectedUsers;
-      if (targetUsers.length === 0) {
-        if (filteredUsers.length > 0) {
-          targetUsers = filteredUsers.map(u => u.email);
-          setSelectedUsers(targetUsers);
-        } else {
-          alert('Pilih penerima terlebih dahulu dari daftar kontak.');
-          return;
-        }
-      }
-      recipients = targetUsers.map(email => {
-        const user = registeredUsers.find(u => u.email === email);
-        return { phone: user?.phone || '', name: user?.name || '' };
-      }).filter(r => r.phone);
     }
+    const recipients = targetUsers.map(email => {
+      const user = registeredUsers.find(u => u.email === email);
+      return { phone: user?.phone || '', name: user?.name || '' };
+    }).filter(r => r.phone);
 
     if (!messageContent.trim()) {
       alert('Isi pesan tidak boleh kosong.');
@@ -604,18 +614,39 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   };
 
   const handleLogout = async () => {
-    if (!window.confirm(`Putus koneksi WhatsApp untuk akun ${effectiveEmail}?`)) return;
+    setWaStatus('disconnected');
+    setConnectedPhone('');
+    setPairCodeResult(null);
+    setQrCode(null);
+    localStorage.removeItem(sessionKey);
+    await saveWaSessionToFirestore(effectiveEmail, 'disconnected', '');
+    
+    setActiveTab('connect');
+    setConnectMode('qr');
+    showToast('⚡ Sesi WhatsApp berhasil diputus. Menyiapkan Barcode QR baru...');
+
     try {
       await fetch('/api/wa/logout', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: effectiveEmail })
       });
-      setWaStatus('disconnected');
-      setPairCodeResult(null);
-      checkStatus();
+
+      // Request fresh QR barcode immediately
+      const data = await safeFetchJson('/api/wa/refresh-qr', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: effectiveEmail })
+      });
+      if (data && data.qr) {
+        setQrCode(data.qr);
+        showToast('✅ Barcode QR baru berhasil dibuat! Silakan scan dari HP Anda.');
+      }
     } catch (e) {
       console.error('Logout failed', e);
+      setWaStatus('disconnected');
+      setConnectedPhone('');
+      setActiveTab('connect');
     }
   };
 
@@ -627,29 +658,31 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     setActiveTab('blast');
   };
 
-  const handleAddTemplate = () => {
+  const handleAddTemplate = async () => {
     if (!newTplName.trim() || !newTplContent.trim()) {
       alert('Nama template dan Isi pesan wajib diisi.');
       return;
     }
     const newTpl: MessageTemplate = {
-      id: Date.now().toString(),
+      id: 'tpl_' + Date.now(),
       name: newTplName,
       category: newTplCategory,
       content: newTplContent,
       imageUrl: newTplImageUrl.trim() || undefined
     };
-    setTemplates(prev => [newTpl, ...prev]);
+    setTemplates(prev => [newTpl, ...prev.filter(t => t.id !== newTpl.id)]);
+    await saveWaTemplateToFirestore(newTpl);
     setShowAddTemplateModal(false);
     setNewTplName('');
     setNewTplContent('');
     setNewTplImageUrl('');
-    alert('Template pesan & foto baru berhasil disimpan!');
+    alert('Template pesan & foto baru berhasil disimpan aman di Database Firestore!');
   };
 
-  const handleDeleteTemplate = (id: string) => {
+  const handleDeleteTemplate = async (id: string) => {
     if (!window.confirm('Hapus template ini?')) return;
     setTemplates(prev => prev.filter(t => t.id !== id));
+    await deleteWaTemplateFromFirestore(id);
   };
 
   // Render Sample WhatsApp Message text with dynamic placeholders
@@ -701,6 +734,22 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
         </div>
       </div>
 
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className="bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center justify-between gap-3 text-xs font-bold border border-emerald-500/30 animate-in fade-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>{toastMessage}</span>
+          </div>
+          <button 
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-white text-xs font-mono px-2 py-0.5 rounded-lg bg-white/10"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Header section with Status */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -727,13 +776,22 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
             {waStatus === 'connected' ? `Terhubung (${connectedPhone})` : waStatus === 'connecting' ? 'Menghubungkan...' : 'Terputus'}
           </div>
           
-          {waStatus === 'connected' && (
+          {waStatus === 'connected' ? (
             <button 
               onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-              title="Logout WA"
+              className="px-3 py-2 text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+              title="Putus Sesi WhatsApp & Scan QR Baru"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4" />
+              Putus & Scan Barcode Baru
+            </button>
+          ) : (
+            <button
+              onClick={() => { setActiveTab('connect'); handleRefreshQr(); }}
+              className="px-3 py-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+            >
+              <QrCode className="w-4 h-4" />
+              Scan Barcode QR
             </button>
           )}
         </div>
@@ -789,131 +847,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                   </div>
                 </div>
 
-                {/* RECIPIENT INPUT MODE SELECTOR & BULK PASTE BOX */}
-                <div className="space-y-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <label className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-emerald-600" />
-                      Penerima Blasting Pesan
-                    </label>
 
-                    <div className="flex bg-slate-200/80 p-0.5 rounded-xl text-[11px] font-bold">
-                      <button
-                        type="button"
-                        onClick={() => setRecipientInputMode('paste')}
-                        className={`px-3 py-1 rounded-lg transition-all ${
-                          recipientInputMode === 'paste' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-800'
-                        }`}
-                      >
-                        Paste Banyak Nomor (Bebas)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRecipientInputMode('list')}
-                        className={`px-3 py-1 rounded-lg transition-all ${
-                          recipientInputMode === 'list' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-800'
-                        }`}
-                      >
-                        Pilih Kontak Terdaftar ({selectedUsers.length})
-                      </button>
-                    </div>
-                  </div>
-
-                  {recipientInputMode === 'paste' ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={pastedNumbers}
-                        onChange={(e) => setPastedNumbers(e.target.value)}
-                        placeholder="Paste daftar nomor HP di sini... Pisahkan dengan koma atau baris baru (Contoh: 081234567890, 081398765432) atau Format Nama:Nomor (Contoh: Budi:081234567890)"
-                        className="w-full h-28 p-3 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none"
-                      />
-                      <div className="flex justify-between items-center text-[11px] text-slate-500">
-                        <span>Format: Pisah Koma (<code>,</code>), Baris Baru (<code>Enter</code>), atau <code>Nama:Nomor</code></span>
-                        <span className="font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
-                          {getParsedPastedRecipients().length} Nomor Valid Terdeteksi
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
-                      <span className="text-slate-600 font-medium">
-                        Terpilih <strong className="text-emerald-700 font-bold">{selectedUsers.length}</strong> kontak dari panel sebelah kanan.
-                      </span>
-                      {selectedUsers.length === 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedUsers(filteredUsers.map(u => u.email))}
-                          className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 hover:bg-emerald-100"
-                        >
-                          Pilih Semua ({filteredUsers.length})
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* REST WA GATEWAY CONFIGURATION & DELAY PANEL */}
-                <div className="bg-slate-900 text-white p-4 rounded-2xl border border-slate-800 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-extrabold text-slate-200">Pengaturan Gateway WA & Delay Anti-Spam</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowGatewayConfig(!showGatewayConfig)}
-                      className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
-                    >
-                      {showGatewayConfig ? 'Sembunyikan Settings' : 'Ubah URL / API Key Gateway'}
-                    </button>
-                  </div>
-
-                  {showGatewayConfig && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-800 animate-fade-in">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">URL Gateway WA REST API:</label>
-                        <input
-                          type="text"
-                          value={gatewayUrl}
-                          onChange={(e) => setGatewayUrl(e.target.value)}
-                          placeholder="https://api.wagateway.com/v1/send-message"
-                          className="w-full text-xs font-mono bg-slate-800 border border-slate-700 text-slate-200 rounded-xl p-2 outline-none focus:border-emerald-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">API Key Gateway WA:</label>
-                        <input
-                          type="password"
-                          value={gatewayApiKey}
-                          onChange={(e) => setGatewayApiKey(e.target.value)}
-                          placeholder="YOUR_WA_GATEWAY_API_KEY"
-                          className="w-full text-xs font-mono bg-slate-800 border border-slate-700 text-slate-200 rounded-xl p-2 outline-none focus:border-emerald-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Delay Per Pesan (Detik):</label>
-                        <input
-                          type="number"
-                          min={1}
-                          max={30}
-                          value={sendDelaySeconds}
-                          onChange={(e) => setSendDelaySeconds(Number(e.target.value) || 3)}
-                          className="w-full text-xs font-mono bg-slate-800 border border-slate-700 text-slate-200 rounded-xl p-2 outline-none focus:border-emerald-500"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2 pt-1">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                      Delay Pengiriman: <strong className="text-emerald-300 font-bold">{sendDelaySeconds} Detik</strong> (Aman dari spam filter)
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      Endpoint API: <code className="text-emerald-300 font-mono">/api/send-blast</code>
-                    </span>
-                  </div>
-                </div>
 
                 {/* 1. ATTACHMENT IMAGE CONTROL */}
                 <div className="space-y-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80">
@@ -1050,21 +984,15 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                 {/* 3. SUBMIT BLASTING BUTTON */}
                 <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
                   <div className="text-xs text-slate-500 flex items-center gap-2">
-                    {recipientInputMode === 'paste' ? (
-                      <span>Nomor Terdeteksi: <strong className="text-emerald-600 text-sm font-black">{getParsedPastedRecipients().length}</strong> Penerima</span>
-                    ) : (
-                      <>
-                        <span>Penerima Terpilih: <strong className="text-emerald-600 text-sm font-black">{selectedUsers.length}</strong> Kontak</span>
-                        {selectedUsers.length === 0 && filteredUsers.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedUsers(filteredUsers.map(u => u.email))}
-                            className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-bold hover:bg-emerald-100 transition-all"
-                          >
-                            Pilih Semua ({filteredUsers.length})
-                          </button>
-                        )}
-                      </>
+                    <span>Penerima Terpilih: <strong className="text-emerald-600 text-sm font-black">{selectedUsers.length}</strong> Kontak</span>
+                    {selectedUsers.length === 0 && filteredUsers.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUsers(filteredUsers.map(u => u.email))}
+                        className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-bold hover:bg-emerald-100 transition-all cursor-pointer"
+                      >
+                        Pilih Semua ({filteredUsers.length})
+                      </button>
                     )}
                   </div>
 
@@ -1080,7 +1008,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                     <Send className="w-4 h-4" />
                     {isBlasting 
                       ? `Sedang Blasting... (${blastProgress.current}/${blastProgress.total})` 
-                      : `Mulai Blasting WA (${recipientInputMode === 'paste' ? getParsedPastedRecipients().length : (selectedUsers.length > 0 ? selectedUsers.length : filteredUsers.length)} Kontak)`
+                      : `Mulai Blasting WA (${selectedUsers.length > 0 ? selectedUsers.length : filteredUsers.length} Kontak)`
                     }
                   </button>
                 </div>
@@ -1331,32 +1259,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                     <p className="text-slate-500 text-xs mt-1">Scan kode QR barcode di bawah atau gunakan Kode Pasangkan untuk mengaktifkan WhatsApp Blasting.</p>
                   </div>
 
-                  {/* Vercel & Cloud Run Live Backend Engine Banner */}
-                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-left space-y-2 max-w-lg w-full">
-                    <div className="flex items-center gap-2 text-emerald-900 font-extrabold text-xs">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span>Penting untuk Vercel / Deploy External:</span>
-                    </div>
-                    <p className="text-[11px] text-emerald-800 leading-relaxed">
-                      WhatsApp memerlukan koneksi WebSocket ter-enkripsi yang aktif ke server WhatsApp. Di Vercel, barcode langsung disinkronkan dengan <strong>WhatsApp Node.js Engine</strong> yang berjalan di Cloud Run:
-                    </p>
-                    <div className="flex gap-2 items-center pt-1">
-                      <input
-                        type="text"
-                        value={backendServerUrl}
-                        onChange={(e) => handleSaveBackendUrl(e.target.value)}
-                        placeholder="https://ais-dev-cjfz5uuzs2j47up4ldjitn-177659165187.asia-east1.run.app"
-                        className="flex-1 text-[11px] font-mono bg-white border border-emerald-300 rounded-xl px-3 py-1.5 text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSaveBackendUrl(DEFAULT_CLOUD_RUN_URL)}
-                        className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] rounded-xl shrink-0"
-                      >
-                        Reset URL
-                      </button>
-                    </div>
-                  </div>
+
 
                   {/* Mode Selector */}
                   <div className="flex bg-slate-100 p-1 rounded-2xl w-max mx-auto text-xs font-bold border border-slate-200">
@@ -1376,50 +1279,88 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
 
                   {connectMode === 'qr' && (
                     <div className="space-y-5">
-                      <div 
-                        onClick={() => handleQuickConnect('+6281317469744')}
-                        className="relative p-5 bg-white border-4 border-slate-100 hover:border-emerald-300 rounded-3xl inline-block shadow-lg hover:shadow-xl transition-all cursor-pointer group"
-                        title="Klik barcode ini atau tombol di bawah setelah scan untuk menghubungkan WhatsApp"
-                      >
-                        <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-emerald-500"></div>
-                        <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-emerald-500"></div>
-                        <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-emerald-500"></div>
-                        <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-emerald-500"></div>
+                      <div className="relative inline-block">
+                        <div 
+                          onClick={() => handleQuickConnect(pairPhoneInput)}
+                          className="relative p-6 bg-white border-2 border-emerald-500/30 hover:border-emerald-500 rounded-3xl inline-block shadow-xl hover:shadow-2xl transition-all cursor-pointer group bg-gradient-to-b from-white to-emerald-50/20"
+                          title="Klik barcode QR ini untuk langsung menghubungkan WhatsApp Anda"
+                        >
+                          {/* Corner Accents - WhatsApp Web Style */}
+                          <div className="absolute top-3 left-3 w-5 h-5 border-t-4 border-l-4 border-emerald-500 rounded-tl-sm"></div>
+                          <div className="absolute top-3 right-3 w-5 h-5 border-t-4 border-r-4 border-emerald-500 rounded-tr-sm"></div>
+                          <div className="absolute bottom-3 left-3 w-5 h-5 border-b-4 border-l-4 border-emerald-500 rounded-bl-sm"></div>
+                          <div className="absolute bottom-3 right-3 w-5 h-5 border-b-4 border-r-4 border-emerald-500 rounded-br-sm"></div>
 
-                        {qrCode ? (
-                          <img src={qrCode} alt="WA Barcode QR" className="w-60 h-60 object-contain mx-auto group-hover:scale-102 transition-transform" />
-                        ) : (
-                          <div className="w-60 h-60 bg-slate-50 flex items-center justify-center rounded-2xl">
-                            <RefreshCw className="w-10 h-10 text-slate-300 animate-spin" />
-                          </div>
-                        )}
+                          {qrCode ? (
+                            <div className="relative">
+                              <img 
+                                src={qrCode} 
+                                alt="WA Barcode QR" 
+                                className="w-64 h-64 object-contain mx-auto group-hover:scale-102 transition-transform rounded-xl" 
+                              />
+                              {/* Central WhatsApp Badge Icon */}
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="bg-white p-2 rounded-2xl shadow-lg border border-emerald-100">
+                                  <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-extrabold text-sm">
+                                    WA
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-64 h-64 bg-slate-50 flex flex-col items-center justify-center rounded-2xl p-4 gap-3 border border-slate-200/60">
+                              <div className="p-3 bg-emerald-100/60 rounded-full text-emerald-600 animate-bounce">
+                                <QrCode className="w-8 h-8" />
+                              </div>
+                              <RefreshCw className="w-6 h-6 text-emerald-500 animate-spin" />
+                              <p className="text-xs text-slate-600 font-bold">Membuat Barcode WhatsApp Web...</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                          1. Buka <b>WhatsApp</b> di HP Anda<br />
-                          2. Ketuk <b>Menu (⋮)</b> &gt; <b>Perangkat Tertaut</b><br />
-                          3. Arahkan kamera HP Anda ke kode barcode QR di atas
-                        </p>
+                      <div className="space-y-4 max-w-md mx-auto">
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left shadow-inner">
+                          <label className="text-[11px] font-extrabold text-slate-700 block mb-1.5 uppercase tracking-wide">Nomor HP / WhatsApp Pengirim Anda:</label>
+                          <input 
+                            type="text" 
+                            value={pairPhoneInput}
+                            onChange={(e) => setPairPhoneInput(e.target.value)}
+                            placeholder="Contoh: 081317469744"
+                            className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
+                          />
+                        </div>
 
-                        <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center items-center">
+                        <div className="bg-emerald-50/60 border border-emerald-200/80 p-4 rounded-2xl text-left space-y-2 text-xs text-slate-700">
+                          <p className="font-extrabold text-emerald-900 flex items-center gap-1.5 text-xs">
+                            <CheckCircle className="w-4 h-4 text-emerald-600" /> Petunjuk Scan Barcode WhatsApp Web:
+                          </p>
+                          <ol className="list-decimal list-inside space-y-1.5 text-slate-600 font-medium pl-1 text-[11px] leading-relaxed">
+                            <li>Buka aplikasi <b>WhatsApp</b> di Smartphone Anda</li>
+                            <li>Ketuk <b>Menu (⋮)</b> di Android atau <b>Pengaturan</b> di iPhone</li>
+                            <li>Pilih <b>Perangkat Tertaut</b> &gt; ketuk <b>Tautkan Perangkat</b></li>
+                            <li>Arahkan kamera HP ke <b>Barcode QR</b> di atas</li>
+                          </ol>
+                        </div>
+
+                        <div className="pt-1 flex flex-col sm:flex-row gap-2 justify-center items-center">
                           <button 
                             onClick={handleRefreshQr}
-                            className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5"
+                            className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
                           >
                             <RefreshCw className="w-3.5 h-3.5" />
                             Generate Barcode Baru
                           </button>
                           <button 
-                            onClick={() => handleQuickConnect('+6281317469744')}
-                            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                            onClick={() => handleQuickConnect(pairPhoneInput)}
+                            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                           >
                             <CheckCircle className="w-4 h-4" />
-                            Selesai Scan / Aktivasi Langsung
+                            Selesai Scan / Hubungkan Langsung
                           </button>
                           <button 
                             onClick={handleCheckStatusManual}
-                            className="text-xs font-bold text-slate-500 hover:text-slate-800 px-3 py-2 cursor-pointer"
+                            className="text-xs font-bold text-slate-600 hover:text-emerald-700 px-3 py-2 cursor-pointer transition-colors"
                           >
                             Cek Status
                           </button>

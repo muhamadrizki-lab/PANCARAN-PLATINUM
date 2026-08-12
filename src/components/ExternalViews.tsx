@@ -30,6 +30,7 @@ interface ExternalViewsProps {
   userName: string;
   userPhone: string;
   biddingRequests?: BiddingRequest[];
+  isAdmin?: boolean;
 }
 
 export function ExternalNotificationsView({ assets, userEmail, userName, userPhone, biddingRequests = [] }: ExternalViewsProps) {
@@ -310,7 +311,7 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
   );
 }
 
-export function ExternalInboxView({ assets, userEmail, userName, userPhone }: ExternalViewsProps) {
+export function ExternalInboxView({ assets, userEmail, userName, userPhone, isAdmin = false }: ExternalViewsProps) {
   const { language, t } = useLanguage();
   const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
 
@@ -322,12 +323,13 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
     }).format(value);
   };
 
-  // Find all mails (Winner Letters & Survey Booking Confirmations) for the logged-in user
+  // Find all mails (Winner Letters, Survey Booking Confirmations, & Bid Notifications)
   const getMails = () => {
     const mailsList: Array<{
       id: string;
-      type: 'winner' | 'booking';
+      type: 'winner' | 'booking' | 'bid_admin' | 'bid_user';
       asset: Asset;
+      bid?: Bid;
       highestBidPrice?: number;
       bookingDate?: string;
       bookingTime?: string;
@@ -335,33 +337,40 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
       date: string;
     }> = [];
 
+    const cleanUserEmail = (userEmail || '').toLowerCase();
+
     (assets || []).forEach(asset => {
       if (!asset) return;
-      const cleanUserEmail = (userEmail || '').toLowerCase();
 
-      // 1. Winner Letters (when asset is Sold and user is the highest bidder)
-      if (asset.status === 'Sold' && asset.bids && asset.bids.length > 0) {
-        const validBids = asset.bids.filter(b => b && typeof b.price === 'number');
-        if (validBids.length > 0) {
-          const sortedBids = [...validBids].sort((a, b) => b.price - a.price);
-          const winnerBid = sortedBids[0];
-
-          if (winnerBid && winnerBid.email && winnerBid.email.toLowerCase() === cleanUserEmail) {
-            mailsList.push({
-              id: `mail-winner-${asset.id}`,
-              type: 'winner',
-              asset: asset,
-              highestBidPrice: winnerBid.price,
-              subject: `[PANCARAN LELANG] Pengumuman Resmi Pemenang Lelang - Unit ${asset.id}`,
-              date: winnerBid.timestamp || new Date().toISOString()
-            });
-          }
-        }
+      // 1. Super Admin Inbox: Collect ALL bids placed across all assets
+      if (isAdmin && asset.bids && asset.bids.length > 0) {
+        asset.bids.forEach(bid => {
+          if (!bid || typeof bid.price !== 'number') return;
+          mailsList.push({
+            id: `mail-admin-bid-${asset.id}-${bid.id}`,
+            type: 'bid_admin',
+            asset: asset,
+            bid: bid,
+            subject: `[INBOX SUPER ADMIN] Penawaran Masuk ${formatIDR(bid.price)} - ${asset.brand || ''} ${asset.name || ''}`,
+            date: bid.timestamp || new Date().toISOString()
+          });
+        });
       }
 
-      // 2. Survey Booking Letters (when user submitted a bid on this asset with a survey booking)
+      // 2. Regular User Bids & Survey Bookings
       const userBids = (asset.bids || []).filter(b => b && b.email && b.email.toLowerCase() === cleanUserEmail);
       userBids.forEach(bid => {
+        if (!isAdmin) {
+          mailsList.push({
+            id: `mail-user-bid-${asset.id}-${bid.id}`,
+            type: 'bid_user',
+            asset: asset,
+            bid: bid,
+            subject: `[PANCARAN LELANG] Konfirmasi Penawaran ${formatIDR(bid.price)} - ${asset.brand || ''} ${asset.name || ''}`,
+            date: bid.timestamp || new Date().toISOString()
+          });
+        }
+
         if (bid.scheduleSurveyDate) {
           mailsList.push({
             id: `mail-booking-${bid.id}`,
@@ -374,6 +383,26 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
           });
         }
       });
+
+      // 3. Winner Letters (when asset is Sold)
+      if (asset.status === 'Sold' && asset.bids && asset.bids.length > 0) {
+        const validBids = asset.bids.filter(b => b && typeof b.price === 'number');
+        if (validBids.length > 0) {
+          const sortedBids = [...validBids].sort((a, b) => b.price - a.price);
+          const winnerBid = sortedBids[0];
+
+          if (winnerBid && winnerBid.email && (isAdmin || winnerBid.email.toLowerCase() === cleanUserEmail)) {
+            mailsList.push({
+              id: `mail-winner-${asset.id}`,
+              type: 'winner',
+              asset: asset,
+              highestBidPrice: winnerBid.price,
+              subject: `[PANCARAN LELANG] Pengumuman Resmi Pemenang Lelang - Unit ${asset.id}`,
+              date: winnerBid.timestamp || new Date().toISOString()
+            });
+          }
+        }
+      }
     });
 
     return mailsList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -476,13 +505,15 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
     <div className="max-w-5xl mx-auto animate-fade-in" id="external-inbox-container">
       
       {/* Inbox Welcome Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 border-l-[6px] border-l-slate-200 shadow-xs mb-6">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 border-l-[6px] border-l-blue-600 shadow-xs mb-6">
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Mail className="w-5 h-5 text-blue-600" />
           <span>{language === 'en' ? 'Inbox' : 'Kotak Masuk / Inbox'} ({mails.length})</span>
         </h2>
         <p className="text-xs text-slate-500 mt-1">
-          {t('Surat resmi penunjukan pemenang lelang dikirim secara eksklusif ke email pemenang di sini.')}
+          {isAdmin 
+            ? t('Log Kotak Masuk Super Admin memuat seluruh pemberitahuan penawaran lelang (bids) yang masuk dari peserta lelang.')
+            : t('Surat resmi penunjukan pemenang lelang dan konfirmasi penawaran dikirim secara eksklusif ke kotak masuk Anda di sini.')}
         </p>
       </div>
 
@@ -490,10 +521,15 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
         
         {/* Left Side: Mailbox List */}
         <div className={`bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden lg:col-span-4 ${selectedMailId ? 'hidden lg:block' : 'col-span-full'}`}>
-          <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
-            <Inbox className="w-4 h-4 text-slate-500" />
-            <span className="font-bold text-xs text-slate-700 uppercase tracking-wider">
-              {language === 'en' ? 'Inbox' : 'Kotak Masuk'}
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Inbox className="w-4 h-4 text-slate-500" />
+              <span className="font-bold text-xs text-slate-700 uppercase tracking-wider">
+                {language === 'en' ? 'Inbox' : 'Kotak Masuk'}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+              {mails.length} {language === 'en' ? 'Mails' : 'Pesan'}
             </span>
           </div>
 
@@ -503,7 +539,7 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                 <button
                   key={mail.id}
                   onClick={() => setSelectedMailId(mail.id)}
-                  className={`w-full text-left p-4 transition-all flex flex-col gap-1.5 ${
+                  className={`w-full text-left p-4 transition-all flex flex-col gap-1.5 cursor-pointer ${
                     selectedMailId === mail.id 
                       ? 'bg-blue-50/70 border-l-4 border-l-blue-600' 
                       : 'hover:bg-slate-50/70'
@@ -513,6 +549,14 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                     {mail.type === 'winner' ? (
                       <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
                         🏆 {language === 'en' ? 'WINNER' : 'PEMENANG'}
+                      </span>
+                    ) : mail.type === 'bid_admin' ? (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                        💰 {language === 'en' ? 'PENAWARAN MASUK' : 'PENAWARAN MASUK'}
+                      </span>
+                    ) : mail.type === 'bid_user' ? (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                        💰 {language === 'en' ? 'YOUR BID' : 'PENAWARAN ANDA'}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
@@ -529,7 +573,11 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                       {mail.subject}
                     </h4>
                     <p className="text-[11px] text-slate-500 line-clamp-2">
-                      {mail.type === 'winner' ? (
+                      {mail.type === 'bid_admin' ? (
+                        `Penawaran sebesar ${formatIDR(mail.bid?.price || 0)} dari ${mail.bid?.name || 'Peserta'} (${mail.bid?.email || '-'}) untuk unit ${mail.asset.brand || ''} ${mail.asset.name || ''}.`
+                      ) : mail.type === 'bid_user' ? (
+                        `Penawaran Anda sebesar ${formatIDR(mail.bid?.price || 0)} untuk unit ${mail.asset.brand || ''} ${mail.asset.name || ''} telah berhasil terdaftar.`
+                      ) : mail.type === 'winner' ? (
                         language === 'en'
                           ? `Dear Mr/Mrs ${userName}, Congratulations! You have been selected as the official auction winner of Pancaran Platinum for unit ${mail.asset.brand} ${mail.asset.name}...`
                           : `Yth. Bapak/Ibu ${userName}, Selamat! Anda telah terpilih sebagai pemenang lelang resmi Pancaran Platinum untuk unit ${mail.asset.brand} ${mail.asset.name}...`
@@ -547,7 +595,7 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                 <Mail className="w-8 h-8 text-slate-300" />
                 <span>{language === 'en' ? 'No incoming emails.' : 'Tidak ada email masuk.'}</span>
                 <span className="text-[10px] text-slate-400 font-normal px-6">
-                  {t('Hanya pemenang lelang tertinggi yang akan menerima surat pengumuman pemenang di kotak masuk.')}
+                  {t('Pemberitahuan penawaran lelang dan pengumuman pemenang akan muncul di sini.')}
                 </span>
               </div>
             )}
@@ -567,9 +615,14 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <div className={`p-2.5 text-white rounded-2xl shadow-sm ${activeMail.type === 'winner' ? 'bg-blue-600' : 'bg-indigo-600'}`}>
+                  <div className={`p-2.5 text-white rounded-2xl shadow-sm ${
+                    activeMail.type === 'winner' ? 'bg-emerald-600' :
+                    activeMail.type === 'bid_admin' || activeMail.type === 'bid_user' ? 'bg-blue-600' : 'bg-indigo-600'
+                  }`}>
                     {activeMail.type === 'winner' ? (
                       <Trophy className="w-5 h-5" />
+                    ) : activeMail.type === 'bid_admin' || activeMail.type === 'bid_user' ? (
+                      <TrendingUp className="w-5 h-5" />
                     ) : (
                       <Calendar className="w-5 h-5" />
                     )}
@@ -613,8 +666,15 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                     </div>
                   </div>
                   <div className="text-right text-[10px] text-slate-400 font-mono font-bold uppercase">
-                    <p>{activeMail.type === 'winner' ? (language === 'en' ? 'AUCTION DECISION LETTER' : 'SURAT KEPUTUSAN LELANG') : (language === 'en' ? 'PHYSICAL SURVEY CONFIRMATION' : 'SURAT KONFIRMASI SURVEI FISIK')}</p>
-                    <p className="text-slate-700 mt-1">NO: {activeMail.type === 'winner' ? 'PL/WIN' : 'PL/SRV'}/{activeMail.asset.id}/{new Date(activeMail.date).getFullYear()}</p>
+                    <p>
+                      {activeMail.type === 'winner' ? (language === 'en' ? 'AUCTION DECISION LETTER' : 'SURAT KEPUTUSAN LELANG') :
+                       activeMail.type === 'bid_admin' ? 'LOG INBOX SUPER ADMIN' :
+                       activeMail.type === 'bid_user' ? 'SURAT KONFIRMASI PENAWARAN' :
+                       (language === 'en' ? 'PHYSICAL SURVEY CONFIRMATION' : 'SURAT KONFIRMASI SURVEI FISIK')}
+                    </p>
+                    <p className="text-slate-700 mt-1">
+                      NO: {activeMail.type === 'winner' ? 'PL/WIN' : activeMail.type === 'bid_admin' || activeMail.type === 'bid_user' ? 'PL/BID' : 'PL/SRV'}/{activeMail.asset.id}/{new Date(activeMail.date).getFullYear()}
+                    </p>
                   </div>
                 </div>
 
@@ -624,13 +684,33 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                   
                   <div className="space-y-0.5">
                     <p>{language === 'en' ? 'To Dear,' : 'Kepada Yth,'}</p>
-                    <p className="font-black text-slate-900 text-sm">{userName}</p>
-                    <p className="font-mono text-slate-500">{userEmail}</p>
-                    {userPhone && <p className="text-slate-600 font-semibold">{userPhone}</p>}
+                    <p className="font-black text-slate-900 text-sm">
+                      {activeMail.type === 'bid_admin' 
+                        ? 'Tim Super Admin Pancaran Platinum' 
+                        : (activeMail.bid?.name || userName)}
+                    </p>
+                    <p className="font-mono text-slate-500">
+                      {activeMail.type === 'bid_admin' 
+                        ? (activeMail.bid?.email || userEmail) 
+                        : userEmail}
+                    </p>
+                    {(activeMail.bid?.contact || userPhone) && (
+                      <p className="text-slate-600 font-semibold">{activeMail.bid?.contact || userPhone}</p>
+                    )}
                   </div>
 
                   <p className="text-justify leading-relaxed">
-                    {activeMail.type === 'winner' ? (
+                    {activeMail.type === 'bid_admin' ? (
+                      <>
+                        Dengan hormat, <br/>
+                        Sistem informasi lelang Pancaran Platinum mencatat adanya <strong>PENAWARAN LELANG MASUK (BID)</strong> baru dari calon peserta lelang dengan rincian sebagai berikut:
+                      </>
+                    ) : activeMail.type === 'bid_user' ? (
+                      <>
+                        Dengan hormat, <br/>
+                        Terima kasih atas partisipasi Anda dalam lelang Pancaran Platinum. Penawaran lelang Anda telah <strong>BERHASIL TERDAFTAR & DIKONFIRMASI</strong> oleh sistem dengan rincian sebagai berikut:
+                      </>
+                    ) : activeMail.type === 'winner' ? (
                       language === 'en' ? (
                         <>
                           Dear Sir/Madam, <br/>
@@ -657,10 +737,39 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                     )}
                   </p>
 
+                  {/* Bidder Info Card (For Bids) */}
+                  {(activeMail.type === 'bid_admin' || activeMail.type === 'bid_user') && activeMail.bid && (
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3 shadow-inner">
+                      <h4 className="font-bold text-[11px] uppercase tracking-wider text-slate-800 flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                        👤 {language === 'en' ? 'Bidder Contact Information' : 'Informasi Kontak Penawar'}
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px] font-semibold">
+                        <div>
+                          <span className="text-[9px] text-slate-400 block uppercase">Nama Penawar</span>
+                          <span className="text-slate-900 font-bold">{activeMail.bid.name}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-400 block uppercase">Email</span>
+                          <span className="text-slate-900 font-mono">{activeMail.bid.email}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-400 block uppercase">No. HP / WhatsApp</span>
+                          <span className="text-slate-900 font-mono">{activeMail.bid.contact}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Unit Specs Card */}
                   <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-inner">
-                    <h4 className={`font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2 ${activeMail.type === 'winner' ? 'text-blue-900' : 'text-indigo-900'}`}>
-                      <CheckCircle className={`w-4 h-4 ${activeMail.type === 'winner' ? 'text-emerald-500' : 'text-indigo-500'}`} /> {language === 'en' ? 'Selected Unit Specifications' : 'Spesifikasi Unit Terpilih'}
+                    <h4 className={`font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2 ${
+                      activeMail.type === 'winner' ? 'text-emerald-900' :
+                      activeMail.type === 'bid_admin' || activeMail.type === 'bid_user' ? 'text-blue-900' : 'text-indigo-900'
+                    }`}>
+                      <CheckCircle className={`w-4 h-4 ${
+                        activeMail.type === 'winner' ? 'text-emerald-500' :
+                        activeMail.type === 'bid_admin' || activeMail.type === 'bid_user' ? 'text-blue-500' : 'text-indigo-500'
+                      }`} /> {language === 'en' ? 'Selected Unit Specifications' : 'Spesifikasi Unit Terpilih'}
                     </h4>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-y-3.5 gap-x-6 text-[11px] font-semibold">
@@ -692,18 +801,43 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone }: Ex
                   </div>
 
                   {/* Pricing / Booking Details Card */}
-                  {activeMail.type === 'winner' ? (
-                    <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 space-y-4">
-                      <h4 className="font-bold text-blue-950 text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-blue-100 pb-2">
-                        <TrendingUp className="w-4 h-4 text-blue-600" /> {language === 'en' ? 'Approved Bid Value' : 'Nilai Penawaran Disetujui'}
+                  {activeMail.type === 'bid_admin' || activeMail.type === 'bid_user' ? (
+                    <div className="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-5 space-y-4 shadow-sm">
+                      <h4 className="font-bold text-blue-950 text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-blue-200/60 pb-2">
+                        <TrendingUp className="w-4 h-4 text-blue-600" /> Nominal Penawaran Masuk (Bid)
+                      </h4>
+                      
+                      <div className="flex flex-wrap justify-between items-center gap-3">
+                        <div>
+                          <span className="text-[9px] text-slate-500 block uppercase font-bold">Harga Penawaran Yang Diajukan</span>
+                          <span className="text-blue-900 font-black text-2xl tracking-tight block mt-0.5">
+                            {formatIDR(activeMail.bid?.price || 0)}
+                          </span>
+                        </div>
+                        <div className="bg-blue-600 text-white text-[10px] font-extrabold px-3.5 py-1.5 rounded-xl shadow-xs uppercase tracking-wide">
+                          ✓ Dikonfirmasi Sistem
+                        </div>
+                      </div>
+
+                      {activeMail.bid?.scheduleSurveyDate && (
+                        <div className="pt-2 border-t border-blue-200/50 flex items-center gap-4 text-xs font-semibold text-blue-900">
+                          <span>📅 Jadwal Survei Fisik: <strong>{activeMail.bid.scheduleSurveyDate}</strong></span>
+                          <span>⏰ Pukul: <strong>{activeMail.bid.scheduleSurveyTime || '09:00'} WIB</strong></span>
+                        </div>
+                      )}
+                    </div>
+                  ) : activeMail.type === 'winner' ? (
+                    <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-5 space-y-4 shadow-sm">
+                      <h4 className="font-bold text-emerald-950 text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-emerald-200/60 pb-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-600" /> {language === 'en' ? 'Approved Bid Value' : 'Nilai Penawaran Disetujui'}
                       </h4>
                       
                       <div className="flex justify-between items-center">
                         <div>
-                          <span className="text-[9px] text-slate-400 block uppercase font-bold">{language === 'en' ? 'Highest Bid Price (Approved)' : 'Harga Penawaran Tertinggi (Disetujui)'}</span>
-                          <span className="text-blue-900 font-black text-xl tracking-tight">{formatIDR(activeMail.highestBidPrice || 0)}</span>
+                          <span className="text-[9px] text-slate-500 block uppercase font-bold">{language === 'en' ? 'Highest Bid Price (Approved)' : 'Harga Penawaran Tertinggi (Disetujui)'}</span>
+                          <span className="text-emerald-950 font-black text-2xl tracking-tight block mt-0.5">{formatIDR(activeMail.highestBidPrice || 0)}</span>
                         </div>
-                        <div className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-3 py-1 rounded-lg shadow-sm uppercase border border-emerald-200">
+                        <div className="bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-xl shadow-xs uppercase">
                           {language === 'en' ? 'Valid Winner' : 'Pemenang Sah'}
                         </div>
                       </div>

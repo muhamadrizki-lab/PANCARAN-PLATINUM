@@ -170,7 +170,7 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
     setActiveImgIdx(prev => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const validBidPrices = (asset.bids || []).filter(b => b && typeof b.price === 'number' && !isNaN(b.price)).map(b => b.price);
+  const validBidPrices = (asset.bids || []).filter(b => b && typeof b.price === 'number' && !isNaN(b.price) && b.price < 1000000000).map(b => b.price);
   const highestOffer = Math.max(asset.startingPrice || 0, ...validBidPrices, 0);
   const isExpired = asset.closeBidDate ? new Date() > new Date(asset.closeBidDate) : false;
 
@@ -602,7 +602,7 @@ export default function CatalogView({
   const uniqueCategories = Array.from(new Set([...MAIN_CATEGORIES, ...openAssets.map(a => normalizeCategory(a.category || ''))]));
 
   const selectedAsset = (assets || []).find(a => a && a.id === selectedAssetId);
-  const selectedAssetBids = (selectedAsset?.bids || []).filter(b => b && typeof b.price === 'number' && !isNaN(b.price)).map(b => b.price);
+  const selectedAssetBids = (selectedAsset?.bids || []).filter(b => b && typeof b.price === 'number' && !isNaN(b.price) && b.price < 1000000000).map(b => b.price);
   const currentHighestBid = selectedAsset 
     ? Math.max(selectedAsset.startingPrice || 0, ...selectedAssetBids, 0)
     : 0;
@@ -1802,9 +1802,8 @@ export default function CatalogView({
                   )}
 
           {/* Interactive Bidding & Survey Scheduler Form */}
-                  {canBid && (
-                    <div 
-                      id="bid-form-card"
+                  <div 
+                    id="bid-form-card"
                       className={`bg-white p-6 rounded-2xl border border-l-[6px] border-l-slate-300 transition-all duration-300 space-y-4 cursor-pointer ${
                         isFormFocused 
                           ? 'relative z-40 border-blue-500 shadow-2xl ring-2 ring-blue-500/20 scale-[1.02] bg-white cursor-default' 
@@ -2216,7 +2215,6 @@ export default function CatalogView({
                     <div className="h-[20vh] md:hidden" />
                   )}
                 </div>
-              )}
             </div>
           </div>
         </div>
@@ -2440,6 +2438,12 @@ export default function CatalogView({
             <p className="text-[11px] text-center font-medium text-slate-600">
               {t('Anda yakin sudah benar dengan penawaran sebesar')} <strong className="text-blue-700 font-extrabold">{formatIDR(Number(bidForm.price))}</strong>?
             </p>
+
+            {/* Super Admin Inbox Notice */}
+            <div className="bg-blue-50/90 border border-blue-200/80 rounded-xl p-2.5 text-[10px] text-blue-900 font-medium text-center flex items-center justify-center gap-1.5 shadow-xs">
+              <span className="text-blue-600 text-xs">📬</span>
+              <span>{t('Setelah menekan "Ya, Saya Yakin", penawaran akan langsung terkirim & tercatat di Inbox Super Admin.')}</span>
+            </div>
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <button

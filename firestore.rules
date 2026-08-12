@@ -75,5 +75,15 @@ service cloud.firestore {
     match /refund_requests/{requestId} {
       allow read, write: if true;
     }
+
+    // Rules for WA Sessions collection
+    match /wa_sessions/{sessionId} {
+      allow read, write: if true;
+    }
+
+    // Rules for WA Templates collection
+    match /wa_templates/{templateId} {
+      allow read, write: if true;
+    }
   }
 }

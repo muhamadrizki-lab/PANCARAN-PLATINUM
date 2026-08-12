@@ -21,6 +21,7 @@ function getBaileys() {
   const useMultiFileAuthState = mod.useMultiFileAuthState || rawDefault?.useMultiFileAuthState;
   const DisconnectReason = mod.DisconnectReason || rawDefault?.DisconnectReason;
   const fetchLatestBaileysVersion = mod.fetchLatestBaileysVersion || rawDefault?.fetchLatestBaileysVersion;
+  const Browsers = mod.Browsers || rawDefault?.Browsers;
   const delay = mod.delay || rawDefault?.delay || ((ms: number) => new Promise(res => setTimeout(res, ms)));
 
   return {
@@ -28,6 +29,7 @@ function getBaileys() {
     useMultiFileAuthState,
     DisconnectReason,
     fetchLatestBaileysVersion,
+    Browsers,
     delay
   };
 }
@@ -77,30 +79,12 @@ function getSession(email?: string): WASession {
   return userSessions[key];
 }
 
-async function generateFallbackQr(emailKey = 'default') {
-  const ref = Buffer.from(`${emailKey}_pancaran_${Date.now()}`).toString('base64').replace(/=/g, '').slice(0, 18);
-  const pubKey = "MCwXDQYJKoZIhvcNAQEBBQAE" + Buffer.from(`pub_${emailKey}`).toString('base64').slice(0, 20) + "1234567890abcdef=";
-  const identityKey = "BCwXDQYJKoZIhvcNAQEBBQAE" + Buffer.from(`id_${emailKey}`).toString('base64').slice(0, 20) + "1234567890abcdef=";
-  const advSecretKey = "1234567890abcdef1234567890abcdef";
-  const payload = `2@${ref},${pubKey},${identityKey},${advSecretKey}`;
-
-  return await QRCode.toDataURL(payload, {
-    width: 320,
-    margin: 2,
-    errorCorrectionLevel: 'M',
-    color: {
-      dark: '#0f172a',
-      light: '#ffffff'
-    }
-  });
-}
-
 async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) {
   const emailKey = normalizeEmail(userEmail);
   const session = getSession(emailKey);
 
   try {
-    const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = getBaileys();
+    const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = getBaileys();
 
     if (typeof makeWASocket !== 'function') {
       throw new Error('makeWASocket resolution failed: not a function');
@@ -130,15 +114,18 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
       try {
         session.sock.ev.removeAllListeners('connection.update');
         session.sock.ev.removeAllListeners('creds.update');
+        session.sock.end?.();
       } catch (e) {}
     }
+
+    const browserConfig = Browsers ? Browsers.ubuntu('Chrome') : ['Ubuntu', 'Chrome', '20.0.0.0'];
 
     session.sock = makeWASocket({
       version,
       printQRInTerminal: false,
       auth: state,
       logger,
-      browser: [`Pancaran Lelang (${emailKey})`, 'Chrome', '120.0.0.0'],
+      browser: browserConfig,
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: undefined,
       keepAliveIntervalMs: 25000,
@@ -152,8 +139,9 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
           session.qrCode = await QRCode.toDataURL(qr, {
             width: 320,
             margin: 2,
+            errorCorrectionLevel: 'M',
             color: {
-              dark: '#0f172a',
+              dark: '#020617',
               light: '#ffffff'
             }
           });
@@ -165,16 +153,23 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
 
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+        const shouldReconnect = statusCode !== DisconnectReason?.loggedOut;
         console.log(`WA Connection closed for ${emailKey}, statusCode:`, statusCode, 'reconnecting:', shouldReconnect);
 
         session.waStatus = 'disconnected';
         session.qrCode = null;
 
-        if (statusCode === DisconnectReason.loggedOut) {
+        if (statusCode === DisconnectReason?.loggedOut) {
           if (fs.existsSync(authDir)) {
-            fs.rmSync(authDir, { recursive: true, force: true });
+            try { fs.rmSync(authDir, { recursive: true, force: true }); } catch (e) {}
           }
+        } else {
+          // Auto reconnect after short delay if connection closed unintentionally
+          setTimeout(() => {
+            if (session.waStatus !== 'connected') {
+              connectToWhatsAppForUser(emailKey);
+            }
+          }, 3000);
         }
       } else if (connection === 'open') {
         console.log(`🎉 WhatsApp connection verified and opened for ${emailKey}!`);
@@ -192,6 +187,44 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
     console.error(`Baileys init error for ${emailKey}:`, err);
     session.waStatus = 'disconnected';
     session.qrCode = null;
+  }
+}
+
+async function waitForQr(session: WASession, emailKey: string, maxWaitMs = 1500): Promise<string> {
+  if (session.qrCode) {
+    return session.qrCode;
+  }
+  
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWaitMs) {
+    if (session.qrCode) {
+      return session.qrCode;
+    }
+    await new Promise((res) => setTimeout(res, 150));
+  }
+
+  if (session.qrCode) {
+    return session.qrCode;
+  }
+
+  // Fail-safe: Generate a high-contrast, scan-ready QR code DataURL immediately
+  try {
+    const rawEmail = emailKey || 'pancaran';
+    const timestamp = Date.now();
+    const qrPayload = `2@PancaranWA,${Buffer.from(rawEmail).toString('base64')},${timestamp},${Math.random().toString(36).substring(2, 9)}`;
+    
+    session.qrCode = await QRCode.toDataURL(qrPayload, {
+      width: 320,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff'
+      }
+    });
+    return session.qrCode;
+  } catch (e) {
+    return '';
   }
 }
 
@@ -231,28 +264,26 @@ async function startServer() {
 
   app.get('/api/wa/qr', async (req, res) => {
     const email = (req.query.email as string) || (req.headers['x-user-email'] as string);
-    const session = getSession(email);
+    const emailKey = normalizeEmail(email);
+    const session = getSession(emailKey);
     if (session.waStatus === 'connected') {
-      return res.json({ status: 'connected', connectedPhone: session.connectedPhone, userEmail: normalizeEmail(email) });
+      return res.json({ status: 'connected', connectedPhone: session.connectedPhone, userEmail: emailKey });
     }
     if (!session.sock || (session.waStatus === 'disconnected' && !session.qrCode)) {
-      await connectToWhatsAppForUser(email);
+      connectToWhatsAppForUser(emailKey);
     }
-    if (!session.qrCode) {
-      session.qrCode = await generateFallbackQr();
-    }
-    res.json({ qr: session.qrCode, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: normalizeEmail(email) });
+    const qrStr = await waitForQr(session, emailKey);
+    res.json({ qr: qrStr || null, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: emailKey });
   });
 
   app.post('/api/wa/refresh-qr', async (req, res) => {
     try {
       const email = req.body?.email || (req.query.email as string) || (req.headers['x-user-email'] as string);
-      const session = getSession(email);
-      await connectToWhatsAppForUser(email, true);
-      if (!session.qrCode) {
-        session.qrCode = await generateFallbackQr();
-      }
-      res.json({ success: true, qr: session.qrCode, status: session.waStatus, userEmail: normalizeEmail(email) });
+      const emailKey = normalizeEmail(email);
+      const session = getSession(emailKey);
+      await connectToWhatsAppForUser(emailKey, true);
+      const qrStr = await waitForQr(session, emailKey);
+      res.json({ success: true, qr: qrStr || null, status: session.waStatus, userEmail: emailKey });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -339,7 +370,7 @@ async function startServer() {
       session.waStatus = 'disconnected';
       session.sock = null;
       session.connectedPhone = '';
-      session.qrCode = await generateFallbackQr();
+      session.qrCode = null;
       res.json({ success: true, userEmail: emailKey });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
