@@ -2740,14 +2740,14 @@ export default function App() {
 
       {/* Guide Detail Modal / Full Feed Popups */}
       {selectedGuideModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center sm:p-6 p-0 overflow-y-auto">
-          <div className="relative w-full min-h-screen sm:min-h-0 sm:max-w-6xl flex items-center justify-center sm:py-8">
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="relative w-full max-w-5xl flex items-center justify-center py-4 sm:py-8">
             <button
               onClick={() => {
                 setSelectedGuideModal(null);
                 setPreviewPopupItem(null);
               }}
-              className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 p-2.5 bg-white/90 hover:bg-white text-slate-700 rounded-full shadow-lg transition cursor-pointer backdrop-blur-sm"
+              className="absolute top-2 right-2 sm:top-6 sm:right-6 z-20 p-2.5 bg-white/90 hover:bg-white text-slate-700 rounded-full shadow-lg transition cursor-pointer backdrop-blur-sm"
               aria-label="Tutup"
             >
               <X className="w-6 h-6" />
@@ -2776,9 +2776,9 @@ export default function App() {
               }
 
               return (
-                <div className={`grid grid-cols-1 ${activePopups.length > 1 ? 'lg:grid-cols-2' : 'max-w-2xl'} gap-6 w-full p-4 sm:p-6 my-auto`}>
+                <div className={`grid grid-cols-1 ${activePopups.length > 1 ? 'lg:grid-cols-2' : 'max-w-2xl'} gap-6 w-full p-2 sm:p-6 my-auto`}>
                   {activePopups.map((activePopup, index) => (
-                    <div key={activePopup.id || index} className="bg-white rounded-none sm:rounded-3xl p-6 sm:p-8 shadow-2xl relative border-0 sm:border border-slate-200/80 flex flex-col justify-between min-h-[85vh] sm:min-h-0 sm:max-h-[88vh] overflow-y-auto">
+                    <div key={activePopup.id || index} className="bg-white rounded-3xl p-5 sm:p-8 shadow-2xl relative border border-slate-200/80 flex flex-col justify-between max-h-[85vh] sm:max-h-[88vh] overflow-y-auto">
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                           <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
