@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory } from './types';
+import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory, PopupConfig, PopupItem, EMPTY_POPUP_CONFIG } from './types';
 import { INITIAL_ASSETS, INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from './data/mockData';
 import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
 import AdminUsers from './components/AdminUsers';
 import AdminSettings from './components/AdminSettings';
 import AdminWhatsAppBlasting from './components/AdminWhatsAppBlasting';
+import AdminPopupSettings from './components/AdminPopupSettings';
 import CatalogView from './components/CatalogView';
 import LoginModal from './components/LoginModal';
 import { useLanguage } from './components/LanguageContext';
@@ -65,7 +66,8 @@ import {
   subscribeToRefundRequests,
   updateRefundRequest,
   deleteRefundRequest,
-  addRefundRequest
+  addRefundRequest,
+  getSystemSettings
 } from './firebase';
 import { 
   Shield, 
@@ -95,7 +97,8 @@ import {
   Award,
   Eye,
   Lock,
-  Search
+  Search,
+  Sliders
 } from 'lucide-react';
 
 export default function App() {
@@ -115,7 +118,33 @@ export default function App() {
   const [selectedGuideModal, setSelectedGuideModal] = useState<'ikut' | 'titip' | 'online' | null>(null);
   
   // Navigation inside Admin area
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'settings' | 'whatsapp'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'popup_settings' | 'settings' | 'whatsapp'>('dashboard');
+  
+  // Pop-up Config & Preview State
+  const [previewPopupItem, setPreviewPopupItem] = useState<PopupItem | null>(null);
+  const [popupConfig, setPopupConfig] = useState<PopupConfig>(() => {
+    try {
+      const saved = localStorage.getItem('pancaran_popup_config');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.popups)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading popup config from localStorage:', e);
+    }
+    return EMPTY_POPUP_CONFIG;
+  });
+
+  const handleSavePopupConfig = (newConfig: PopupConfig) => {
+    setPopupConfig(newConfig);
+    try {
+      localStorage.setItem('pancaran_popup_config', JSON.stringify(newConfig));
+    } catch (e) {
+      console.error('Error saving popup config to localStorage:', e);
+    }
+  };
   
   // Navigation inside External area
   const [externalTab, setExternalTab] = useState<'catalog' | 'notifications' | 'inbox' | 'bidding_access'>('catalog');
@@ -632,10 +661,31 @@ export default function App() {
       console.warn("Firestore connection is offline or unavailable. Operating with local database.", err);
     });
 
+    // Fetch cloud system settings (including popupConfig)
+    getSystemSettings().then((settings) => {
+      if (settings && settings.popupConfig) {
+        setPopupConfig(settings.popupConfig);
+        try {
+          localStorage.setItem('pancaran_popup_config', JSON.stringify(settings.popupConfig));
+        } catch (e) {}
+      }
+    });
+
     const storedSession = localStorage.getItem('pancaran_session_email');
     const storedSessionType = localStorage.getItem('pancaran_session_type');
     const storedSessionName = localStorage.getItem('pancaran_session_name') || '';
     const storedSessionPhone = localStorage.getItem('pancaran_session_phone') || '';
+
+    let activeConfig = EMPTY_POPUP_CONFIG;
+    try {
+      const savedCfg = localStorage.getItem('pancaran_popup_config');
+      if (savedCfg) {
+        const parsed = JSON.parse(savedCfg);
+        if (parsed && Array.isArray(parsed.popups)) activeConfig = parsed;
+      }
+    } catch (e) {}
+
+    const popupsList = activeConfig.popups || [];
 
     if (storedSession) {
       if (storedSessionType === 'user') {
@@ -648,10 +698,21 @@ export default function App() {
         setLoggedInAdminEmail(storedSession);
       }
       
-      // Auto-show the bidding rules popup on session restoration (one-time or every refresh as requested)
-      setTimeout(() => {
-        setSelectedGuideModal('ikut');
-      }, 1000);
+      // Auto-show popup AFTER login if an active popup exists
+      const hasAfterLoginPopup = popupsList.some((p) => p.isActive && p.showAfterLogin);
+      if (hasAfterLoginPopup) {
+        setTimeout(() => {
+          setSelectedGuideModal('ikut');
+        }, 1000);
+      }
+    } else {
+      // Auto-show popup BEFORE login (guests/visitors) if an active popup exists
+      const hasBeforeLoginPopup = popupsList.some((p) => p.isActive && p.showBeforeLogin);
+      if (hasBeforeLoginPopup) {
+        setTimeout(() => {
+          setSelectedGuideModal('ikut');
+        }, 1000);
+      }
     }
 
     return () => {
@@ -1076,9 +1137,12 @@ export default function App() {
     localStorage.setItem('pancaran_session_type', 'admin');
     setRole('internal'); // Switch to internal dashboard on login
     setAdminTab('dashboard');
-    setTimeout(() => {
-      setSelectedGuideModal('ikut');
-    }, 400);
+    const hasAfterLoginPopup = (popupConfig.popups || []).some((p) => p.isActive && p.showAfterLogin);
+    if (hasAfterLoginPopup) {
+      setTimeout(() => {
+        setSelectedGuideModal('ikut');
+      }, 400);
+    }
   };
 
   const handleExternalLoginSuccess = (email: string, name: string, phone?: string) => {
@@ -1096,9 +1160,11 @@ export default function App() {
     }
     setRole('external');
     setExternalTab('catalog');
-    setTimeout(() => {
-      setSelectedGuideModal('ikut');
-    }, 400);
+    if (hasAfterLoginPopup) {
+      setTimeout(() => {
+        setSelectedGuideModal('ikut');
+      }, 400);
+    }
   };
 
   const handleLogout = () => {
@@ -2098,6 +2164,15 @@ export default function App() {
                 >
                   WA Blasting
                 </button>
+                <button
+                  onClick={() => { setAdminTab('popup_settings'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
+                    adminTab === 'popup_settings' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
+                  }`}
+                >
+                  <Sliders className="w-4 h-4" />
+                  <span>{t('Kelola Pop-up Modal')}</span>
+                </button>
               </div>
             )}
 
@@ -2233,27 +2308,19 @@ export default function App() {
                     <Phone className="w-4 h-4 shrink-0" />
                     <span>WA Blasting</span>
                   </button>
-                </nav>
-              </div>
 
-              <div className="pt-4 border-t border-slate-100">
-                <h3 className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-3">
-                  {t('Lelang Aktif')}
-                </h3>
-                <ul className="space-y-3">
-                  <li className="flex items-center justify-between">
-                    <span className="text-xs text-slate-600">{t('Sedang Berjalan')}</span>
-                    <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                      {assets.filter(a => a.status === 'Open').length}
-                    </span>
-                  </li>
-                  <li className="flex items-center justify-between">
-                    <span className="text-xs text-slate-600">{t('Unit Terjual')}</span>
-                    <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                      {assets.filter(a => a.status === 'Sold').length}
-                    </span>
-                  </li>
-                </ul>
+                  <button
+                    onClick={() => setAdminTab('popup_settings')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
+                      adminTab === 'popup_settings'
+                        ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Sliders className="w-4 h-4 shrink-0" />
+                    <span>{t('Kelola Pop-up Modal')}</span>
+                  </button>
+                </nav>
               </div>
             </div>
 
@@ -2317,6 +2384,20 @@ export default function App() {
                   registeredUsers={registeredUsers} 
                   assets={assets}
                   currentUserEmail={isUserLoggedIn ? loggedInUserEmail : loggedInAdminEmail}
+                />
+              )}
+              {adminTab === 'popup_settings' && (
+                <AdminPopupSettings
+                  popupConfig={popupConfig}
+                  onSaveConfig={handleSavePopupConfig}
+                  onShowNotification={(msg, type) => {
+                    const mappedType = type === 'error' ? 'warning' : type;
+                    addNotification(mappedType, type === 'success' ? t('Berhasil') : t('Info'), msg);
+                  }}
+                  onPreviewPopup={(cfg) => {
+                    setPopupConfig(cfg);
+                    setSelectedGuideModal('ikut');
+                  }}
                 />
               )}
         {adminTab === 'settings' && (
@@ -2666,79 +2747,116 @@ export default function App() {
               <X className="w-5 h-5" />
             </button>
 
-            {selectedGuideModal === 'ikut' && (
-              <div className="space-y-5">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                    <CheckCircle className="w-6 h-6" />
+            {selectedGuideModal === 'ikut' && (() => {
+              const activePopup = previewPopupItem || (popupConfig.popups || []).find(p => p.isActive && (isUserLoggedIn || isAdminLoggedIn ? p.showAfterLogin : p.showBeforeLogin)) || (popupConfig.popups || [])[0];
+
+              if (!activePopup) {
+                return (
+                  <div className="space-y-4 text-center py-6">
+                    <h3 className="text-lg font-extrabold text-slate-900">{t('Informasi Penawaran')}</h3>
+                    <p className="text-xs text-slate-500">{t('Belum ada pop-up pengumuman aktif saat ini.')}</p>
+                    <button
+                      onClick={() => setSelectedGuideModal(null)}
+                      className="px-5 py-2 bg-slate-100 font-bold text-xs rounded-xl text-slate-700 cursor-pointer"
+                    >
+                      {t('Tutup')}
+                    </button>
                   </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug">
-                      {t('Syarat & Ketentuan Akses Bidding - Lelang Truck Pancaran Platinum')}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('Informasi Resmi Deposit & Akses Penawaran')}</p>
+                );
+              }
+
+              return (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                      <CheckCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug">
+                        {activePopup.title}
+                      </h3>
+                      {activePopup.subtitle && (
+                        <p className="text-xs text-slate-500 mt-0.5">{activePopup.subtitle}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Banner / Guide Image */}
-                <div className="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-sm">
-                  <img
-                    src="https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN"
-                    alt={t('Syarat & Ketentuan Akses Bidding')}
-                    className="w-full h-full object-cover object-center"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
+                  {/* Banner / Guide Image */}
+                  {activePopup.imageUrl && (
+                    <div className="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-sm">
+                      <img
+                        src={activePopup.imageUrl}
+                        alt={activePopup.title}
+                        className="w-full h-full object-cover object-center"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
 
-                <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
-                  <p className="font-medium text-slate-800">
-                    {t('Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan')} <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">{t('deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.')}</span> {t('sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.')}
-                  </p>
-
-                  <div className="p-4 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1.5">
-                    <h4 className="font-extrabold text-emerald-900 text-sm flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      {t('Jaminan Keamanan Dana:')}
-                    </h4>
-                    <p className="text-emerald-950 font-medium text-xs sm:text-sm">
-                      {t('Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar')} <span className="font-extrabold text-emerald-900">{t('Rp10.000.000,-')}</span> {t('akan dikembalikan penuh')} <span className="font-extrabold text-emerald-900">({t('100%')})</span> {t('setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.')}
+                  <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                    <p className="font-medium text-slate-800">
+                      {activePopup.mainDescription}{' '}
+                      {activePopup.depositHighlight && (
+                        <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">
+                          {activePopup.depositHighlight}
+                        </span>
+                      )}
                     </p>
+
+                    {activePopup.securityTitle && (
+                      <div className="p-4 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1.5">
+                        <h4 className="font-extrabold text-emerald-900 text-sm flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          {activePopup.securityTitle}
+                        </h4>
+                        <p className="text-emerald-950 font-medium text-xs sm:text-sm">
+                          {activePopup.securityDescription}
+                        </p>
+                      </div>
+                    )}
+
+                    {activePopup.cancellationTitle && (
+                      <div className="p-4 bg-rose-50/80 border border-rose-200/80 rounded-2xl space-y-1.5">
+                        <h4 className="font-extrabold text-rose-900 text-sm flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-rose-600" />
+                          {activePopup.cancellationTitle}
+                        </h4>
+                        <p className="text-rose-950 font-medium text-xs sm:text-sm">
+                          {activePopup.cancellationDescription}
+                        </p>
+                      </div>
+                    )}
+
+                    {activePopup.closingSlogan && (
+                      <p className="font-semibold text-blue-950 italic text-center pt-2">
+                        {activePopup.closingSlogan}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="p-4 bg-rose-50/80 border border-rose-200/80 rounded-2xl space-y-1.5">
-                    <h4 className="font-extrabold text-rose-900 text-sm flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
-                      {t('Syarat & Ketentuan Pembatalan:')}
-                    </h4>
-                    <p className="text-rose-950 font-medium text-xs sm:text-sm">
-                      {t('Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.')}
-                    </p>
+                  <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-3 justify-end items-center">
+                    <button
+                      onClick={() => {
+                        setSelectedGuideModal(null);
+                        setPreviewPopupItem(null);
+                      }}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 transition cursor-pointer"
+                    >
+                      {t('Tutup')}
+                    </button>
+                    <a
+                      href={activePopup.ctaButtonUrl || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {activePopup.ctaButtonText || t('Hubungi Panitia')}
+                    </a>
                   </div>
-
-                  <p className="font-semibold text-blue-950 italic text-center pt-2">
-                    {t('Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!')}
-                  </p>
                 </div>
-
-                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-3 justify-end items-center">
-                  <button
-                    onClick={() => setSelectedGuideModal(null)}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 transition"
-                  >
-                    {t('Tutup')}
-                  </button>
-                  <a
-                    href="https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition"
-                  >
-                    <Phone className="w-4 h-4" />
-                    {t('Hubungi Panitia untuk Akses Bidding')}
-                  </a>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {selectedGuideModal === 'titip' && (
               <div className="space-y-6">

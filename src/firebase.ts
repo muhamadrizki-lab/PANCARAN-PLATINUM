@@ -1208,8 +1208,11 @@ export function subscribeToRegisteredUsers(callback: (users: RegisteredUser[]) =
 const CONFIG_COLLECTION = 'config';
 const SYSTEM_SETTINGS_DOC = 'settings';
 
+import { PopupConfig } from './types';
+
 export interface SystemSettings {
   appsScriptUrl?: string;
+  popupConfig?: PopupConfig;
 }
 
 /**

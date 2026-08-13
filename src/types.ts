@@ -237,3 +237,32 @@ export interface WaTemplateData {
   createdAt?: string;
 }
 
+export interface PopupItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  mainDescription?: string;
+  depositHighlight?: string;
+  securityTitle?: string;
+  securityDescription?: string;
+  cancellationTitle?: string;
+  cancellationDescription?: string;
+  closingSlogan?: string;
+  ctaButtonText?: string;
+  ctaButtonUrl?: string;
+  showBeforeLogin: boolean;
+  showAfterLogin: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PopupConfig {
+  popups: PopupItem[];
+}
+
+export const EMPTY_POPUP_CONFIG: PopupConfig = {
+  popups: [],
+};
+
+
