@@ -2810,6 +2810,7 @@ export default function App() {
                           {activePopup.depositHighlight}
                         </span>
                       )}
+                      {activePopup.descriptionSuffix && ` ${activePopup.descriptionSuffix}`}
                     </p>
 
                     {activePopup.securityTitle && (

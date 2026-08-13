@@ -244,6 +244,7 @@ export interface PopupItem {
   imageUrl?: string;
   mainDescription?: string;
   depositHighlight?: string;
+  descriptionSuffix?: string;
   securityTitle?: string;
   securityDescription?: string;
   cancellationTitle?: string;
@@ -268,6 +269,7 @@ export const DEFAULT_POPUP_ITEM: PopupItem = {
   imageUrl: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN',
   mainDescription: 'Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan',
   depositHighlight: 'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.',
+  descriptionSuffix: 'sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.',
   securityTitle: 'Jaminan Keamanan Dana:',
   securityDescription: 'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar Rp10.000.000,- akan dikembalikan penuh (100%) setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.',
   cancellationTitle: 'Syarat & Ketentuan Pembatalan:',

@@ -40,6 +40,7 @@ const BLANK_POPUP_FORM: Omit<PopupItem, 'id' | 'createdAt'> = {
   imageUrl: '',
   mainDescription: '',
   depositHighlight: '',
+  descriptionSuffix: '',
   securityTitle: '',
   securityDescription: '',
   cancellationTitle: '',
@@ -79,6 +80,7 @@ export default function AdminPopupSettings({
       imageUrl: item.imageUrl || '',
       mainDescription: item.mainDescription || '',
       depositHighlight: item.depositHighlight || '',
+      descriptionSuffix: item.descriptionSuffix || '',
       securityTitle: item.securityTitle || '',
       securityDescription: item.securityDescription || '',
       cancellationTitle: item.cancellationTitle || '',
@@ -478,6 +480,19 @@ export default function AdminPopupSettings({
                   />
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                    {t('Kelanjutan Teks Deskripsi (Setelah Sorotan)')}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.descriptionSuffix}
+                    onChange={(e) => handleChange('descriptionSuffix', e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl text-slate-800 text-xs sm:text-sm"
+                    placeholder={t('Contoh: sebagai syarat aktif untuk melakukan penawaran (Bidding)...')}
+                  />
+                </div>
+
                 {/* Kotak Informasi Tambahan Hijau & Merah */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Hijau */}
@@ -624,6 +639,7 @@ export default function AdminPopupSettings({
                         {formData.depositHighlight}
                       </span>
                     )}
+                    {formData.descriptionSuffix && ` ${formData.descriptionSuffix}`}
                   </p>
 
                   {formData.securityTitle && (
