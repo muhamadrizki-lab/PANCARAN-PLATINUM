@@ -2167,7 +2167,6 @@ export default function App() {
                   WA Blasting
                 </button>
                 <button
-                  onClick={() => { setAdminTab('popup_settings'); setIsMobileMenuOpen(false); }}
                   className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
                     adminTab === 'popup_settings' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
                   }`}
@@ -2308,7 +2307,7 @@ export default function App() {
                     }`}
                   >
                     <Phone className="w-4 h-4 shrink-0" />
-                    <span>WA Blasting</span>
+                    <span>{t('WA Blasting')}</span>
                   </button>
 
                   <button

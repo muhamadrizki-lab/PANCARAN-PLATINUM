@@ -18,11 +18,11 @@ function getBaileys() {
     makeWASocketFn = mod.makeWASocket || mod.default?.makeWASocket || mod.default;
   }
 
-  const useMultiFileAuthState = mod.useMultiFileAuthState || rawDefault?.useMultiFileAuthState;
-  const DisconnectReason = mod.DisconnectReason || rawDefault?.DisconnectReason;
-  const fetchLatestBaileysVersion = mod.fetchLatestBaileysVersion || rawDefault?.fetchLatestBaileysVersion;
-  const Browsers = mod.Browsers || rawDefault?.Browsers;
-  const delay = mod.delay || rawDefault?.delay || ((ms: number) => new Promise(res => setTimeout(res, ms)));
+  const useMultiFileAuthState = mod.useMultiFileAuthState || rawDefault?.useMultiFileAuthState || mod.default?.useMultiFileAuthState;
+  const DisconnectReason = mod.DisconnectReason || rawDefault?.DisconnectReason || mod.default?.DisconnectReason;
+  const fetchLatestBaileysVersion = mod.fetchLatestBaileysVersion || rawDefault?.fetchLatestBaileysVersion || mod.default?.fetchLatestBaileysVersion;
+  const Browsers = mod.Browsers || rawDefault?.Browsers || mod.default?.Browsers;
+  const delay = mod.delay || rawDefault?.delay || mod.default?.delay || ((ms: number) => new Promise(res => setTimeout(res, ms)));
 
   return {
     makeWASocket: makeWASocketFn,
@@ -105,7 +105,17 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
-    const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] }));
+    let version: [number, number, number] = [2, 3000, 1043857760];
+    try {
+      if (typeof fetchLatestBaileysVersion === 'function') {
+        const latest = await fetchLatestBaileysVersion();
+        if (latest && latest.version) {
+          version = latest.version;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch latest Baileys version, using fallback:', e);
+    }
 
     session.waStatus = 'connecting';
     session.qrCode = null;
@@ -158,6 +168,7 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
 
         session.waStatus = 'disconnected';
         session.qrCode = null;
+        session.sock = null;
 
         if (statusCode === DisconnectReason?.loggedOut) {
           if (fs.existsSync(authDir)) {
@@ -190,7 +201,7 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
   }
 }
 
-async function waitForQr(session: WASession, emailKey: string, maxWaitMs = 1500): Promise<string> {
+async function waitForQr(session: WASession, emailKey: string, maxWaitMs = 5000): Promise<string> {
   if (session.qrCode) {
     return session.qrCode;
   }
@@ -200,32 +211,10 @@ async function waitForQr(session: WASession, emailKey: string, maxWaitMs = 1500)
     if (session.qrCode) {
       return session.qrCode;
     }
-    await new Promise((res) => setTimeout(res, 150));
+    await new Promise((res) => setTimeout(res, 200));
   }
 
-  if (session.qrCode) {
-    return session.qrCode;
-  }
-
-  // Fail-safe: Generate a high-contrast, scan-ready QR code DataURL immediately
-  try {
-    const rawEmail = emailKey || 'pancaran';
-    const timestamp = Date.now();
-    const qrPayload = `2@PancaranWA,${Buffer.from(rawEmail).toString('base64')},${timestamp},${Math.random().toString(36).substring(2, 9)}`;
-    
-    const tempQr = await QRCode.toDataURL(qrPayload, {
-      width: 320,
-      margin: 2,
-      errorCorrectionLevel: 'M',
-      color: {
-        dark: '#0f172a',
-        light: '#ffffff'
-      }
-    });
-    return tempQr;
-  } catch (e) {
-    return '';
-  }
+  return session.qrCode || '';
 }
 
 async function startServer() {
@@ -269,7 +258,7 @@ async function startServer() {
     if (session.waStatus === 'connected') {
       return res.json({ status: 'connected', connectedPhone: session.connectedPhone, userEmail: emailKey });
     }
-    if (!session.sock || (session.waStatus === 'disconnected' && !session.qrCode)) {
+    if (!session.sock && session.waStatus !== 'connecting') {
       connectToWhatsAppForUser(emailKey);
     }
     const qrStr = await waitForQr(session, emailKey);
