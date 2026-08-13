@@ -21,7 +21,8 @@ import {
   ArrowLeft,
   ToggleLeft,
   ToggleRight,
-  Layers
+  Layers,
+  Upload
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { PopupItem, PopupConfig, DEFAULT_POPUP_CONFIG, EMPTY_POPUP_CONFIG } from '../types';
@@ -37,6 +38,7 @@ interface AdminPopupSettingsProps {
 const BLANK_POPUP_FORM: Omit<PopupItem, 'id' | 'createdAt'> = {
   title: '',
   subtitle: '',
+  layoutType: 'simple',
   imageUrl: '',
   mainDescription: '',
   depositHighlight: '',
@@ -47,7 +49,7 @@ const BLANK_POPUP_FORM: Omit<PopupItem, 'id' | 'createdAt'> = {
   cancellationDescription: '',
   closingSlogan: '',
   ctaButtonText: 'Hubungi Panitia',
-  ctaButtonUrl: 'https://wa.me/',
+  ctaButtonUrl: 'https://wa.me/6281317469744',
   showBeforeLogin: true,
   showAfterLogin: true,
   isActive: true,
@@ -77,6 +79,7 @@ export default function AdminPopupSettings({
     setFormData({
       title: item.title || '',
       subtitle: item.subtitle || '',
+      layoutType: item.layoutType || (item.depositHighlight || item.securityTitle || item.cancellationTitle ? 'detailed' : 'simple'),
       imageUrl: item.imageUrl || '',
       mainDescription: item.mainDescription || '',
       depositHighlight: item.depositHighlight || '',
@@ -87,7 +90,7 @@ export default function AdminPopupSettings({
       cancellationDescription: item.cancellationDescription || '',
       closingSlogan: item.closingSlogan || '',
       ctaButtonText: item.ctaButtonText || 'Hubungi Panitia',
-      ctaButtonUrl: item.ctaButtonUrl || 'https://wa.me/',
+      ctaButtonUrl: item.ctaButtonUrl || 'https://wa.me/6281317469744',
       showBeforeLogin: item.showBeforeLogin ?? true,
       showAfterLogin: item.showAfterLogin ?? true,
       isActive: item.isActive ?? true,
@@ -426,26 +429,102 @@ export default function AdminPopupSettings({
                   />
                 </div>
 
-                {/* Banner Image */}
+                {/* Layout Type Selector */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                    {t('URL Gambar Poster / Banner Pop-up')}
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                    {t('Pilih Format Tampilan Pop-up')}
                   </label>
-                  <input
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => handleChange('imageUrl', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl font-mono text-slate-800 text-xs"
-                    placeholder="https://..."
-                  />
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="text-[10px] text-slate-400 self-center">{t('Preset:')}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleChange('layoutType', 'simple')}
+                      className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        formData.layoutType === 'simple' || !formData.layoutType
+                          ? 'bg-blue-50/90 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                          : 'bg-slate-50 border-slate-200 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Sparkles className={`w-4 h-4 ${formData.layoutType === 'simple' || !formData.layoutType ? 'text-blue-600' : 'text-slate-400'}`} />
+                        <span className="font-extrabold text-xs text-slate-900">{t('Format Sederhana / Pengumuman')}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        {t('Teks deskripsi paragraf bebas (Enter / Shift + Ctrl), banner gambar, & tombol WhatsApp. Form simpel tanpa kotak jaminan.')}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleChange('layoutType', 'detailed')}
+                      className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        formData.layoutType === 'detailed'
+                          ? 'bg-blue-50/90 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                          : 'bg-slate-50 border-slate-200 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldCheck className={`w-4 h-4 ${formData.layoutType === 'detailed' ? 'text-blue-600' : 'text-slate-400'}`} />
+                        <span className="font-extrabold text-xs text-slate-900">{t('Format Detail Syarat Deposit')}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        {t('Lengkap dengan teks sorotan deposit, kotak informasi jaminan (hijau), & kotak pembatalan (merah).')}
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Banner Image / Upload */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider flex items-center justify-between">
+                    <span>{t('Gambar Poster / Banner Pop-up')}</span>
+                    {formData.imageUrl && (
+                      <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> {t('Gambar terpasang')}
+                      </span>
+                    )}
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="url"
+                      value={formData.imageUrl}
+                      onChange={(e) => handleChange('imageUrl', e.target.value)}
+                      className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl font-mono text-slate-800 text-xs"
+                      placeholder={t('https://... atau klik Upload Gambar')}
+                    />
+                    <label className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center justify-center gap-2 shrink-0 transition-all shadow-xs active:scale-95">
+                      <Upload className="w-4 h-4" />
+                      <span>{t('Upload Gambar')}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) {
+                              alert(t('Ukuran file terlalu besar. Maksimal 5MB.'));
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (reader.result) {
+                                handleChange('imageUrl', reader.result as string);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                    <span className="text-[10px] text-slate-400 font-medium">{t('Atau pilih preset:')}</span>
                     {sampleImages.map((img, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => handleChange('imageUrl', img.url)}
-                        className="text-[10px] px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 border border-slate-200 font-medium"
+                        className="text-[10px] px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-slate-700 border border-slate-200 font-medium transition-all"
                       >
                         {img.label}
                       </button>
@@ -453,92 +532,116 @@ export default function AdminPopupSettings({
                   </div>
                 </div>
 
-                {/* Deskripsi & Deposit Highlight */}
+                {/* Deskripsi Utama */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                    {t('Deskripsi Utama')}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      {t('Deskripsi Utama Pop-up')}
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {t('Gunakan Enter / Shift + Ctrl untuk paragraf baru')}
+                    </span>
+                  </div>
                   <textarea
-                    rows={3}
+                    rows={4}
                     value={formData.mainDescription}
                     onChange={(e) => handleChange('mainDescription', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl text-slate-800 text-xs sm:text-sm"
-                    placeholder={t('Tuliskan teks paragraf deskripsi pop-up...')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
+                        e.preventDefault();
+                        const target = e.currentTarget;
+                        const start = target.selectionStart;
+                        const end = target.selectionEnd;
+                        const val = target.value;
+                        const newValue = val.substring(0, start) + '\n' + val.substring(end);
+                        handleChange('mainDescription', newValue);
+                        setTimeout(() => {
+                          target.selectionStart = target.selectionEnd = start + 1;
+                        }, 0);
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl text-slate-800 text-xs sm:text-sm leading-relaxed"
+                    placeholder={t('Tuliskan teks paragraf deskripsi pop-up secara lengkap...')}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                    {t('Teks Sorotan (Cetak Tebal)')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.depositHighlight}
-                    onChange={(e) => handleChange('depositHighlight', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-blue-50 border border-blue-200 font-extrabold text-blue-900 rounded-xl text-xs sm:text-sm"
-                    placeholder={t('Contoh: deposit jaminan sebesar Rp10.000.000,-...')}
-                  />
-                </div>
+                {/* BIDANG KHUSUS FORMAT DETAIL */}
+                {formData.layoutType === 'detailed' && (
+                  <div className="space-y-4 pt-2 border-t border-slate-100">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                        {t('Teks Sorotan (Cetak Tebal)')}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.depositHighlight}
+                        onChange={(e) => handleChange('depositHighlight', e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-blue-50 border border-blue-200 font-extrabold text-blue-900 rounded-xl text-xs sm:text-sm"
+                        placeholder={t('Contoh: deposit jaminan sebesar Rp10.000.000,-...')}
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                    {t('Kelanjutan Teks Deskripsi (Setelah Sorotan)')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.descriptionSuffix}
-                    onChange={(e) => handleChange('descriptionSuffix', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl text-slate-800 text-xs sm:text-sm"
-                    placeholder={t('Contoh: sebagai syarat aktif untuk melakukan penawaran (Bidding)...')}
-                  />
-                </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                        {t('Kelanjutan Teks Deskripsi (Setelah Sorotan)')}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.descriptionSuffix}
+                        onChange={(e) => handleChange('descriptionSuffix', e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl text-slate-800 text-xs sm:text-sm"
+                        placeholder={t('Contoh: sebagai syarat aktif untuk melakukan penawaran (Bidding)...')}
+                      />
+                    </div>
 
-                {/* Kotak Informasi Tambahan Hijau & Merah */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Hijau */}
-                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
-                    <span className="font-extrabold text-emerald-900 text-xs flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      {t('Kotak Informasi Jaminan (Hijau)')}
-                    </span>
-                    <input
-                      type="text"
-                      value={formData.securityTitle}
-                      onChange={(e) => handleChange('securityTitle', e.target.value)}
-                      placeholder={t('Judul Kotak Jaminan')}
-                      className="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-900"
-                    />
-                    <textarea
-                      rows={2}
-                      value={formData.securityDescription}
-                      onChange={(e) => handleChange('securityDescription', e.target.value)}
-                      placeholder={t('Isi Keterangan Jaminan')}
-                      className="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs text-emerald-950"
-                    />
+                    {/* Kotak Informasi Tambahan Hijau & Merah */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Hijau */}
+                      <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+                        <span className="font-extrabold text-emerald-900 text-xs flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          {t('Kotak Informasi Jaminan (Hijau)')}
+                        </span>
+                        <input
+                          type="text"
+                          value={formData.securityTitle}
+                          onChange={(e) => handleChange('securityTitle', e.target.value)}
+                          placeholder={t('Judul Kotak Jaminan')}
+                          className="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-900"
+                        />
+                        <textarea
+                          rows={2}
+                          value={formData.securityDescription}
+                          onChange={(e) => handleChange('securityDescription', e.target.value)}
+                          placeholder={t('Isi Keterangan Jaminan')}
+                          className="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-xs text-emerald-950"
+                        />
+                      </div>
+
+                      {/* Merah */}
+                      <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
+                        <span className="font-extrabold text-rose-900 text-xs flex items-center gap-1.5">
+                          <AlertCircle className="w-4 h-4 text-rose-600" />
+                          {t('Kotak Informasi Pembatalan (Merah)')}
+                        </span>
+                        <input
+                          type="text"
+                          value={formData.cancellationTitle}
+                          onChange={(e) => handleChange('cancellationTitle', e.target.value)}
+                          placeholder={t('Judul Kotak Pembatalan')}
+                          className="w-full px-3 py-1.5 bg-white border border-rose-300 rounded-lg text-xs font-bold text-rose-900"
+                        />
+                        <textarea
+                          rows={2}
+                          value={formData.cancellationDescription}
+                          onChange={(e) => handleChange('cancellationDescription', e.target.value)}
+                          placeholder={t('Isi Keterangan Pembatalan')}
+                          className="w-full px-3 py-1.5 bg-white border border-rose-300 rounded-lg text-xs text-rose-950"
+                        />
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Merah */}
-                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
-                    <span className="font-extrabold text-rose-900 text-xs flex items-center gap-1.5">
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
-                      {t('Kotak Informasi Pembatalan (Merah)')}
-                    </span>
-                    <input
-                      type="text"
-                      value={formData.cancellationTitle}
-                      onChange={(e) => handleChange('cancellationTitle', e.target.value)}
-                      placeholder={t('Judul Kotak Pembatalan')}
-                      className="w-full px-3 py-1.5 bg-white border border-rose-300 rounded-lg text-xs font-bold text-rose-900"
-                    />
-                    <textarea
-                      rows={2}
-                      value={formData.cancellationDescription}
-                      onChange={(e) => handleChange('cancellationDescription', e.target.value)}
-                      placeholder={t('Isi Keterangan Pembatalan')}
-                      className="w-full px-3 py-1.5 bg-white border border-rose-300 rounded-lg text-xs text-rose-950"
-                    />
-                  </div>
-                </div>
+                )}
 
                 {/* Slogan & Tombol WhatsApp */}
                 <div className="space-y-3 pt-2">
@@ -632,7 +735,7 @@ export default function AdminPopupSettings({
                     </div>
                   )}
 
-                  <p className="text-xs text-slate-700">
+                  <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
                     {formData.mainDescription}{' '}
                     {formData.depositHighlight && (
                       <span className="font-extrabold text-blue-900 bg-blue-50 px-1 py-0.5 rounded">
@@ -667,13 +770,15 @@ export default function AdminPopupSettings({
                   )}
 
                   <div className="pt-2">
-                    <button
-                      type="button"
-                      className="w-full py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+                    <a
+                      href={formData.ctaButtonUrl || "https://wa.me/6281317469744"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition"
                     >
                       <Phone className="w-3.5 h-3.5" />
-                      <span>{formData.ctaButtonText}</span>
-                    </button>
+                      <span>{formData.ctaButtonText || t('Hubungi Panitia')}</span>
+                    </a>
                   </div>
                 </div>
               </div>

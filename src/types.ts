@@ -241,6 +241,7 @@ export interface PopupItem {
   id: string;
   title: string;
   subtitle?: string;
+  layoutType?: 'simple' | 'detailed';
   imageUrl?: string;
   mainDescription?: string;
   depositHighlight?: string;
@@ -266,6 +267,7 @@ export const DEFAULT_POPUP_ITEM: PopupItem = {
   id: 'default_bidding_rules_popup',
   title: 'Syarat & Ketentuan Akses Bidding - Lelang Truck Pancaran Platinum',
   subtitle: 'Informasi Resmi Deposit & Akses Penawaran',
+  layoutType: 'detailed',
   imageUrl: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN',
   mainDescription: 'Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan',
   depositHighlight: 'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.',
