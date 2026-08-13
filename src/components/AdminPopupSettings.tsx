@@ -126,7 +126,13 @@ export default function AdminPopupSettings({
         // Edit existing
         updatedPopups = popups.map((p) =>
           p.id === editingId
-            ? { ...p, ...formData }
+            ? {
+                ...p,
+                ...formData,
+                closingSlogan: formData.closingSlogan || 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',
+                ctaButtonText: formData.ctaButtonText || 'Hubungi Panitia untuk Akses Bidding',
+                ctaButtonUrl: formData.ctaButtonUrl || 'https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang.',
+              }
             : p
         );
       } else {
@@ -134,6 +140,9 @@ export default function AdminPopupSettings({
         const newPopupItem: PopupItem = {
           id: 'popup_' + Date.now(),
           ...formData,
+          closingSlogan: formData.closingSlogan || 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',
+          ctaButtonText: formData.ctaButtonText || 'Hubungi Panitia untuk Akses Bidding',
+          ctaButtonUrl: formData.ctaButtonUrl || 'https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang.',
           createdAt: new Date().toISOString(),
         };
         updatedPopups = [newPopupItem, ...popups];
@@ -643,46 +652,7 @@ export default function AdminPopupSettings({
                   </div>
                 )}
 
-                {/* Slogan & Tombol WhatsApp */}
-                <div className="space-y-3 pt-2">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                      {t('Slogan Penutup')}
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.closingSlogan}
-                      onChange={(e) => handleChange('closingSlogan', e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white rounded-xl italic text-xs sm:text-sm text-slate-800"
-                      placeholder={t('Contoh: Mari bergabung di ajang eksklusif...')}
-                    />
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                        {t('Teks Tombol CTA')}
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.ctaButtonText}
-                        onChange={(e) => handleChange('ctaButtonText', e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                        {t('Link WhatsApp CTA')}
-                      </label>
-                      <input
-                        type="url"
-                        value={formData.ctaButtonUrl}
-                        onChange={(e) => handleChange('ctaButtonUrl', e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Action Buttons */}

@@ -285,8 +285,21 @@ export const DEFAULT_POPUP_ITEM: PopupItem = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
+export const DEFAULT_SCHEDULE_POPUP_ITEM: PopupItem = {
+  id: 'default_schedule_popup',
+  title: 'Pengumuman Jadwal Lelang & Survey Fisik Unit',
+  subtitle: 'Informasi Resmi Waktu Pelaksanaan Lelang Pancaran Platinum',
+  layoutType: 'simple',
+  imageUrl: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN',
+  mainDescription: '📅 JADWAL SURVEY FISIK UNIT:\n• Tanggal: 18 - 22 Agustus 2026\n• Pukul: 09.00 - 16.00 WIB\n• Lokasi: Pool & Gudang Logistik Pancaran Utama\n\n🚀 JADWAL MULAI LELANG (BIDDING):\n• Tanggal: 25 Agustus 2026\n• Pukul: 10.00 WIB s/d Selesai\n\nPastikan Anda telah melengkapi deposit jaminan dan bersiap mengikuti bidding online.',
+  showBeforeLogin: true,
+  showAfterLogin: true,
+  isActive: false, // can be activated by admin
+  createdAt: '2026-01-02T00:00:00.000Z',
+};
+
 export const DEFAULT_POPUP_CONFIG: PopupConfig = {
-  popups: [DEFAULT_POPUP_ITEM],
+  popups: [DEFAULT_POPUP_ITEM, DEFAULT_SCHEDULE_POPUP_ITEM],
 };
 
 export const EMPTY_POPUP_CONFIG: PopupConfig = {
