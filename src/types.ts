@@ -296,7 +296,7 @@ export const DEFAULT_SCHEDULE_POPUP_ITEM: PopupItem = {
   title: 'Pengumuman Jadwal Lelang & Survey Fisik Unit',
   subtitle: 'Informasi Resmi Waktu Pelaksanaan Lelang Pancaran Platinum',
   layoutType: 'simple',
-  imageUrl: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN',
+  imageUrl: 'https://lh3.googleusercontent.com/d/17N7xTwx4PcaqLK3NN6nq04x0yATldWaU',
   surveyDate: '18 - 22 Agustus 2026',
   surveyTime: '09.00 - 16.00 WIB',
   surveyLocation: 'Pool & Gudang Logistik Pancaran Utama',
