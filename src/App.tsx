@@ -1003,6 +1003,29 @@ export default function App() {
       return;
     }
 
+    const targetAsset = assets.find(a => a.id === assetId);
+    if (targetAsset && targetAsset.startingPrice) {
+      if (bidData.price < targetAsset.startingPrice) {
+        const formattedStarting = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(targetAsset.startingPrice);
+        addNotification(
+          'warning',
+          'Penawaran Gagal',
+          `Nominal penawaran (${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(bidData.price)}) tidak boleh di bawah harga awal (${formattedStarting}).`
+        );
+        return;
+      }
+
+      const maxAllowed = targetAsset.startingPrice * 1.5;
+      if (bidData.price > maxAllowed) {
+        addNotification(
+          'warning',
+          'Penawaran Gagal',
+          'Nominal penawaran melebihi 50% dari harga awal. Mohon cek kembali nominal pengisian Anda.'
+        );
+        return;
+      }
+    }
+
     const nextBidId = `B-${Math.floor(100 + Math.random() * 900)}`;
     const newBid: Bid = {
       ...bidData,
@@ -1010,7 +1033,6 @@ export default function App() {
       timestamp: new Date().toISOString()
     };
 
-    const targetAsset = assets.find(a => a.id === assetId);
     const assetTitle = targetAsset ? `${targetAsset.brand} ${targetAsset.name}` : assetId;
     const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(bidData.price);
 
@@ -1312,8 +1334,8 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Top Filter Dropdowns (Right next to PLATINUM text - visible only on external catalog tab) */}
-              {role === 'external' && externalTab === 'catalog' && (
+              {/* Top Filter Dropdowns (Right next to PLATINUM text - visible only when logged in on external catalog tab) */}
+              {(isUserLoggedIn || isAdminLoggedIn) && role === 'external' && externalTab === 'catalog' && (
                 <div className="flex items-center gap-1.5 sm:gap-2 ml-1 sm:ml-3">
                   <select
                     value={selectedBrand}
@@ -2671,7 +2693,7 @@ export default function App() {
 
                 <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
                   <p className="font-medium text-slate-800">
-                    {t('Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan')} <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">{t('deposit jaminan sebesar Rp10.000.000,-')}</span> {t('sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.')}
+                    {t('Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan')} <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">{t('deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.')}</span> {t('sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.')}
                   </p>
 
                   <div className="p-4 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1.5">
@@ -2681,6 +2703,16 @@ export default function App() {
                     </h4>
                     <p className="text-emerald-950 font-medium text-xs sm:text-sm">
                       {t('Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar')} <span className="font-extrabold text-emerald-900">{t('Rp10.000.000,-')}</span> {t('akan dikembalikan penuh')} <span className="font-extrabold text-emerald-900">({t('100%')})</span> {t('setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.')}
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-rose-50/80 border border-rose-200/80 rounded-2xl space-y-1.5">
+                    <h4 className="font-extrabold text-rose-900 text-sm flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-600" />
+                      {t('Syarat & Ketentuan Pembatalan:')}
+                    </h4>
+                    <p className="text-rose-950 font-medium text-xs sm:text-sm">
+                      {t('Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.')}
                     </p>
                   </div>
 

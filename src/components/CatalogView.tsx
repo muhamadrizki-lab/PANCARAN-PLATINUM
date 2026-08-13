@@ -698,6 +698,26 @@ export default function CatalogView({
       return;
     }
 
+    // Starting price validation: bid price cannot be below starting price
+    const startingPrice = selectedAsset.startingPrice || 0;
+    if (startingPrice > 0 && bidPriceNum < startingPrice) {
+      setFormError(
+        t('Nominal penawaran tidak boleh lebih rendah dari harga awal (starting price) sebesar {price}.', {
+          price: formatIDR(startingPrice)
+        })
+      );
+      return;
+    }
+
+    // Maximum bid validation: cannot be > 50% above starting price
+    const maxAllowedBid = startingPrice > 0 ? startingPrice * 1.5 : 0;
+    if (startingPrice > 0 && bidPriceNum > maxAllowedBid) {
+      setFormError(
+        t('Penawaran gagal! Nominal penawaran melebihi 50% dari harga awal. Mohon cek kembali nominal pengisian Anda.')
+      );
+      return;
+    }
+
     // Survey Validation if checked
     if (bidForm.requestSurvey) {
       if (!bidForm.surveyDate) {
@@ -711,7 +731,6 @@ export default function CatalogView({
     }
 
     // Check if bid price is 50% or more above the starting price or current highest bid
-    const startingPrice = selectedAsset.startingPrice || 0;
     const isHighBidThanStarting = startingPrice > 0 && bidPriceNum >= (startingPrice * 1.5);
     const isHighBidThanCurrent = currentHighestBid > 0 && bidPriceNum >= (currentHighestBid * 1.5);
 
@@ -981,31 +1000,33 @@ export default function CatalogView({
                 />
               </div>
 
-              <div className="flex gap-2 w-full sm:w-auto flex-1 sm:flex-initial">
-                {/* Brand Select */}
-                <select
-                  value={selectedBrand}
-                  onChange={(e) => setSelectedBrand && setSelectedBrand(e.target.value)}
-                  className="flex-1 sm:flex-initial px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                >
-                  <option value="all">{t('Semua Brand')}</option>
-                  {uniqueBrands.map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
+              {isUserLoggedIn && (
+                <div className="flex gap-2 w-full sm:w-auto flex-1 sm:flex-initial">
+                  {/* Brand Select */}
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => setSelectedBrand && setSelectedBrand(e.target.value)}
+                    className="flex-1 sm:flex-initial px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  >
+                    <option value="all">{t('Semua Brand')}</option>
+                    {uniqueBrands.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
 
-                {/* Category Select */}
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory && setSelectedCategory(e.target.value)}
-                  className="flex-1 sm:flex-initial px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                >
-                  <option value="all">{t('Semua Kategori')}</option>
-                  {uniqueCategories.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
+                  {/* Category Select */}
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory && setSelectedCategory(e.target.value)}
+                    className="flex-1 sm:flex-initial px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  >
+                    <option value="all">{t('Semua Kategori')}</option>
+                    {uniqueCategories.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 

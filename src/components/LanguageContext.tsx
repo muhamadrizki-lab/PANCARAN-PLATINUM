@@ -522,9 +522,11 @@ const translations: Record<Language, Record<string, string>> = {
     'Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.': 'Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.',
     'Informasi Resmi Deposit & Akses Penawaran': 'Informasi Resmi Deposit & Akses Penawaran',
     'Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan': 'Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan',
-    'deposit jaminan sebesar Rp10.000.000,-': 'deposit jaminan sebesar Rp10.000.000,-',
+    'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.': 'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.',
     'sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.': 'sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.',
     'Jaminan Keamanan Dana:': 'Jaminan Keamanan Dana:',
+    'Syarat & Ketentuan Pembatalan:': 'Syarat & Ketentuan Pembatalan:',
+    'Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.': 'Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.',
     'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar': 'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar',
     'akan dikembalikan penuh': 'akan dikembalikan penuh',
     'setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.': 'setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.',
@@ -1344,9 +1346,11 @@ const translations: Record<Language, Record<string, string>> = {
     'Sebelum mengikuti lelang, Anda diwajibkan membaca dan memahami peraturan serta tata cara lelang.': 'Before participating in the auction, you are required to read and understand the auction rules and procedures.',
     'Informasi Resmi Deposit & Akses Penawaran': 'Official Information on Deposit & Bidding Access',
     'Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan': 'To maintain qualifications and ensure a smooth bidding process, every participant is required to pay',
-    'deposit jaminan sebesar Rp10.000.000,-': 'a security deposit of IDR 10,000,000',
+    'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.': 'a security deposit of IDR 10,000,000 to the Official Pancaran Office Account.',
     'sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.': 'as an active requirement to place bids for vehicle auctions.',
     'Jaminan Keamanan Dana:': 'Fund Security Guarantee:',
+    'Syarat & Ketentuan Pembatalan:': 'Cancellation Terms & Conditions:',
+    'Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.': 'The deposit will be forfeited if the winner withdraws or fails to complete the transaction process within a maximum period of 7 (seven) days.',
     'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar': 'For participants who do not win, the deposit amount of',
     'akan dikembalikan penuh': 'will be fully refunded',
     'setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.': 'after the official winner announcement and prior to the next event stage.',
@@ -1648,10 +1652,14 @@ const translations: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('app_language');
+    return (saved === 'en' || saved === 'id') ? (saved as Language) : 'id';
+  });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
+    localStorage.setItem('app_language', lang);
   };
 
   const t = (key: string, variables?: Record<string, string | number>): string => {
