@@ -1297,27 +1297,26 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans" id="app-root-wrapper">
       
-      {/* Sleek, Sticky Header / Navigation with a premium dark blue and light blue color harmony */}
+      {/* Sleek, Sticky Header / Navigation with a clean white design */}
       <header 
-        className="sticky top-0 z-40 shadow-lg text-white border-b border-blue-500/20 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-950"
+        className="sticky top-0 z-40 shadow-sm text-slate-800 border-b border-slate-200 bg-white backdrop-blur-md"
         id="main-navigation-header"
       >
-        {/* Glow Container to prevent overflow issues of absolute elements */}
+        {/* Glow Container */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-b-xl" id="header-glows-container">
-          {/* Soft, multi-layered light blue and cyan ambient glows */}
-          <div className="absolute -top-10 left-1/4 w-96 h-20 bg-blue-500/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '6s' }}></div>
-          <div className="absolute -bottom-10 right-1/4 w-80 h-16 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '4s' }}></div>
+          <div className="absolute -top-10 left-1/4 w-96 h-20 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-10 right-1/4 w-80 h-16 bg-cyan-400/5 rounded-full blur-3xl pointer-events-none"></div>
         </div>
         
         {/* Glowing light blue bottom accent line */}
-        <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex justify-between h-16 items-center">
             
             {/* Logo & Filter Dropdowns */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 bg-white rounded flex items-center justify-center shadow-md shadow-blue-500/10 overflow-hidden shrink-0">
+              <div className="w-8 h-8 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm overflow-hidden shrink-0">
                 <img 
                   src="https://lh3.googleusercontent.com/d/1LmpjB5qAX8ev5_JRzYQDwjM58RxHl18X" 
                   alt="Pancaran Logo" 
@@ -1329,8 +1328,8 @@ export default function App() {
                 />
               </div>
               <div className="flex flex-col shrink-0">
-                <span className="text-white font-bold text-lg tracking-tight">
-                  <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent font-extrabold drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">PLATINUM</span>
+                <span className="text-slate-900 font-bold text-lg tracking-tight">
+                  <span className="bg-gradient-to-r from-blue-900 via-blue-700 to-slate-900 bg-clip-text text-transparent font-black">PLATINUM</span>
                 </span>
               </div>
 
@@ -1375,15 +1374,15 @@ export default function App() {
                     onClick={() => setRole('external')}
                     className={`pb-1 transition-all flex items-center justify-center relative ${
                       role === 'external'
-                        ? 'text-blue-300 font-bold drop-shadow-[0_0_6px_rgba(147,197,253,0.3)]'
-                        : 'text-slate-300 hover:text-white'
+                        ? 'text-blue-600 font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                     id="tab-external-catalog"
                     title={t('Katalog Eksternal')}
                   >
                     <Globe className="w-5 h-5 mr-1" />
                     {role === 'external' && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.8)]"></span>
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full shadow-sm"></span>
                     )}
                   </button>
                   <button
@@ -1396,28 +1395,28 @@ export default function App() {
                     }}
                     className={`pb-1 transition-all flex items-center justify-center relative ${
                       role === 'internal'
-                        ? 'text-blue-300 font-bold drop-shadow-[0_0_6px_rgba(147,197,253,0.3)]'
-                        : 'text-slate-300 hover:text-white'
+                        ? 'text-blue-600 font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                     id="tab-internal-admin"
                     title={t('Area Admin Internal')}
                   >
                     <Shield className="w-5 h-5 mr-1" />
                     {role === 'internal' && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.8)]"></span>
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full shadow-sm"></span>
                     )}
                   </button>
                 </div>
               )}
 
               {/* Desktop Language Selector */}
-              <div className="flex bg-blue-950/40 p-0.5 rounded-lg border border-blue-800/40 shadow-inner">
+              <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shadow-inner">
                 <button
                   onClick={() => setLanguage('id')}
                   className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
                     language === 'id' 
-                      ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow shadow-blue-500/20' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow shadow-blue-500/20' 
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   ID
@@ -1426,8 +1425,8 @@ export default function App() {
                   onClick={() => setLanguage('en')}
                   className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
                     language === 'en' 
-                      ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow shadow-blue-500/20' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow shadow-blue-500/20' 
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   EN
@@ -1439,10 +1438,10 @@ export default function App() {
                 <div ref={notifRef} className="relative">
                   <button
                     onClick={handleOpenNotifications}
-                    className="p-1.5 hover:bg-slate-800/80 text-slate-300 hover:text-white rounded-lg transition-colors border border-transparent hover:border-slate-700/50 relative cursor-pointer flex items-center justify-center"
+                    className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg transition-colors border border-transparent hover:border-slate-200 relative cursor-pointer flex items-center justify-center"
                     title={t('Notifikasi Terkini')}
                   >
-                    <Bell className={`w-4.5 h-4.5 ${unreadCount > 0 ? 'text-amber-400 animate-pulse' : ''}`} />
+                    <Bell className={`w-4.5 h-4.5 ${unreadCount > 0 ? 'text-amber-500 animate-pulse' : ''}`} />
                     {unreadCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[8px] font-extrabold px-1 py-0.5 rounded-full min-w-4 text-center leading-none">
                         {unreadCount}
@@ -1675,16 +1674,16 @@ export default function App() {
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <div className="flex items-center gap-1.5 justify-end">
-                        <span className="bg-blue-500/20 text-blue-300 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border border-blue-500/30 uppercase tracking-wider">
+                        <span className="bg-blue-100 text-blue-800 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border border-blue-200 uppercase tracking-wider">
                           {t(adminRole)}
                         </span>
-                        <p className="text-white text-xs font-semibold">{adminName}</p>
+                        <p className="text-slate-900 text-xs font-semibold">{adminName}</p>
                       </div>
-                      <p className="text-slate-400 text-[10px] truncate max-w-[280px] font-mono mt-0.5">{loggedInAdminEmail}</p>
+                      <p className="text-slate-500 text-[10px] truncate max-w-[280px] font-mono mt-0.5">{loggedInAdminEmail}</p>
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="p-1.5 hover:bg-slate-800/80 text-slate-400 hover:text-rose-400 rounded-lg transition-colors border border-transparent hover:border-slate-700/50 cursor-pointer"
+                      className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-rose-600 rounded-lg transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
                       title={t('Keluar')}
                     >
                       <LogOut className="w-4 h-4" />
@@ -1695,17 +1694,17 @@ export default function App() {
                     <div className="text-right">
                       <div className="flex items-center gap-1.5 justify-end">
                         {isUserCanBid ? (
-                          <span className="bg-emerald-500/20 text-emerald-300 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border border-emerald-500/30 uppercase tracking-wider">
+                          <span className="bg-emerald-100 text-emerald-800 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md border border-emerald-200 uppercase tracking-wider">
                             {t('Bisa Menawar')}
                           </span>
                         ) : null}
-                        <p className="text-white text-xs font-semibold">{loggedInUserName}</p>
+                        <p className="text-slate-900 text-xs font-semibold">{loggedInUserName}</p>
                       </div>
-                      <p className="text-slate-400 text-[10px] truncate max-w-[280px] font-mono mt-0.5">{loggedInUserEmail}</p>
+                      <p className="text-slate-500 text-[10px] truncate max-w-[280px] font-mono mt-0.5">{loggedInUserEmail}</p>
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="p-1.5 hover:bg-slate-800/80 text-slate-400 hover:text-rose-400 rounded-lg transition-colors border border-transparent hover:border-slate-700/50 cursor-pointer"
+                      className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-rose-600 rounded-lg transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
                       title={t('Keluar')}
                     >
                       <LogOut className="w-4 h-4" />
@@ -1714,7 +1713,7 @@ export default function App() {
                 ) : (
                   <button
                     onClick={() => setIsLoginModalOpen(true)}
-                    className="bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md shadow-blue-500/15 transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <LogIn className="w-4 h-4" /> {t('Masuk / Daftar')}
                   </button>
@@ -1726,13 +1725,13 @@ export default function App() {
             {/* Mobile Menu Button */}
             <div className="flex md:hidden items-center gap-2">
               {/* Always visible mobile language switcher */}
-              <div className="flex bg-blue-950/40 p-0.5 rounded-lg border border-blue-800/40 shadow-inner">
+              <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 shadow-inner">
                 <button
                   onClick={() => setLanguage('id')}
                   className={`px-2 py-0.5 text-[9px] font-bold rounded-md transition-all ${
                     language === 'id' 
-                      ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow shadow-blue-500/20' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow shadow-blue-500/20' 
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   ID
@@ -1741,8 +1740,8 @@ export default function App() {
                   onClick={() => setLanguage('en')}
                   className={`px-2 py-0.5 text-[9px] font-bold rounded-md transition-all ${
                     language === 'en' 
-                      ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow shadow-blue-500/20' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow shadow-blue-500/20' 
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   EN
@@ -1754,10 +1753,10 @@ export default function App() {
                 <div className="relative">
                   <button
                     onClick={handleOpenNotifications}
-                    className="p-1 text-slate-300 hover:text-white rounded-lg transition-colors relative cursor-pointer flex items-center justify-center"
+                    className="p-1 text-slate-600 hover:text-slate-900 rounded-lg transition-colors relative cursor-pointer flex items-center justify-center"
                     title={t('Notifikasi Terkini')}
                   >
-                    <Bell className={`w-4 h-5 ${unreadCount > 0 ? 'text-amber-400 animate-pulse' : ''}`} />
+                    <Bell className={`w-4 h-5 ${unreadCount > 0 ? 'text-amber-500 animate-pulse' : ''}`} />
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[7px] font-extrabold px-1 rounded-full min-w-3 text-center leading-none">
                         {unreadCount}
@@ -1991,7 +1990,7 @@ export default function App() {
               )}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 hover:bg-slate-800 rounded-xl text-slate-300 hover:text-white"
+                className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 hover:text-slate-900 transition-colors"
               >
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
