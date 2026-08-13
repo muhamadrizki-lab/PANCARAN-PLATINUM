@@ -24,7 +24,7 @@ import {
   Layers
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
-import { PopupItem, PopupConfig, EMPTY_POPUP_CONFIG } from '../types';
+import { PopupItem, PopupConfig, DEFAULT_POPUP_CONFIG, EMPTY_POPUP_CONFIG } from '../types';
 import { getSystemSettings, saveSystemSettings } from '../firebase';
 
 interface AdminPopupSettingsProps {
@@ -192,6 +192,22 @@ export default function AdminPopupSettings({
     } catch (e) {}
   };
 
+  const handleResetDefaultPopups = async () => {
+    if (window.confirm(t('Kembalikan ke Pop-up Deposit Bawaan?'))) {
+      onSaveConfig(DEFAULT_POPUP_CONFIG);
+      try {
+        const existingSettings = await getSystemSettings();
+        await saveSystemSettings({
+          ...existingSettings,
+          popupConfig: DEFAULT_POPUP_CONFIG,
+        });
+        onShowNotification(t('Berhasil mengembalikan Pop-up Deposit Bawaan!'), 'success');
+      } catch (e) {
+        onShowNotification(t('Gagal menyimpan ke server, disimpan secara lokal.'), 'info');
+      }
+    }
+  };
+
   const sampleImages = [
     {
       label: 'Poster Lelang Truck',
@@ -233,14 +249,25 @@ export default function AdminPopupSettings({
 
         <div className="relative z-10 flex flex-wrap items-center gap-2.5 shrink-0">
           {!isCreating && (
-            <button
-              type="button"
-              onClick={handleOpenCreateForm}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{t('Buat Pop-up Baru')}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetDefaultPopups}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-700 transition flex items-center gap-2 cursor-pointer"
+                title={t('Kembalikan ke Pop-up Deposit Bawaan')}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{t('Reset Pop-up Deposit')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenCreateForm}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('Buat Pop-up Baru')}</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

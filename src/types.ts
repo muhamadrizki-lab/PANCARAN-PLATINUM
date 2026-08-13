@@ -261,6 +261,30 @@ export interface PopupConfig {
   popups: PopupItem[];
 }
 
+export const DEFAULT_POPUP_ITEM: PopupItem = {
+  id: 'default_bidding_rules_popup',
+  title: 'Syarat & Ketentuan Akses Bidding - Lelang Truck Pancaran Platinum',
+  subtitle: 'Informasi Resmi Deposit & Akses Penawaran',
+  imageUrl: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN',
+  mainDescription: 'Untuk menjaga kualifikasi dan kelancaran proses penawaran, setiap peserta diwajibkan melakukan',
+  depositHighlight: 'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.',
+  securityTitle: 'Jaminan Keamanan Dana:',
+  securityDescription: 'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar Rp10.000.000,- akan dikembalikan penuh (100%) setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.',
+  cancellationTitle: 'Syarat & Ketentuan Pembatalan:',
+  cancellationDescription: 'Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.',
+  closingSlogan: 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',
+  ctaButtonText: 'Hubungi Panitia untuk Akses Bidding',
+  ctaButtonUrl: 'https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang.',
+  showBeforeLogin: true,
+  showAfterLogin: true,
+  isActive: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+};
+
+export const DEFAULT_POPUP_CONFIG: PopupConfig = {
+  popups: [DEFAULT_POPUP_ITEM],
+};
+
 export const EMPTY_POPUP_CONFIG: PopupConfig = {
   popups: [],
 };

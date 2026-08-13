@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory, PopupConfig, PopupItem, EMPTY_POPUP_CONFIG } from './types';
+import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory, PopupConfig, PopupItem, DEFAULT_POPUP_CONFIG, EMPTY_POPUP_CONFIG } from './types';
 import { INITIAL_ASSETS, INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from './data/mockData';
 import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
@@ -127,14 +127,14 @@ export default function App() {
       const saved = localStorage.getItem('pancaran_popup_config');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.popups)) {
+        if (parsed && Array.isArray(parsed.popups) && parsed.popups.length > 0) {
           return parsed;
         }
       }
     } catch (e) {
       console.error('Error loading popup config from localStorage:', e);
     }
-    return EMPTY_POPUP_CONFIG;
+    return DEFAULT_POPUP_CONFIG;
   });
 
   const handleSavePopupConfig = (newConfig: PopupConfig) => {
@@ -663,10 +663,15 @@ export default function App() {
 
     // Fetch cloud system settings (including popupConfig)
     getSystemSettings().then((settings) => {
-      if (settings && settings.popupConfig) {
+      if (settings && settings.popupConfig && Array.isArray(settings.popupConfig.popups) && settings.popupConfig.popups.length > 0) {
         setPopupConfig(settings.popupConfig);
         try {
           localStorage.setItem('pancaran_popup_config', JSON.stringify(settings.popupConfig));
+        } catch (e) {}
+      } else {
+        setPopupConfig(DEFAULT_POPUP_CONFIG);
+        try {
+          localStorage.setItem('pancaran_popup_config', JSON.stringify(DEFAULT_POPUP_CONFIG));
         } catch (e) {}
       }
     });
@@ -676,12 +681,12 @@ export default function App() {
     const storedSessionName = localStorage.getItem('pancaran_session_name') || '';
     const storedSessionPhone = localStorage.getItem('pancaran_session_phone') || '';
 
-    let activeConfig = EMPTY_POPUP_CONFIG;
+    let activeConfig = DEFAULT_POPUP_CONFIG;
     try {
       const savedCfg = localStorage.getItem('pancaran_popup_config');
       if (savedCfg) {
         const parsed = JSON.parse(savedCfg);
-        if (parsed && Array.isArray(parsed.popups)) activeConfig = parsed;
+        if (parsed && Array.isArray(parsed.popups) && parsed.popups.length > 0) activeConfig = parsed;
       }
     } catch (e) {}
 
@@ -1137,7 +1142,8 @@ export default function App() {
     localStorage.setItem('pancaran_session_type', 'admin');
     setRole('internal'); // Switch to internal dashboard on login
     setAdminTab('dashboard');
-    const hasAfterLoginPopup = (popupConfig.popups || []).some((p) => p.isActive && p.showAfterLogin);
+    const popupsList = (popupConfig.popups && popupConfig.popups.length > 0) ? popupConfig.popups : DEFAULT_POPUP_CONFIG.popups;
+    const hasAfterLoginPopup = popupsList.some((p) => p.isActive && p.showAfterLogin);
     if (hasAfterLoginPopup) {
       setTimeout(() => {
         setSelectedGuideModal('ikut');
@@ -1160,6 +1166,8 @@ export default function App() {
     }
     setRole('external');
     setExternalTab('catalog');
+    const popupsList = (popupConfig.popups && popupConfig.popups.length > 0) ? popupConfig.popups : DEFAULT_POPUP_CONFIG.popups;
+    const hasAfterLoginPopup = popupsList.some((p) => p.isActive && p.showAfterLogin);
     if (hasAfterLoginPopup) {
       setTimeout(() => {
         setSelectedGuideModal('ikut');
@@ -2748,7 +2756,8 @@ export default function App() {
             </button>
 
             {selectedGuideModal === 'ikut' && (() => {
-              const activePopup = previewPopupItem || (popupConfig.popups || []).find(p => p.isActive && (isUserLoggedIn || isAdminLoggedIn ? p.showAfterLogin : p.showBeforeLogin)) || (popupConfig.popups || [])[0];
+              const allPopups = (popupConfig.popups && popupConfig.popups.length > 0) ? popupConfig.popups : DEFAULT_POPUP_CONFIG.popups;
+              const activePopup = previewPopupItem || allPopups.find(p => p.isActive && (isUserLoggedIn || isAdminLoggedIn ? p.showAfterLogin : p.showBeforeLogin)) || allPopups[0];
 
               if (!activePopup) {
                 return (
