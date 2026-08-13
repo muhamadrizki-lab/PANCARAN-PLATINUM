@@ -213,7 +213,7 @@ async function waitForQr(session: WASession, emailKey: string, maxWaitMs = 1500)
     const timestamp = Date.now();
     const qrPayload = `2@PancaranWA,${Buffer.from(rawEmail).toString('base64')},${timestamp},${Math.random().toString(36).substring(2, 9)}`;
     
-    session.qrCode = await QRCode.toDataURL(qrPayload, {
+    const tempQr = await QRCode.toDataURL(qrPayload, {
       width: 320,
       margin: 2,
       errorCorrectionLevel: 'M',
@@ -222,7 +222,7 @@ async function waitForQr(session: WASession, emailKey: string, maxWaitMs = 1500)
         light: '#ffffff'
       }
     });
-    return session.qrCode;
+    return tempQr;
   } catch (e) {
     return '';
   }

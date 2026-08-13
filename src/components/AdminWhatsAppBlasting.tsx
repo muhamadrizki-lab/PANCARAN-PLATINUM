@@ -207,12 +207,16 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   const [backendServerUrl, setBackendServerUrl] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('wa_backend_server_url');
-      if (saved) return saved;
+      if (saved === DEFAULT_CLOUD_RUN_URL && !window.location.hostname.includes('ais-dev')) {
+        localStorage.removeItem('wa_backend_server_url');
+      } else if (saved) {
+        return saved;
+      }
       if (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('pancaran-one.com')) {
         return DEFAULT_CLOUD_RUN_URL;
       }
     }
-    return DEFAULT_CLOUD_RUN_URL;
+    return ''; // Default to relative paths on Cloud Run to avoid CORS and multi-environment conflict
   });
 
   const handleSaveBackendUrl = (newUrl: string) => {
@@ -1378,42 +1382,49 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                   </div>
 
                   {connectMode === 'qr' && (
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       <div className="relative inline-block">
                         <div 
                           onClick={() => handleQuickConnect(pairPhoneInput)}
-                          className="relative p-6 bg-white border-2 border-emerald-500/30 hover:border-emerald-500 rounded-3xl inline-block shadow-xl hover:shadow-2xl transition-all cursor-pointer group bg-gradient-to-b from-white to-emerald-50/20"
-                          title="Klik barcode QR ini untuk langsung menghubungkan WhatsApp Anda"
+                          className="relative w-80 h-80 bg-white border border-emerald-400 rounded-[32px] p-3 flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer group"
+                          title="Klik barcode QR ini untuk menghubungkan instan"
                         >
-                          {/* Corner Accents - WhatsApp Web Style */}
-                          <div className="absolute top-3 left-3 w-5 h-5 border-t-4 border-l-4 border-emerald-500 rounded-tl-sm"></div>
-                          <div className="absolute top-3 right-3 w-5 h-5 border-t-4 border-r-4 border-emerald-500 rounded-tr-sm"></div>
-                          <div className="absolute bottom-3 left-3 w-5 h-5 border-b-4 border-l-4 border-emerald-500 rounded-bl-sm"></div>
-                          <div className="absolute bottom-3 right-3 w-5 h-5 border-b-4 border-r-4 border-emerald-500 rounded-br-sm"></div>
+                          {/* Green Corner Brackets - Matched with screenshot */}
+                          <div className="absolute top-2 left-2 w-7 h-7 border-t-4 border-l-4 border-[#00c278] rounded-tl-lg"></div>
+                          <div className="absolute top-2 right-2 w-7 h-7 border-t-4 border-r-4 border-[#00c278] rounded-tr-lg"></div>
+                          <div className="absolute bottom-2 left-2 w-7 h-7 border-b-4 border-l-4 border-[#00c278] rounded-bl-lg"></div>
+                          <div className="absolute bottom-2 right-2 w-7 h-7 border-b-4 border-r-4 border-[#00c278] rounded-br-lg"></div>
 
                           {qrCode ? (
-                            <div className="relative">
+                            <div className="w-full h-full bg-[#f8fafd] rounded-[24px] flex flex-col items-center justify-center p-4 relative">
                               <img 
                                 src={qrCode} 
                                 alt="WA Barcode QR" 
-                                className="w-64 h-64 object-contain mx-auto group-hover:scale-102 transition-transform rounded-xl" 
+                                className="w-56 h-56 object-contain mx-auto group-hover:scale-105 transition-transform rounded-xl" 
                               />
                               {/* Central WhatsApp Badge Icon */}
                               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="bg-white p-2 rounded-2xl shadow-lg border border-emerald-100">
-                                  <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-extrabold text-sm">
+                                <div className="bg-white p-2 rounded-2xl shadow-md border border-emerald-100">
+                                  <div className="w-7 h-7 rounded-xl bg-[#00c278] flex items-center justify-center text-white font-extrabold text-xs">
                                     WA
                                   </div>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <div className="w-64 h-64 bg-slate-50 flex flex-col items-center justify-center rounded-2xl p-4 gap-3 border border-slate-200/60">
-                              <div className="p-3 bg-emerald-100/60 rounded-full text-emerald-600 animate-bounce">
+                            <div className="w-full h-full bg-[#f8fafd] rounded-[24px] flex flex-col items-center justify-center p-6 gap-4">
+                              {/* Green Circle Badge with QR Dot-Grid inside */}
+                              <div className="w-16 h-16 bg-[#e6f7f0] text-[#00c278] rounded-full flex items-center justify-center shadow-inner border border-emerald-100">
                                 <QrCode className="w-8 h-8" />
                               </div>
-                              <RefreshCw className="w-6 h-6 text-emerald-500 animate-spin" />
-                              <p className="text-xs text-slate-600 font-bold">Membuat Barcode WhatsApp Web...</p>
+                              
+                              {/* Rotating Refresh Indicator */}
+                              <RefreshCw className="w-6 h-6 text-[#00c278] animate-spin" />
+                              
+                              {/* WhatsApp web label */}
+                              <p className="text-[13px] text-slate-700 font-extrabold tracking-wide">
+                                Membuat Barcode WhatsApp Web...
+                              </p>
                             </div>
                           )}
                         </div>
