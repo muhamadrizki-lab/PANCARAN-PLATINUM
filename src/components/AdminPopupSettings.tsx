@@ -36,8 +36,28 @@ interface AdminPopupSettingsProps {
   onPreviewPopup: (popupToPreview: PopupItem) => void;
 }
 
-const sampleImages = [
-  { label: 'Poster Lelang & Survei', url: 'https://lh3.googleusercontent.com/d/17N7xTwx4PcaqLK3NN6nq04x0yATldWaU' },
+interface PresetImage {
+  label: string;
+  url: string;
+  surveyDate?: string;
+  surveyTime?: string;
+  surveyLocation?: string;
+  biddingDate?: string;
+  biddingTime?: string;
+  additionalNote?: string;
+}
+
+const sampleImages: PresetImage[] = [
+  { 
+    label: 'Poster Lelang & Survei', 
+    url: 'https://lh3.googleusercontent.com/d/17N7xTwx4PcaqLK3NN6nq04x0yATldWaU',
+    surveyDate: '18 - 22 Agustus 2026',
+    surveyTime: '09.00 - 16.00 WIB',
+    surveyLocation: 'Pool & Gudang Logistik Pancaran Utama',
+    biddingDate: '25 Agustus 2026',
+    biddingTime: '10.00 WIB s/d Selesai',
+    additionalNote: 'Penting: Peserta wajib hadir tepat waktu untuk survey fisik dan membawa KTP asli serta bukti transfer deposit.'
+  },
   { label: 'Poster Lelang Truck', url: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN' },
   { label: 'Gudang & Truck Banner (3D)', url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80' },
   { label: 'Gudang Logistik', url: 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=1200&q=80' }
@@ -56,6 +76,7 @@ const BLANK_POPUP_FORM: Omit<PopupItem, 'id' | 'createdAt'> = {
   cancellationTitle: '',
   cancellationDescription: '',
   closingSlogan: '',
+  additionalNote: '',
   ctaButtonText: 'Hubungi Panitia',
   ctaButtonUrl: 'https://wa.me/6281317469744',
   showBeforeLogin: true,
@@ -536,11 +557,26 @@ export default function AdminPopupSettings({
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5 items-center">
                     <span className="text-[10px] text-slate-400 font-medium">{t('Atau pilih preset:')}</span>
-                    {sampleImages.map((img, idx) => (
+                    {sampleImages.map((img: PresetImage, idx) => (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => handleChange('imageUrl', img.url)}
+                        onClick={() => {
+                          if (img.surveyDate) {
+                            setFormData(prev => ({
+                              ...prev,
+                              imageUrl: img.url,
+                              surveyDate: img.surveyDate,
+                              surveyTime: img.surveyTime,
+                              surveyLocation: img.surveyLocation,
+                              biddingDate: img.biddingDate,
+                              biddingTime: img.biddingTime,
+                              additionalNote: img.additionalNote || ''
+                            }));
+                          } else {
+                            handleChange('imageUrl', img.url);
+                          }
+                        }}
                         className="text-[10px] px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-slate-700 border border-slate-200 font-medium transition-all"
                       >
                         {img.label}
@@ -549,38 +585,7 @@ export default function AdminPopupSettings({
                   </div>
                 </div>
 
-                {/* Deskripsi Utama */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      {t('Deskripsi Utama Pop-up')}
-                    </label>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {t('Gunakan Enter / Shift + Ctrl untuk paragraf baru')}
-                    </span>
-                  </div>
-                  <textarea
-                    rows={4}
-                    value={formData.mainDescription}
-                    onChange={(e) => handleChange('mainDescription', e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
-                        e.preventDefault();
-                        const target = e.currentTarget;
-                        const start = target.selectionStart;
-                        const end = target.selectionEnd;
-                        const val = target.value;
-                        const newValue = val.substring(0, start) + '\n' + val.substring(end);
-                        handleChange('mainDescription', newValue);
-                        setTimeout(() => {
-                          target.selectionStart = target.selectionEnd = start + 1;
-                        }, 0);
-                      }
-                    }}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl text-slate-800 text-xs sm:text-sm leading-relaxed"
-                    placeholder={t('Tuliskan teks paragraf deskripsi pop-up secara lengkap...')}
-                  />
-                </div>
+
 
                 {/* BIDANG KHUSUS FORMAT DETAIL */}
                 {formData.layoutType === 'detailed' && (
@@ -732,6 +737,20 @@ export default function AdminPopupSettings({
                           />
                         </div>
                       </div>
+
+                      {/* Note tambahan */}
+                      <div className="col-span-1 sm:col-span-2 p-4 bg-amber-50/40 border border-amber-200 rounded-2xl space-y-2">
+                        <span className="font-extrabold text-amber-900 text-xs flex items-center gap-1.5">
+                          📝 {t('Note tambahan')}
+                        </span>
+                        <textarea
+                          rows={2}
+                          value={formData.additionalNote || ''}
+                          onChange={(e) => handleChange('additionalNote', e.target.value)}
+                          placeholder={t('Contoh: Peserta wajib hadir tepat waktu untuk survey fisik dan membawa KTP asli.')}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-1 focus:ring-amber-300 focus:outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -789,15 +808,56 @@ export default function AdminPopupSettings({
                     </div>
                   )}
 
-                  <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
-                    {formData.mainDescription}{' '}
-                    {formData.depositHighlight && (
-                      <span className="font-extrabold text-blue-900 bg-blue-50 px-1 py-0.5 rounded">
-                        {formData.depositHighlight}
-                      </span>
-                    )}
-                    {formData.descriptionSuffix && ` ${formData.descriptionSuffix}`}
-                  </p>
+                  {/* Structured Schedule Display in Admin Preview */}
+                  {(formData.surveyDate || formData.biddingDate) ? (
+                    <div className="space-y-3 my-2 text-xs">
+                      {formData.biddingDate && (
+                        <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
+                          <h4 className="font-extrabold text-purple-900 text-xs flex items-center gap-1.5">
+                            🚀 JADWAL MULAI LELANG (BIDDING):
+                          </h4>
+                          <div className="space-y-0.5 text-[11px] text-purple-950 font-medium pl-5">
+                            <p>• <span className="font-bold">Tanggal:</span> {formData.biddingDate}</p>
+                            {formData.biddingTime && <p>• <span className="font-bold">Pukul:</span> {formData.biddingTime}</p>}
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.surveyDate && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
+                          <h4 className="font-extrabold text-blue-900 text-xs flex items-center gap-1.5">
+                            📅 JADWAL SURVEY FISIK UNIT:
+                          </h4>
+                          <div className="space-y-0.5 text-[11px] text-blue-950 font-medium pl-5">
+                            <p>• <span className="font-bold">Tanggal:</span> {formData.surveyDate}</p>
+                            {formData.surveyTime && <p>• <span className="font-bold">Pukul:</span> {formData.surveyTime}</p>}
+                            {formData.surveyLocation && <p>• <span className="font-bold">Lokasi:</span> {formData.surveyLocation}</p>}
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.additionalNote && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                          <h4 className="font-extrabold text-amber-950 text-xs flex items-center gap-1.5">
+                            📝 NOTE TAMBAHAN:
+                          </h4>
+                          <p className="text-[11px] text-amber-900 font-medium pl-5">
+                            {formData.additionalNote}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                      {formData.mainDescription}{' '}
+                      {formData.depositHighlight && (
+                        <span className="font-extrabold text-blue-900 bg-blue-50 px-1 py-0.5 rounded">
+                          {formData.depositHighlight}
+                        </span>
+                      )}
+                      {formData.descriptionSuffix && ` ${formData.descriptionSuffix}`}
+                    </p>
+                  )}
 
                   {formData.securityTitle && (
                     <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-0.5">

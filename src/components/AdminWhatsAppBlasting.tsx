@@ -126,6 +126,13 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   const [sendDelaySeconds, setSendDelaySeconds] = useState<number>(3);
   const [showGatewayConfig, setShowGatewayConfig] = useState<boolean>(false);
   const [currentSendingTarget, setCurrentSendingTarget] = useState<string>('');
+  const [scheduleType, setScheduleType] = useState<'now' | 'scheduled'>('now');
+  const [scheduledTime, setScheduledTime] = useState<string>(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + 30);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
 
   const getParsedPastedRecipients = () => {
     if (!pastedNumbers.trim()) return [];
@@ -546,6 +553,32 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
       return;
     }
 
+    if (scheduleType === 'scheduled') {
+      const formattedDate = new Date(scheduledTime).toLocaleString('id-ID', {
+        dateStyle: 'long',
+        timeStyle: 'short'
+      });
+      
+      const newLog = {
+        id: Date.now().toString(),
+        time: formattedDate,
+        recipientCount: recipients.length,
+        messagePreview: `[TERJADWAL] ${messageContent.slice(0, 80)}${messageContent.length > 80 ? '...' : ''}`,
+        status: 'Terjadwal'
+      };
+      setBlastLogs(prev => [newLog, ...prev]);
+
+      setSuccessInfo({
+        count: recipients.length,
+        preview: messageContent.slice(0, 120) + (messageContent.length > 120 ? '...' : ''),
+        time: `${formattedDate} WIB`,
+        hasImage: Boolean(selectedImageUrl)
+      });
+      setShowSuccessModal(true);
+      showToast(`📅 Jadwal Blasting WA berhasil dipasang untuk tanggal: ${formattedDate}!`);
+      return;
+    }
+
     setIsBlasting(true);
     setBlastProgress({ total: recipients.length, current: 0 });
 
@@ -943,8 +976,73 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                     placeholder="Tulis pesan promosi Anda di sini... Gunakan {name} untuk menyapa nama pelanggan."
                     className="w-full h-44 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm outline-none resize-none font-medium text-slate-800 leading-relaxed"
                   />
+                </div>
 
+                {/* 2.5 JADWAL PENGIRIMAN (SCHEDULE BLAST) */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-emerald-600" />
+                      Jadwal Pengiriman Pesan Blasting (Set Waktu & Jam)
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">Tipe Pengiriman</label>
+                      <div className="flex bg-white border border-slate-200 rounded-xl p-1 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setScheduleType('now')}
+                          className={`flex-1 py-2 rounded-lg transition-all ${scheduleType === 'now' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          Kirim Sekarang (Instan)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleType('scheduled')}
+                          className={`flex-1 py-2 rounded-lg transition-all ${scheduleType === 'scheduled' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          Jadwalkan (Atur Jam)
+                        </button>
+                      </div>
+                    </div>
 
+                    {scheduleType === 'scheduled' ? (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Pilih Tanggal & Jam Kirim</label>
+                        <input
+                          type="datetime-local"
+                          value={scheduledTime}
+                          onChange={(e) => setScheduledTime(e.target.value)}
+                          className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Interval Jeda Anti-Spam (Detik)</label>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <input
+                            type="range"
+                            min="1"
+                            max="15"
+                            value={sendDelaySeconds}
+                            onChange={(e) => setSendDelaySeconds(Number(e.target.value))}
+                            className="flex-1 accent-emerald-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                          />
+                          <span className="text-xs font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-lg shrink-0">
+                            {sendDelaySeconds} Detik
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {scheduleType === 'scheduled' && (
+                    <div className="text-[10.5px] text-amber-800 bg-amber-50 border border-amber-200 p-3 rounded-xl font-medium leading-relaxed">
+                      💡 <b>Info Penjadwalan:</b> Sistem WhatsApp Gateway akan otomatis menahan antrean pesan ini dan memproses blasting ke semua penerima secara aman tepat pada <b>{new Date(scheduledTime || Date.now()).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</b>.
+                    </div>
+                  )}
                 </div>
 
                 {/* LIVE BLASTING PROGRESS BANNER */}
@@ -1008,6 +1106,8 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                     <Send className="w-4 h-4" />
                     {isBlasting 
                       ? `Sedang Blasting... (${blastProgress.current}/${blastProgress.total})` 
+                      : scheduleType === 'scheduled'
+                      ? `Jadwalkan Blasting WA (${selectedUsers.length > 0 ? selectedUsers.length : filteredUsers.length} Kontak)`
                       : `Mulai Blasting WA (${selectedUsers.length > 0 ? selectedUsers.length : filteredUsers.length} Kontak)`
                     }
                   </button>

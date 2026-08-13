@@ -2839,6 +2839,18 @@ export default function App() {
                         {/* Structured Schedule Display if surveyDate or biddingDate is present */}
                         {(activePopup.surveyDate || activePopup.biddingDate) ? (
                           <div className="space-y-4 my-2">
+                            {activePopup.biddingDate && (
+                              <div className="p-3.5 bg-purple-50/80 border border-purple-200/80 rounded-2xl space-y-1.5 shadow-2xs">
+                                <h4 className="font-extrabold text-purple-900 text-xs sm:text-sm flex items-center gap-2">
+                                  🚀 JADWAL MULAI LELANG (BIDDING):
+                                </h4>
+                                <div className="space-y-1 text-xs text-purple-950 font-medium pl-6">
+                                  <p>• <span className="font-bold">Tanggal:</span> {activePopup.biddingDate}</p>
+                                  {activePopup.biddingTime && <p>• <span className="font-bold">Pukul:</span> {activePopup.biddingTime}</p>}
+                                </div>
+                              </div>
+                            )}
+
                             {activePopup.surveyDate && (
                               <div className="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-2xl space-y-1.5 shadow-2xs">
                                 <h4 className="font-extrabold text-blue-900 text-xs sm:text-sm flex items-center gap-2">
@@ -2852,29 +2864,28 @@ export default function App() {
                               </div>
                             )}
 
-                            {activePopup.biddingDate && (
-                              <div className="p-3.5 bg-purple-50/80 border border-purple-200/80 rounded-2xl space-y-1.5 shadow-2xs">
-                                <h4 className="font-extrabold text-purple-900 text-xs sm:text-sm flex items-center gap-2">
-                                  🚀 JADWAL MULAI LELANG (BIDDING):
+                            {activePopup.additionalNote && (
+                              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-1 shadow-2xs">
+                                <h4 className="font-extrabold text-amber-950 text-xs sm:text-sm flex items-center gap-2">
+                                  📝 NOTE TAMBAHAN:
                                 </h4>
-                                <div className="space-y-1 text-xs text-purple-950 font-medium pl-6">
-                                  <p>• <span className="font-bold">Tanggal:</span> {activePopup.biddingDate}</p>
-                                  {activePopup.biddingTime && <p>• <span className="font-bold">Pukul:</span> {activePopup.biddingTime}</p>}
-                                </div>
+                                <p className="text-xs text-amber-900 font-medium pl-6">
+                                  {activePopup.additionalNote}
+                                </p>
                               </div>
                             )}
                           </div>
-                        ) : null}
-
-                        <p className="font-medium text-slate-800 whitespace-pre-line">
-                          {activePopup.mainDescription}{' '}
-                          {activePopup.depositHighlight && (
-                            <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">
-                              {activePopup.depositHighlight}
-                            </span>
-                          )}
-                          {activePopup.descriptionSuffix && ` ${activePopup.descriptionSuffix}`}
-                        </p>
+                        ) : (
+                          <p className="font-medium text-slate-800 whitespace-pre-line">
+                            {activePopup.mainDescription}{' '}
+                            {activePopup.depositHighlight && (
+                              <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">
+                                {activePopup.depositHighlight}
+                              </span>
+                            )}
+                            {activePopup.descriptionSuffix && ` ${activePopup.descriptionSuffix}`}
+                          </p>
+                        )}
 
                         {activePopup.securityTitle && (
                           <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1">

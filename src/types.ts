@@ -259,6 +259,7 @@ export interface PopupItem {
   surveyLocation?: string;
   biddingDate?: string;
   biddingTime?: string;
+  additionalNote?: string;
   showBeforeLogin: boolean;
   showAfterLogin: boolean;
   isActive: boolean;
@@ -302,6 +303,7 @@ export const DEFAULT_SCHEDULE_POPUP_ITEM: PopupItem = {
   surveyLocation: 'Pool & Gudang Logistik Pancaran Utama',
   biddingDate: '25 Agustus 2026',
   biddingTime: '10.00 WIB s/d Selesai',
+  additionalNote: 'Penting: Peserta wajib hadir tepat waktu untuk survey fisik dan membawa KTP asli serta bukti transfer deposit.',
   mainDescription: 'Pastikan Anda telah melengkapi deposit jaminan dan bersiap mengikuti bidding online.',
   showBeforeLogin: true,
   showAfterLogin: true,
