@@ -195,6 +195,7 @@ export interface BiddingRequest {
   id: string;
   email: string;
   userName: string;
+  phone?: string;
   requestType: string;
   proofUrl: string; // Base64 image
   status: 'Pending' | 'Approved' | 'Rejected';
@@ -253,6 +254,11 @@ export interface PopupItem {
   closingSlogan?: string;
   ctaButtonText?: string;
   ctaButtonUrl?: string;
+  surveyDate?: string;
+  surveyTime?: string;
+  surveyLocation?: string;
+  biddingDate?: string;
+  biddingTime?: string;
   showBeforeLogin: boolean;
   showAfterLogin: boolean;
   isActive: boolean;
@@ -279,7 +285,7 @@ export const DEFAULT_POPUP_ITEM: PopupItem = {
   closingSlogan: 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',
   ctaButtonText: 'Hubungi Panitia untuk Akses Bidding',
   ctaButtonUrl: 'https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang.',
-  showBeforeLogin: true,
+  showBeforeLogin: false,
   showAfterLogin: true,
   isActive: true,
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -291,10 +297,15 @@ export const DEFAULT_SCHEDULE_POPUP_ITEM: PopupItem = {
   subtitle: 'Informasi Resmi Waktu Pelaksanaan Lelang Pancaran Platinum',
   layoutType: 'simple',
   imageUrl: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN',
-  mainDescription: '📅 JADWAL SURVEY FISIK UNIT:\n• Tanggal: 18 - 22 Agustus 2026\n• Pukul: 09.00 - 16.00 WIB\n• Lokasi: Pool & Gudang Logistik Pancaran Utama\n\n🚀 JADWAL MULAI LELANG (BIDDING):\n• Tanggal: 25 Agustus 2026\n• Pukul: 10.00 WIB s/d Selesai\n\nPastikan Anda telah melengkapi deposit jaminan dan bersiap mengikuti bidding online.',
+  surveyDate: '18 - 22 Agustus 2026',
+  surveyTime: '09.00 - 16.00 WIB',
+  surveyLocation: 'Pool & Gudang Logistik Pancaran Utama',
+  biddingDate: '25 Agustus 2026',
+  biddingTime: '10.00 WIB s/d Selesai',
+  mainDescription: 'Pastikan Anda telah melengkapi deposit jaminan dan bersiap mengikuti bidding online.',
   showBeforeLogin: true,
   showAfterLogin: true,
-  isActive: false, // can be activated by admin
+  isActive: true, // active by default
   createdAt: '2026-01-02T00:00:00.000Z',
 };
 

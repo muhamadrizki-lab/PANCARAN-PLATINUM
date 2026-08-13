@@ -479,10 +479,11 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone, bidd
         plateNumber: '-',
         modelYear: 2026,
         condition: 'Baik',
-        engineNumber: '-',
-        chassisNumber: '-',
         location: 'Pancaran HQ',
-        openBid: 10000000,
+        startingPrice: 10000000,
+        highestBid: 10000000,
+        description: 'Bidding access request',
+        imageUrl: '',
         status: 'Open',
         bids: []
       };

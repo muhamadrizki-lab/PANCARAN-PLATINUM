@@ -22,7 +22,8 @@ import {
   ToggleLeft,
   ToggleRight,
   Layers,
-  Upload
+  Upload,
+  Calendar
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { PopupItem, PopupConfig, DEFAULT_POPUP_CONFIG, EMPTY_POPUP_CONFIG } from '../types';
@@ -34,6 +35,13 @@ interface AdminPopupSettingsProps {
   onShowNotification: (message: string, type: 'success' | 'error' | 'info') => void;
   onPreviewPopup: (popupToPreview: PopupItem) => void;
 }
+
+const sampleImages = [
+  { label: 'Poster Lelang & Survei', url: 'https://lh3.googleusercontent.com/d/17N7xTwx4PcaqLK3NN6nq04x0yATldWaU' },
+  { label: 'Poster Lelang Truck', url: 'https://lh3.googleusercontent.com/d/19rthCmJjo1yZlT94ce5xY_mcwGnyaqjN' },
+  { label: 'Gudang & Truck Banner (3D)', url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Gudang Logistik', url: 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=1200&q=80' }
+];
 
 const BLANK_POPUP_FORM: Omit<PopupItem, 'id' | 'createdAt'> = {
   title: '',
@@ -647,6 +655,82 @@ export default function AdminPopupSettings({
                           placeholder={t('Isi Keterangan Pembatalan')}
                           className="w-full px-3 py-1.5 bg-white border border-rose-300 rounded-lg text-xs text-rose-950"
                         />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* BIDANG KHUSUS JADWAL SURVEY & LELANG */}
+                {(!formData.layoutType || formData.layoutType === 'simple') && (
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-600" />
+                      {t('Form Pengisian Detail Jadwal Survey & Lelang')}
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Survey Fisik Unit */}
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                        <span className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+                          📅 {t('Jadwal Survey Fisik Unit')}
+                        </span>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Tanggal Survey')}</label>
+                          <input
+                            type="text"
+                            value={formData.surveyDate || ''}
+                            onChange={(e) => handleChange('surveyDate', e.target.value)}
+                            placeholder={t('Contoh: 18 - 22 Agustus 2026')}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Pukul Survey')}</label>
+                          <input
+                            type="text"
+                            value={formData.surveyTime || ''}
+                            onChange={(e) => handleChange('surveyTime', e.target.value)}
+                            placeholder={t('Contoh: 09.00 - 16.00 WIB')}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Lokasi Survey')}</label>
+                          <input
+                            type="text"
+                            value={formData.surveyLocation || ''}
+                            onChange={(e) => handleChange('surveyLocation', e.target.value)}
+                            placeholder={t('Contoh: Pool & Gudang Logistik Pancaran Utama')}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Jadwal Mulai Lelang */}
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                        <span className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+                          🚀 {t('Jadwal Mulai Lelang (Bidding)')}
+                        </span>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Tanggal Lelang')}</label>
+                          <input
+                            type="text"
+                            value={formData.biddingDate || ''}
+                            onChange={(e) => handleChange('biddingDate', e.target.value)}
+                            placeholder={t('Contoh: 25 Agustus 2026')}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Pukul Lelang')}</label>
+                          <input
+                            type="text"
+                            value={formData.biddingTime || ''}
+                            onChange={(e) => handleChange('biddingTime', e.target.value)}
+                            placeholder={t('Contoh: 10.00 WIB s/d Selesai')}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

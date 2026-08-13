@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory, PopupConfig, PopupItem, DEFAULT_POPUP_CONFIG, EMPTY_POPUP_CONFIG } from './types';
+import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory, PopupConfig, PopupItem, DEFAULT_POPUP_CONFIG, DEFAULT_SCHEDULE_POPUP_ITEM, EMPTY_POPUP_CONFIG } from './types';
 import { INITIAL_ASSETS, INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from './data/mockData';
 import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
@@ -116,6 +116,7 @@ export default function App() {
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedGuideModal, setSelectedGuideModal] = useState<'ikut' | 'titip' | 'online' | null>(null);
+  const [popupStepIndex, setPopupStepIndex] = useState(0);
   
   // Navigation inside Admin area
   const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'popup_settings' | 'settings' | 'whatsapp'>('dashboard');
@@ -2738,34 +2739,35 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* Guide Detail Modal / Full Feed Popups */}
+      {/* Guide Detail Modal / Sequential Popups */}
       {selectedGuideModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="relative w-full max-w-5xl flex items-center justify-center py-4 sm:py-8">
-            <button
-              onClick={() => {
-                setSelectedGuideModal(null);
-                setPreviewPopupItem(null);
-              }}
-              className="absolute top-2 right-2 sm:top-6 sm:right-6 z-20 p-2.5 bg-white/90 hover:bg-white text-slate-700 rounded-full shadow-lg transition cursor-pointer backdrop-blur-sm"
-              aria-label="Tutup"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="relative w-full max-w-2xl flex items-center justify-center my-auto py-6">
             {selectedGuideModal === 'ikut' && (() => {
               const allPopups = (popupConfig.popups && popupConfig.popups.length > 0) ? popupConfig.popups : DEFAULT_POPUP_CONFIG.popups;
               const activePopups = previewPopupItem ? [previewPopupItem] : allPopups.filter(p => p.isActive && (isUserLoggedIn || isAdminLoggedIn ? p.showAfterLogin : p.showBeforeLogin));
 
               if (activePopups.length === 0) {
                 return (
-                  <div className="bg-white rounded-3xl max-w-md w-full p-8 text-center space-y-4 shadow-2xl mx-auto my-auto">
+                  <div className="bg-white rounded-3xl max-w-md w-full p-8 text-center space-y-4 shadow-2xl mx-auto my-auto relative">
+                    <button
+                      onClick={() => {
+                        setSelectedGuideModal(null);
+                        setPreviewPopupItem(null);
+                        setPopupStepIndex(0);
+                      }}
+                      className="absolute top-4 right-4 z-20 p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition cursor-pointer"
+                      aria-label="Tutup"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                     <h3 className="text-lg font-extrabold text-slate-900">{t('Informasi Penawaran')}</h3>
                     <p className="text-xs text-slate-500">{t('Belum ada pop-up pengumuman aktif saat ini.')}</p>
                     <button
                       onClick={() => {
                         setSelectedGuideModal(null);
                         setPreviewPopupItem(null);
+                        setPopupStepIndex(0);
                       }}
                       className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl cursor-pointer transition"
                     >
@@ -2775,102 +2777,155 @@ export default function App() {
                 );
               }
 
+              const activePopup = activePopups[popupStepIndex] || activePopups[0];
+
+              const handleNextOrClose = () => {
+                if (popupStepIndex + 1 < activePopups.length) {
+                  setPopupStepIndex(popupStepIndex + 1);
+                } else {
+                  setSelectedGuideModal(null);
+                  setPreviewPopupItem(null);
+                  setPopupStepIndex(0);
+                }
+              };
+
               return (
-                <div className={`grid grid-cols-1 ${activePopups.length > 1 ? 'lg:grid-cols-2' : 'max-w-2xl'} gap-6 w-full p-2 sm:p-6 my-auto`}>
-                  {activePopups.map((activePopup, index) => (
-                    <div key={activePopup.id || index} className="bg-white rounded-3xl p-5 sm:p-8 shadow-2xl relative border border-slate-200/80 flex flex-col justify-between max-h-[85vh] sm:max-h-[88vh] overflow-y-auto">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                            <CheckCircle className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
-                              {activePopup.title}
-                            </h3>
-                            {activePopup.subtitle && (
-                              <p className="text-[11px] text-slate-500 mt-0.5">{activePopup.subtitle}</p>
+                <div className="w-full p-1 sm:p-2 my-auto">
+                  {activePopups.length > 1 && (
+                    <div className="text-center mb-3">
+                      <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md text-white font-bold text-xs rounded-full border border-white/30 shadow-sm">
+                        Pengumuman {popupStepIndex + 1} dari {activePopups.length}
+                      </span>
+                    </div>
+                  )}
+                  <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-2xl relative border border-slate-200/80 flex flex-col justify-between">
+                    {/* Close X Button inside card at top right */}
+                    <button
+                      onClick={handleNextOrClose}
+                      className="absolute top-4 right-4 z-20 p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition cursor-pointer shadow-sm"
+                      aria-label="Tutup"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    <div className="space-y-4 pr-8 sm:pr-0">
+                      <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                          <CheckCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                            {activePopup.title}
+                          </h3>
+                          {activePopup.subtitle && (
+                            <p className="text-[11px] text-slate-500 mt-0.5">{activePopup.subtitle}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Banner / Guide Image */}
+                      {activePopup.imageUrl && (
+                        <div className="w-full h-40 sm:h-52 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-xs">
+                          <img
+                            src={activePopup.imageUrl}
+                            alt={activePopup.title}
+                            className="w-full h-full object-cover object-center"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-3 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                        {/* Structured Schedule Display if surveyDate or biddingDate is present */}
+                        {(activePopup.surveyDate || activePopup.biddingDate) ? (
+                          <div className="space-y-4 my-2">
+                            {activePopup.surveyDate && (
+                              <div className="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-2xl space-y-1.5 shadow-2xs">
+                                <h4 className="font-extrabold text-blue-900 text-xs sm:text-sm flex items-center gap-2">
+                                  📅 JADWAL SURVEY FISIK UNIT:
+                                </h4>
+                                <div className="space-y-1 text-xs text-blue-950 font-medium pl-6">
+                                  <p>• <span className="font-bold">Tanggal:</span> {activePopup.surveyDate}</p>
+                                  {activePopup.surveyTime && <p>• <span className="font-bold">Pukul:</span> {activePopup.surveyTime}</p>}
+                                  {activePopup.surveyLocation && <p>• <span className="font-bold">Lokasi:</span> {activePopup.surveyLocation}</p>}
+                                </div>
+                              </div>
+                            )}
+
+                            {activePopup.biddingDate && (
+                              <div className="p-3.5 bg-purple-50/80 border border-purple-200/80 rounded-2xl space-y-1.5 shadow-2xs">
+                                <h4 className="font-extrabold text-purple-900 text-xs sm:text-sm flex items-center gap-2">
+                                  🚀 JADWAL MULAI LELANG (BIDDING):
+                                </h4>
+                                <div className="space-y-1 text-xs text-purple-950 font-medium pl-6">
+                                  <p>• <span className="font-bold">Tanggal:</span> {activePopup.biddingDate}</p>
+                                  {activePopup.biddingTime && <p>• <span className="font-bold">Pukul:</span> {activePopup.biddingTime}</p>}
+                                </div>
+                              </div>
                             )}
                           </div>
-                        </div>
+                        ) : null}
 
-                        {/* Banner / Guide Image */}
-                        {activePopup.imageUrl && (
-                          <div className="w-full h-40 sm:h-48 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-xs">
-                            <img
-                              src={activePopup.imageUrl}
-                              alt={activePopup.title}
-                              className="w-full h-full object-cover object-center"
-                              referrerPolicy="no-referrer"
-                            />
+                        <p className="font-medium text-slate-800 whitespace-pre-line">
+                          {activePopup.mainDescription}{' '}
+                          {activePopup.depositHighlight && (
+                            <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">
+                              {activePopup.depositHighlight}
+                            </span>
+                          )}
+                          {activePopup.descriptionSuffix && ` ${activePopup.descriptionSuffix}`}
+                        </p>
+
+                        {activePopup.securityTitle && (
+                          <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1">
+                            <h4 className="font-extrabold text-emerald-900 text-xs sm:text-sm flex items-center gap-2">
+                              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                              {activePopup.securityTitle}
+                            </h4>
+                            <p className="text-emerald-950 font-medium text-[11px] sm:text-xs">
+                              {activePopup.securityDescription}
+                            </p>
                           </div>
                         )}
 
-                        <div className="space-y-3 text-xs sm:text-sm text-slate-700 leading-relaxed">
-                          <p className="font-medium text-slate-800 whitespace-pre-line">
-                            {activePopup.mainDescription}{' '}
-                            {activePopup.depositHighlight && (
-                              <span className="font-extrabold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">
-                                {activePopup.depositHighlight}
-                              </span>
-                            )}
-                            {activePopup.descriptionSuffix && ` ${activePopup.descriptionSuffix}`}
-                          </p>
-
-                          {activePopup.securityTitle && (
-                            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-1">
-                              <h4 className="font-extrabold text-emerald-900 text-xs sm:text-sm flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                                {activePopup.securityTitle}
-                              </h4>
-                              <p className="text-emerald-950 font-medium text-[11px] sm:text-xs">
-                                {activePopup.securityDescription}
-                              </p>
-                            </div>
-                          )}
-
-                          {activePopup.cancellationTitle && (
-                            <div className="p-3.5 bg-rose-50/80 border border-rose-200/80 rounded-2xl space-y-1">
-                              <h4 className="font-extrabold text-rose-900 text-xs sm:text-sm flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4 text-rose-600" />
-                                {activePopup.cancellationTitle}
-                              </h4>
-                              <p className="text-rose-950 font-medium text-[11px] sm:text-xs">
-                                {activePopup.cancellationDescription}
-                              </p>
-                            </div>
-                          )}
-
-                          {activePopup.closingSlogan && (
-                            <p className="font-semibold text-blue-950 italic text-center pt-1 text-xs">
-                              {activePopup.closingSlogan}
+                        {activePopup.cancellationTitle && (
+                          <div className="p-3.5 bg-rose-50/80 border border-rose-200/80 rounded-2xl space-y-1">
+                            <h4 className="font-extrabold text-rose-900 text-xs sm:text-sm flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 text-rose-600" />
+                              {activePopup.cancellationTitle}
+                            </h4>
+                            <p className="text-rose-950 font-medium text-[11px] sm:text-xs">
+                              {activePopup.cancellationDescription}
                             </p>
-                          )}
-                        </div>
-                      </div>
+                          </div>
+                        )}
 
-                      <div className="pt-4 mt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5 justify-end items-center">
-                        <button
-                          onClick={() => {
-                            setSelectedGuideModal(null);
-                            setPreviewPopupItem(null);
-                          }}
-                          className="w-full sm:w-auto px-4 py-2 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200 transition cursor-pointer"
-                        >
-                          {t('Tutup')}
-                        </button>
-                        <a
-                          href={activePopup.ctaButtonUrl || "https://wa.me/6281317469744"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full sm:w-auto px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition"
-                        >
-                          <Phone className="w-4 h-4" />
-                          {activePopup.ctaButtonText || t('Hubungi Panitia')}
-                        </a>
+                        {activePopup.closingSlogan && (
+                          <p className="font-semibold text-blue-950 italic text-center pt-1 text-xs">
+                            {activePopup.closingSlogan}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  ))}
+
+                    <div className="pt-4 mt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5 justify-end items-center">
+                      <button
+                        onClick={handleNextOrClose}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 transition cursor-pointer"
+                      >
+                        {popupStepIndex + 1 < activePopups.length ? t('Lanjut ke Pengumuman Berikutnya') : t('Tutup & Masuk Menu')}
+                      </button>
+                      <a
+                        href={activePopup.ctaButtonUrl || "https://wa.me/6281317469744"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition"
+                      >
+                        <Phone className="w-4 h-4" />
+                        {activePopup.ctaButtonText || t('Hubungi Panitia')}
+                      </a>
+                    </div>
+                  </div>
                 </div>
               );
             })()}
