@@ -769,13 +769,17 @@ export default function CatalogView({
       <div className="relative w-full overflow-hidden bg-slate-950 text-white border-t border-slate-800 pt-8 md:pt-12 pb-16 md:pb-24">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/30 via-slate-950/70 to-slate-950/80 opacity-80 z-0"></div>
         
-        {/* Banner Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-75 md:opacity-65 z-0"
-          style={{ 
-            backgroundImage: "url('https://lh3.googleusercontent.com/d/1QsGItLvspUKwE2au0ayEtT86r1sR-FX4')",
-          }}
-        ></div>
+        {/* Banner Background Video */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-65 md:opacity-55"
+            src="https://res.cloudinary.com/x6bejifd/video/upload/v1786613786/vidssave.com_Pancaran_Group_720P_uosct4.mp4"
+          />
+        </div>
 
         {/* Traditional Botanical Batik Wallpaper Background Accent Overlay */}
         <div className="absolute inset-0 opacity-[0.20] pointer-events-none z-0 select-none overflow-hidden mix-blend-overlay">
