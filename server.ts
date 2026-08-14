@@ -143,6 +143,7 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
 
     session.sock.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
+      console.log(`[DEBUG] WA connection.update for ${emailKey}:`, { connection, hasQr: !!qr });
 
       if (qr) {
         try {
@@ -159,6 +160,8 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
         } catch (err) {
           console.error(`Failed to convert QR code for ${emailKey}:`, err);
         }
+      } else if (connection === 'connecting') {
+          console.log(`[DEBUG] WA still connecting for ${emailKey}...`);
       }
 
       if (connection === 'close') {

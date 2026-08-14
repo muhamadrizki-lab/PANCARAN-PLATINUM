@@ -13,7 +13,7 @@ import {
   query,
   limit
 } from 'firebase/firestore';
-import { Asset, AdminUser, Bid, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, ToastNotification, normalizeCategory, BiddingRequest, RefundRequest } from './types';
+import { Asset, AdminUser, Bid, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, ToastNotification, normalizeCategory, BiddingRequest, RefundRequest, WaSessionData, WaTemplateData } from './types';
 import { INITIAL_ASSETS, INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from './data/mockData';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -1522,5 +1522,132 @@ export function subscribeToRefundRequests(callback: (requests: RefundRequest[]) 
   );
 }
 
+// ==========================================
+// WHATSAPP SESSION & TEMPLATE PERSISTENCE
+// ==========================================
+const WA_SESSIONS_COLLECTION = 'wa_sessions';
+const WA_TEMPLATES_COLLECTION = 'wa_templates';
+
+export const INITIAL_WA_TEMPLATES: WaTemplateData[] = [
+  {
+    id: 'tpl_lelang_baru',
+    name: 'Pengumuman Lelang Unit Baru',
+    category: 'Lelang Baru',
+    content: `Halo *{name}*, 👋\n\nPancaran Platinum kembali menghadirkan lelang unit kendaraan komersial pilihan dengan harga penawaran awal yang sangat kompetitif!\n\n🚛 *Spesifikasi Unit Terbuka:*\n• *Nama Unit:* [NAMA_UNIT]\n• *Tahun / Kondisi:* [TAHUN] / Ready Unit\n• *Harga Penawaran Awal:* Rp [HARGA_AWAL]\n\nDapatkan unit impian Anda sekarang sebelum masa lelang ditutup.\nKunjungi portal resmi kami untuk mengajukan penawaran:\nhttps://pancaran-platinum.vercel.app/\n\nSalam hangat,\n*Tim Lelang Pancaran Platinum*`
+  },
+  {
+    id: 'tpl_pengingat_lelang',
+    name: 'Pengingat Batas Akhir Penawaran',
+    category: 'Pengingat',
+    content: `Yth. Bapak/Ibu *{name}*, ⏰\n\nMasa penawaran lelang untuk unit kendaraan *[NAMA_UNIT]* akan segera ditutup!\nJangan sampai melewatkan kesempatan emas untuk menjadi pemenang lelang resmi.\n\nGunakan fitur penawaran cepat di portal kami:\nhttps://pancaran-platinum.vercel.app/\n\nHormat kami,\n*Pancaran Platinum Auction Team*`
+  },
+  {
+    id: 'tpl_pemenang_sah',
+    name: 'Pengumuman Pemenang Lelang Sah',
+    category: 'Pemenang',
+    content: `Selamat kepada Bapak/Ibu *{name}*! 🎉🏆\n\nBerdasarkan hasil penutupan lelang resmi Pancaran Platinum, Anda dinyatakan sebagai *PEMENANG RESMI* untuk unit *[NAMA_UNIT]*.\n\nSurat Keputusan Lelang Resmi telah dikirimkan ke Kotak Masuk (Inbox) akun Anda di portal.\nTim admin kami akan segera menghubungi Anda untuk koordinasi proses serah terima dan penyelesaian administrasi.\n\nTerima kasih atas partisipasi Anda!\n*Pancaran Platinum*`
+  },
+  {
+    id: 'tpl_konfirmasi_survei',
+    name: 'Konfirmasi Jadwal Survei Fisik',
+    category: 'Survei Fisik',
+    content: `Halo *{name}*, 🚚\n\nPengajuan jadwal survei fisik unit kendaraan Anda telah kami terima dan terkonfirmasi di sistem.\n\n📍 *Lokasi Pool:* Pool Utama Pancaran Platinum\n🕒 *Waktu Survei:* Sesuai konfirmasi jadwal di sistem\n\nSilakan tunjukkan surat konfirmasi survei yang ada di Kotak Masuk (Inbox) portal saat tiba di lokasi pool.\n\nSalam,\n*Tim Layanan Lelang Pancaran Platinum*`
+  }
+];
+
+/**
+ * Save WhatsApp connection status to Firestore
+ */
+export async function saveWaSessionToFirestore(email: string, status: 'disconnected' | 'connecting' | 'connected', connectedPhone: string): Promise<void> {
+  const cleanEmail = (email || 'digital.solution@pancaran-logistic.id').toLowerCase().trim();
+  const docKey = cleanEmail.replace(/[^a-z0-9]/g, '_');
+  const path = `${WA_SESSIONS_COLLECTION}/${docKey}`;
+  const data: WaSessionData = {
+    id: docKey,
+    email: cleanEmail,
+    status,
+    connectedPhone,
+    updatedAt: new Date().toISOString()
+  };
+  try {
+    await setDoc(doc(db, WA_SESSIONS_COLLECTION, docKey), sanitizeData(data));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+/**
+ * Subscribe to realtime WhatsApp session status for a given admin email
+ */
+export function subscribeToWaSession(email: string, callback: (session: WaSessionData | null) => void) {
+  const cleanEmail = (email || 'digital.solution@pancaran-logistic.id').toLowerCase().trim();
+  const docKey = cleanEmail.replace(/[^a-z0-9]/g, '_');
+  return onSnapshot(
+    doc(db, WA_SESSIONS_COLLECTION, docKey),
+    (docSnap) => {
+      if (docSnap.exists()) {
+        callback(docSnap.data() as WaSessionData);
+      } else {
+        callback(null);
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, `${WA_SESSIONS_COLLECTION}/${docKey}`);
+      callback(null);
+    }
+  );
+}
+
+/**
+ * Save a WhatsApp message template to Firestore
+ */
+export async function saveWaTemplateToFirestore(template: WaTemplateData): Promise<void> {
+  const path = `${WA_TEMPLATES_COLLECTION}/${template.id}`;
+  try {
+    await setDoc(doc(db, WA_TEMPLATES_COLLECTION, template.id), sanitizeData(template));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+/**
+ * Delete a WhatsApp message template from Firestore
+ */
+export async function deleteWaTemplateFromFirestore(id: string): Promise<void> {
+  const path = `${WA_TEMPLATES_COLLECTION}/${id}`;
+  try {
+    await deleteDoc(doc(db, WA_TEMPLATES_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+/**
+ * Subscribe to realtime WhatsApp templates list from Firestore
+ */
+export function subscribeToWaTemplates(callback: (templates: WaTemplateData[]) => void) {
+  return onSnapshot(
+    collection(db, WA_TEMPLATES_COLLECTION),
+    (snapshot) => {
+      const items: WaTemplateData[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as WaTemplateData);
+      });
+      if (items.length === 0) {
+        // Automatically seed default templates if collection is empty
+        INITIAL_WA_TEMPLATES.forEach((tpl) => {
+          saveWaTemplateToFirestore(tpl);
+        });
+        callback(INITIAL_WA_TEMPLATES);
+      } else {
+        callback(items);
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, WA_TEMPLATES_COLLECTION);
+      callback(INITIAL_WA_TEMPLATES);
+    }
+  );
+}
 
 
