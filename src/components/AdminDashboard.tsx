@@ -56,8 +56,8 @@ export default function AdminDashboard({
   const totalOpen = assets.filter(a => a.status === 'Open').length;
 
   const totalOmzet = soldAssets.reduce((sum, asset) => {
-    const highestVal = asset.bids && asset.bids.length > 0 ? Math.max(...asset.bids.map(b => b.price)) : asset.startingPrice;
-    return sum + highestVal;
+    const highestVal = asset.bids && asset.bids.length > 0 ? Math.max(...asset.bids.map(b => Number(b.price) || 0)) : (Number(asset.startingPrice) || 0);
+    return sum + (Number(highestVal) || 0);
   }, 0);
 
   const lunasCount = soldAssets.filter(a => a.paymentStatus === 'Lunas').length;
