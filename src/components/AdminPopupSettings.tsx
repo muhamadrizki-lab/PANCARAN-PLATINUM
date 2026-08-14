@@ -159,6 +159,7 @@ export default function AdminPopupSettings({
                 ...p,
                 ...formData,
                 closingSlogan: formData.closingSlogan || 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',
+                ppnDisclaimer: formData.ppnDisclaimer || '*Harga belum termasuk PPN',
                 ctaButtonText: formData.ctaButtonText || 'Hubungi Panitia untuk Akses Bidding',
                 ctaButtonUrl: formData.ctaButtonUrl || 'https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang.',
               }
@@ -170,6 +171,7 @@ export default function AdminPopupSettings({
           id: 'popup_' + Date.now(),
           ...formData,
           closingSlogan: formData.closingSlogan || 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',
+          ppnDisclaimer: formData.ppnDisclaimer || '*Harga belum termasuk PPN',
           ctaButtonText: formData.ctaButtonText || 'Hubungi Panitia untuk Akses Bidding',
           ctaButtonUrl: formData.ctaButtonUrl || 'https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang.',
           createdAt: new Date().toISOString(),
@@ -881,6 +883,9 @@ export default function AdminPopupSettings({
 
                   {formData.closingSlogan && (
                     <p className="text-xs italic text-blue-950 text-center font-semibold">{formData.closingSlogan}</p>
+                  )}
+                  {formData.ppnDisclaimer && (
+                    <p className="text-[10px] text-slate-500 text-center mt-1 font-semibold">{t(formData.ppnDisclaimer)}</p>
                   )}
 
                   <div className="pt-2">

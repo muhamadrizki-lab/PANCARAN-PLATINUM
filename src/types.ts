@@ -253,6 +253,7 @@ export interface PopupItem {
   cancellationTitle?: string;
   cancellationDescription?: string;
   closingSlogan?: string;
+  ppnDisclaimer?: string;
   ctaButtonText?: string;
   ctaButtonUrl?: string;
   surveyDate?: string;
@@ -281,10 +282,11 @@ export const DEFAULT_POPUP_ITEM: PopupItem = {
   depositHighlight: 'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.',
   descriptionSuffix: 'sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.',
   securityTitle: 'Jaminan Keamanan Dana:',
-  securityDescription: 'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar Rp10.000.000,- akan dikembalikan penuh (100%) setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya. Max 5 hari kerja pengembalian deposit.',
+  securityDescription: 'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar Rp10.000.000,- akan dikembalikan penuh (100%) Maximal 5 hari kerja setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.',
   cancellationTitle: 'Syarat & Ketentuan Pembatalan:',
-  cancellationDescription: 'Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.',
+  cancellationDescription: 'Deposit akan dianggap hangus seluruhnya 100% apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.',
   closingSlogan: 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',
+  ppnDisclaimer: '*Harga belum termasuk PPN',
   ctaButtonText: 'Hubungi Panitia untuk Akses Bidding',
   ctaButtonUrl: 'https://wa.me/6281317469744?text=Halo%20Panitia%20Lelang%20Pancaran%20Platinum,%20saya%20ingin%20mengkonfirmasi%20deposit%20jaminan%20Rp10.000.000%20untuk%20akses%20bidding%20lelang.',
   showBeforeLogin: false,

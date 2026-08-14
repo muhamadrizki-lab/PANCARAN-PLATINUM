@@ -2927,6 +2927,11 @@ export default function App() {
                             {activePopup.closingSlogan}
                           </p>
                         )}
+                        {activePopup.ppnDisclaimer && (
+                          <p className="font-semibold text-slate-500 text-center mt-1 text-[10px]">
+                            {t(activePopup.ppnDisclaimer)}
+                          </p>
+                        )}
                       </div>
                     </div>
 
