@@ -51,8 +51,17 @@ export default function AdminDashboard({
 
   // 1. Metric calculations
   const totalAssets = assets.length;
-  const totalSold = assets.filter(a => a.status === 'Sold').length;
+  const soldAssets = assets.filter(a => a.status === 'Sold');
+  const totalSold = soldAssets.length;
   const totalOpen = assets.filter(a => a.status === 'Open').length;
+
+  const totalOmzet = soldAssets.reduce((sum, asset) => {
+    const highestVal = asset.bids && asset.bids.length > 0 ? Math.max(...asset.bids.map(b => b.price)) : asset.startingPrice;
+    return sum + highestVal;
+  }, 0);
+
+  const lunasCount = soldAssets.filter(a => a.paymentStatus === 'Lunas').length;
+  const belumLunasCount = soldAssets.filter(a => a.paymentStatus !== 'Lunas').length;
 
   // Highest price calculation (from starting prices or bids)
   const maxPrice = assets.reduce((max, asset) => {
@@ -392,6 +401,56 @@ export default function AdminDashboard({
             <span className="text-xs text-slate-500 font-medium block mt-1.5 truncate flex items-center justify-between gap-1">
               <span>{t('Pengguna Terdaftar')}</span>
               <span className="text-[9px] bg-slate-100 text-slate-700 px-1 py-0.2 rounded font-mono font-bold">VIEW</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="stats-financial-grid">
+        {/* Total Omzet */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-default hover:border-slate-300 hover:border-l-indigo-500 transition-all duration-300">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px]">{t('Total Omzet Terjual')}</span>
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-2xl font-bold text-indigo-600 leading-none">{formatIDR(totalOmzet)}</p>
+            <span className="text-xs text-indigo-600 font-medium block mt-1.5 truncate flex items-center gap-1">
+              <span>{t('Dari')} {totalSold} {t('Unit Terjual')}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Lunas */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-default hover:border-slate-300 hover:border-l-emerald-600 transition-all duration-300">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px]">{t('Pembayaran Lunas')}</span>
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+              <CheckCircle className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-2xl font-bold text-emerald-600 leading-none">{lunasCount}</p>
+            <span className="text-xs text-emerald-600 font-medium block mt-1.5 truncate flex items-center gap-1">
+              <span>{t('Unit Terjual (Lunas)')}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Belum Lunas */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-default hover:border-slate-300 hover:border-l-amber-500 transition-all duration-300">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px]">{t('Belum Lunas')}</span>
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-2xl font-bold text-amber-600 leading-none">{belumLunasCount}</p>
+            <span className="text-xs text-amber-600 font-medium block mt-1.5 truncate flex items-center gap-1">
+              <span>{t('Unit Terjual (Belum Lunas)')}</span>
             </span>
           </div>
         </div>

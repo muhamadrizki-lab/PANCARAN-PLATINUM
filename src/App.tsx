@@ -7,6 +7,7 @@ import AdminUsers from './components/AdminUsers';
 import AdminSettings from './components/AdminSettings';
 import AdminWhatsAppBlasting from './components/AdminWhatsAppBlasting';
 import AdminPopupSettings from './components/AdminPopupSettings';
+import AdminReports from './components/AdminReports';
 import CatalogView from './components/CatalogView';
 import LoginModal from './components/LoginModal';
 import { useLanguage } from './components/LanguageContext';
@@ -51,7 +52,6 @@ import {
   updateAssetInDb, 
   deleteAssetFromDb, 
   addBidToAsset, 
-  addAdminToDb, 
   deleteAdminFromDb,
   triggerAppsScriptSync,
   subscribeToNotifications,
@@ -99,7 +99,8 @@ import {
   Eye,
   Lock,
   Search,
-  Sliders
+  Sliders,
+  FileText
 } from 'lucide-react';
 
 export default function App() {
@@ -120,7 +121,7 @@ export default function App() {
   const [popupStepIndex, setPopupStepIndex] = useState(0);
   
   // Navigation inside Admin area
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'popup_settings' | 'settings' | 'whatsapp'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'popup_settings' | 'settings' | 'whatsapp' | 'reports'>('dashboard');
   
   // Pop-up Config & Preview State
   const [previewPopupItem, setPreviewPopupItem] = useState<PopupItem | null>(null);
@@ -834,7 +835,11 @@ export default function App() {
           password: user.password
         });
       }
-      await updateRegisteredUser(email, { status: 'Disetujui' });
+      await updateRegisteredUser(email, { 
+        status: 'Disetujui',
+        approvedBy: loggedInAdminEmail || 'Admin',
+        approvedAt: new Date().toISOString()
+      });
       addNotification('success', t('Pendaftaran Disetujui'), `${t('User')} ${email} ${t('telah disetujui untuk mengakses lelang.')}`);
     } catch (error) {
       console.error("Failed to approve user", error);
@@ -844,7 +849,11 @@ export default function App() {
 
   const handleRejectUser = async (email: string) => {
     try {
-      await updateRegisteredUser(email, { status: 'Ditolak' });
+      await updateRegisteredUser(email, { 
+        status: 'Ditolak',
+        approvedBy: loggedInAdminEmail || 'Admin',
+        approvedAt: new Date().toISOString()
+      });
       addNotification('warning', t('Pendaftaran Ditolak'), `${t('User')} ${email} ${t('telah ditolak.')}`);
     } catch (error) {
       console.error("Failed to reject user", error);
@@ -886,7 +895,9 @@ export default function App() {
       // 1. Update request status in bidding_requests collection
       await updateBiddingRequest(requestId, { 
         status: 'Approved',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        approvedBy: loggedInAdminEmail || 'Admin',
+        approvedAt: new Date().toISOString()
       });
 
       // 2. Set the user's canBid flag to true in registered_users collection
@@ -918,7 +929,9 @@ export default function App() {
       // 1. Update request status to Rejected
       await updateBiddingRequest(requestId, { 
         status: 'Rejected',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        approvedBy: loggedInAdminEmail || 'Admin',
+        approvedAt: new Date().toISOString()
       });
 
       // 2. System Notification/Toast
@@ -945,7 +958,11 @@ export default function App() {
       if (!request) return;
 
       // 1. Update request status to Approved
-      await updateRefundRequest(requestId, { status: 'Approved' });
+      await updateRefundRequest(requestId, { 
+        status: 'Approved',
+        approvedBy: loggedInAdminEmail || 'Admin',
+        approvedAt: new Date().toISOString()
+      });
 
       // 1.5 Auto turn off bidding access
       await updateRegisteredUser(request.email, { canBid: false });
@@ -974,7 +991,11 @@ export default function App() {
       if (!request) return;
 
       // 1. Update request status to Rejected
-      await updateRefundRequest(requestId, { status: 'Rejected' });
+      await updateRefundRequest(requestId, { 
+        status: 'Rejected',
+        approvedBy: loggedInAdminEmail || 'Admin',
+        approvedAt: new Date().toISOString()
+      });
 
       // 2. System Notification/Toast
       addNotification('warning', t('Refund Ditolak'), `Permohonan refund dari ${request.userName} (${request.email}) telah ditolak.`);
@@ -2178,6 +2199,15 @@ export default function App() {
                   WA Blasting
                 </button>
                 <button
+                  onClick={() => { setAdminTab('reports'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
+                    adminTab === 'reports' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>{t('Laporan')}</span>
+                </button>
+                <button
                   onClick={() => { setAdminTab('popup_settings'); setIsMobileMenuOpen(false); }}
                   className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
                     adminTab === 'popup_settings' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
@@ -2323,6 +2353,18 @@ export default function App() {
                   </button>
 
                   <button
+                    onClick={() => setAdminTab('reports')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
+                      adminTab === 'reports'
+                        ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span>{t('Laporan')}</span>
+                  </button>
+
+                  <button
                     onClick={() => setAdminTab('popup_settings')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
                       adminTab === 'popup_settings'
@@ -2411,6 +2453,11 @@ export default function App() {
                     setPopupConfig(cfg);
                     setSelectedGuideModal('ikut');
                   }}
+                />
+              )}
+              {adminTab === 'reports' && (
+                <AdminReports
+                  assets={assets}
                 />
               )}
         {adminTab === 'settings' && (

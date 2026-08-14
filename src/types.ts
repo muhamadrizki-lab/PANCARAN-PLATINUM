@@ -48,6 +48,7 @@ export interface Asset {
   imageUrl: string;
   imageUrls?: string[];
   bids: Bid[];
+  paymentStatus?: 'Lunas' | 'Belum Lunas';
   dimensions?: string;
   propertyType?: string;
   auctionType?: string;
@@ -180,6 +181,8 @@ export interface RegisteredUser {
   createdAt: string;
   canBid?: boolean; // Default true when approved. If false, user cannot place bids (View Only)
   userType?: 'internal' | 'external'; // New field
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface ToastNotification {
@@ -203,6 +206,8 @@ export interface BiddingRequest {
   createdAt: string;
   updatedAt?: string;
   notes?: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface RefundRequest {
@@ -220,6 +225,8 @@ export interface RefundRequest {
   accountNumber?: string;
   accountHolder?: string;
   registerEntryName?: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface WaSessionData {

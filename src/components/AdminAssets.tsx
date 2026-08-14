@@ -54,7 +54,8 @@ import {
   Disc,
   BatteryCharging,
   Layers,
-  Droplet
+  Droplet,
+  CheckCircle
 } from 'lucide-react';
 
 interface AdminAssetsProps {
@@ -1587,6 +1588,34 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                           <FileText className="w-4 h-4" />
                           <span>{t('Lihat Surat Pemenang Resmi (PDF)')}</span>
                         </button>
+
+                        <div className="pt-3 mt-3 border-t border-emerald-100/70">
+                          <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider mb-2">{t('Status Pembayaran')}</p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => onUpdateAsset(selectedAsset.id, { paymentStatus: 'Lunas' })}
+                              className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all border ${
+                                selectedAsset.paymentStatus === 'Lunas'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                              }`}
+                            >
+                              <CheckCircle className="w-3.5 h-3.5 inline-block mr-1 mb-0.5" />
+                              {t('Lunas')}
+                            </button>
+                            <button
+                              onClick={() => onUpdateAsset(selectedAsset.id, { paymentStatus: 'Belum Lunas' })}
+                              className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all border ${
+                                selectedAsset.paymentStatus === 'Belum Lunas' || !selectedAsset.paymentStatus
+                                  ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                                  : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                              }`}
+                            >
+                              <Clock className="w-3.5 h-3.5 inline-block mr-1 mb-0.5" />
+                              {t('Belum Lunas')}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : (
