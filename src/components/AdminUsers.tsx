@@ -79,7 +79,7 @@ export default function AdminUsers({
 }: AdminUsersProps) {
   const { t } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'internal' | 'external' | 'bidding_requests'>('internal');
+  const [activeTab, setActiveTab] = useState<'internal' | 'external' | 'bidding_requests' | 'internal_access_requests'>('internal');
   
   // Internal Admin Form States
   const [formData, setFormData] = useState({
@@ -272,9 +272,25 @@ export default function AdminUsers({
           >
             <Users className="w-4 h-4" />
             {t('Akses User Eksternal')}
-            {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan').length > 0 && (
+            {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan' && u.userType !== 'internal').length > 0 && (
               <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
-                {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan').length}
+                {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan' && u.userType !== 'internal').length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('internal_access_requests')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
+              activeTab === 'internal_access_requests'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            {t('Akses Admin Internal')}
+            {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan' && u.userType === 'internal').length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
+                {registeredUsers.filter(u => u.status === 'Menunggu Persetujuan' && u.userType === 'internal').length}
               </span>
             )}
           </button>
@@ -542,6 +558,7 @@ export default function AdminUsers({
                 <tr className="border-b border-slate-200 text-xs text-slate-400 font-bold uppercase">
                   <th className="py-3.5 px-4 font-bold">{t('Nama / No. HP')}</th>
                   <th className="py-3.5 px-4 font-bold">{t('Alamat Email')}</th>
+                  <th className="py-3.5 px-4 font-bold">{t('Tipe')}</th>
                   <th className="py-3.5 px-4 font-bold">{t('Verifikasi Email')}</th>
                   <th className="py-3.5 px-4 font-bold">{t('Status Akses')}</th>
                   <th className="py-3.5 px-4 font-bold">{t('Akses Bidding')}</th>
@@ -550,8 +567,8 @@ export default function AdminUsers({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredExternalUsers.length > 0 ? (
-                  filteredExternalUsers.map((user) => {
+                {filteredExternalUsers.filter(u => u.userType !== 'internal').length > 0 ? (
+                  filteredExternalUsers.filter(u => u.userType !== 'internal').map((user) => {
                     return (
                       <tr key={user.email} className="hover:bg-slate-50/50 transition-colors">
                         
@@ -583,6 +600,9 @@ export default function AdminUsers({
                         {/* Email */}
                         <td className="py-4 px-4 font-mono text-slate-600 text-xs">{user.email}</td>
 
+                        {/* Type */}
+                        <td className="py-4 px-4 text-xs font-bold uppercase text-slate-500">{user.userType || 'External'}</td>
+
                         {/* Verification Status */}
                         <td className="py-4 px-4">
                           {user.emailVerified ? (
@@ -605,10 +625,15 @@ export default function AdminUsers({
                             </span>
                           )}
                           {user.status === 'Menunggu Persetujuan' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-800 animate-pulse">
-                              <Clock className="w-3.5 h-3.5" />
-                              {t('Menunggu Approval')}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-800 animate-pulse">
+                                <Clock className="w-3.5 h-3.5" />
+                                {t('Menunggu Approval')}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-500 uppercase">
+                                ({user.userType === 'internal' ? t('Internal') : t('External')})
+                              </span>
+                            </div>
                           )}
                           {user.status === 'Menunggu Verifikasi' && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-800">
@@ -765,6 +790,84 @@ export default function AdminUsers({
         </div>
       )}
 
+      {/* TAB: INTERNAL ACCESS REQUESTS */}
+      {activeTab === 'internal_access_requests' && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 border-l-[6px] border-l-blue-500 shadow-sm space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" /> {t('Pendaftaran Akses Admin Internal')}
+              </h2>
+              <p className="text-xs text-slate-500">{t('Tinjau dan setujui pendaftaran staf internal.')}</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs text-slate-400 font-bold uppercase">
+                  <th className="py-3.5 px-4 font-bold">{t('Nama / No. HP')}</th>
+                  <th className="py-3.5 px-4 font-bold">{t('Alamat Email')}</th>
+                  <th className="py-3.5 px-4 font-bold">{t('Tipe')}</th>
+                  <th className="py-3.5 px-4 font-bold">{t('Status Akses')}</th>
+                  <th className="py-3.5 px-4 text-center font-bold">{t('Aksi Kelola')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredExternalUsers.filter(u => u.userType === 'internal').length > 0 ? (
+                  filteredExternalUsers.filter(u => u.userType === 'internal').map((user) => (
+                    <tr key={user.email} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-4 px-4 font-medium text-slate-800">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
+                            {user.name.charAt(0)}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-slate-800 leading-tight">{user.name}</span>
+                            <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                              <Phone className="w-3 h-3 text-slate-400" /> {user.phone}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 font-mono text-slate-600 text-xs">{user.email}</td>
+                      <td className="py-4 px-4 text-xs font-bold uppercase text-slate-500">{user.userType || 'Internal'}</td>
+                      <td className="py-4 px-4">
+                        {user.status === 'Menunggu Persetujuan' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-800 animate-pulse">
+                            <Clock className="w-3.5 h-3.5" />
+                            {t('Menunggu Approval')}
+                          </span>
+                        )}
+                        {user.status === 'Disetujui' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">
+                            <UserCheck className="w-3.5 h-3.5" />
+                            {t('Akses Disetujui')}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                           {user.status === 'Menunggu Persetujuan' && onApproveUser && onRejectUser && (
+                              <>
+                                <button onClick={() => onApproveUser(user.email)} className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition">{t('Setujui')}</button>
+                                <button onClick={() => onRejectUser(user.email)} className="px-2.5 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition">{t('Tolak')}</button>
+                              </>
+                           )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-slate-400 text-xs font-semibold">{t('Belum ada pendaftaran internal baru.')}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       {/* TAB 3: BIDDING ACCESS REQUESTS */}
       {activeTab === 'bidding_requests' && (
         <div className="space-y-6">

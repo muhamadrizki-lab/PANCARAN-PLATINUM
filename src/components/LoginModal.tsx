@@ -58,6 +58,7 @@ export default function LoginModal({
   const [regPassword, setRegPassword] = useState('');
   const [regCompany, setRegCompany] = useState('');
   const [regAddress, setRegAddress] = useState('');
+  const [regUserType, setRegUserType] = useState<'internal' | 'external'>('external');
 
   // Verification fields
   const [verificationEmail, setVerificationEmail] = useState('');
@@ -195,11 +196,7 @@ export default function LoginModal({
             }
 
             if (userData.status === 'Menunggu Persetujuan' && cleanEmail !== 'angga@gmail.com') {
-              // Allow login for pending approval users but they will be in "Hanya Lihat" mode
-              const userNameVal = userData.name || cleanEmail.split('@')[0];
-              const userPhoneVal = userData.phone || '';
-              onExternalLoginSuccess(cleanEmail, userNameVal, userPhoneVal);
-              onClose();
+              setError(t('Akun Anda masih dalam proses persetujuan oleh Admin. Silakan tunggu konfirmasi selanjutnya.'));
               setIsLoading(false);
               return;
             }
@@ -299,6 +296,7 @@ export default function LoginModal({
         password: cleanPassword,
         company: cleanCompany,
         address: cleanAddress,
+        userType: regUserType,
         status: 'Menunggu Persetujuan',
         emailVerified: true,
         verificationCode: '',
@@ -307,9 +305,8 @@ export default function LoginModal({
 
       await addRegisteredUser(newRegUser);
 
-      // Automatically log in the user after registration so they can see the catalog in "View Only" mode
-      onExternalLoginSuccess(cleanEmail, cleanName, cleanPhone);
-      onClose();
+      // Successfully registered, go to pending_approval screen instead of logging in
+      setMode('pending_approval');
       setIsLoading(false);
       return;
     } catch (err: any) {
@@ -649,6 +646,21 @@ export default function LoginModal({
                     onChange={(e) => setRegPhone(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
                   />
+                </div>
+              </div>
+
+               {/* Company */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">{t('TIPE AKUN')}</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" value="external" checked={regUserType === 'external'} onChange={() => setRegUserType('external')} className="text-indigo-600 focus:ring-indigo-500" />
+                    <span className="text-sm">{t('External')}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" value="internal" checked={regUserType === 'internal'} onChange={() => setRegUserType('internal')} className="text-indigo-600 focus:ring-indigo-500" />
+                    <span className="text-sm">{t('Internal')}</span>
+                  </label>
                 </div>
               </div>
 

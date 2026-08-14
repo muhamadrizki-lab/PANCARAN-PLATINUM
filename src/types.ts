@@ -179,6 +179,7 @@ export interface RegisteredUser {
   verificationCode: string;
   createdAt: string;
   canBid?: boolean; // Default true when approved. If false, user cannot place bids (View Only)
+  userType?: 'internal' | 'external'; // New field
 }
 
 export interface ToastNotification {
@@ -280,7 +281,7 @@ export const DEFAULT_POPUP_ITEM: PopupItem = {
   depositHighlight: 'deposit jaminan sebesar Rp10.000.000,- di Rekening Resmi Kantor Pancaran.',
   descriptionSuffix: 'sebagai syarat aktif untuk melakukan penawaran (Bidding) khusus Lelang kendaraan.',
   securityTitle: 'Jaminan Keamanan Dana:',
-  securityDescription: 'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar Rp10.000.000,- akan dikembalikan penuh (100%) setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya.',
+  securityDescription: 'Bagi peserta yang belum berkesempatan menjadi pemenang, dana deposit sebesar Rp10.000.000,- akan dikembalikan penuh (100%) setelah pengumuman pemenang resmi dan memasuki tahapan acara selanjutnya. Max 5 hari kerja pengembalian deposit.',
   cancellationTitle: 'Syarat & Ketentuan Pembatalan:',
   cancellationDescription: 'Deposit akan dianggap hangus apabila pemenang mengundurkan diri atau tidak menyelesaikan proses transaksi dalam jangka waktu maksimal 7 (tujuh) hari.',
   closingSlogan: 'Mari bergabung dan dapatkan unit impian Anda di ajang eksklusif Pancaran Platinum!',

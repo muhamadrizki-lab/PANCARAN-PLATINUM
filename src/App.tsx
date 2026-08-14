@@ -25,6 +25,7 @@ import {
   subscribeToRegisteredUsers,
   updateRegisteredUser,
   deleteRegisteredUser,
+  addAdminToDb,
   addBrandToDb,
   deleteBrandFromDb,
   addCategoryToDb,
@@ -823,6 +824,16 @@ export default function App() {
 
   const handleApproveUser = async (email: string) => {
     try {
+      const user = registeredUsers.find(u => u.email === email);
+      if (user && user.userType === 'internal') {
+        await addAdminToDb({
+          email: user.email,
+          name: user.name,
+          role: 'Admin Operasional',
+          createdAt: new Date().toISOString().split('T')[0],
+          password: user.password
+        });
+      }
       await updateRegisteredUser(email, { status: 'Disetujui' });
       addNotification('success', t('Pendaftaran Disetujui'), `${t('User')} ${email} ${t('telah disetujui untuk mengakses lelang.')}`);
     } catch (error) {
