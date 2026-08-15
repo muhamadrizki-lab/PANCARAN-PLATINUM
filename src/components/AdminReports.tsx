@@ -14,7 +14,26 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
   const { t } = useLanguage();
   
   const activeAssets = useMemo(() => assets.filter(a => a.status === 'Open'), [assets]);
-  const soldAssets = useMemo(() => assets.filter(a => a.status === 'Sold'), [assets]);
+  const soldAssets = useMemo(() => {
+    const getTimestamp = (asset: Asset): number => {
+      if (asset.closeBidDate) {
+        const d = new Date(asset.closeBidDate).getTime();
+        if (!isNaN(d)) return d;
+      }
+      const assetBids = asset.bids || [];
+      if (assetBids.length > 0) {
+        const timestamps = assetBids.map(b => b.timestamp ? new Date(b.timestamp).getTime() : 0).filter(t => !isNaN(t) && t > 0);
+        if (timestamps.length > 0) {
+          return Math.max(...timestamps);
+        }
+      }
+      return 0;
+    };
+
+    return assets
+      .filter(a => a.status === 'Sold')
+      .sort((a, b) => getTimestamp(b) - getTimestamp(a));
+  }, [assets]);
   
   const totalBidsCount = useMemo(() => {
     return soldAssets.reduce((sum, a) => sum + (a.bids?.length || 0), 0);
@@ -31,6 +50,15 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
       }
     }
     return Number(asset.highestBid) || Number(asset.startingPrice) || 0;
+  };
+
+  const getAssetWinner = (asset: Asset): string => {
+    const assetBids = asset.bids || [];
+    if (assetBids.length > 0) {
+      const sorted = [...assetBids].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+      return sorted[0].name || '-';
+    }
+    return '-';
   };
 
   const getAssetSoldDate = (asset: Asset): string => {
@@ -80,13 +108,16 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
     const soldData = soldAssets.map(asset => {
       const soldPrice = getAssetSoldPrice(asset);
       const soldDate = getAssetSoldDate(asset);
+      const winnerName = getAssetWinner(asset);
+      const paymentStatus = asset.paymentStatus || 'Belum Lunas';
       return {
         'Tgl Terjual': soldDate,
         'ID Aset': asset.id,
         'No. Polisi / Unit': asset.plateNumber || '-',
         'Merek': asset.brand,
         'Kategori': asset.category,
-        'Lokasi': asset.location,
+        'Pemenang': winnerName,
+        'Status Pembayaran': paymentStatus,
         'Harga Dasar': Number(asset.startingPrice) || 0,
         'Total Bid': (asset.bids || []).length,
         'Harga Terjual': soldPrice
@@ -130,11 +161,14 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
     const soldBody = soldAssets.map(asset => {
       const soldPrice = getAssetSoldPrice(asset);
       const soldDate = getAssetSoldDate(asset);
+      const winnerName = getAssetWinner(asset);
+      const paymentStatus = asset.paymentStatus || 'Belum Lunas';
       return [
         soldDate,
         asset.plateNumber || '-',
         asset.brand,
-        asset.category,
+        winnerName,
+        paymentStatus,
         formatCurrency(Number(asset.startingPrice) || 0),
         `${(asset.bids || []).length} Bid`,
         formatCurrency(soldPrice)
@@ -143,7 +177,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
 
     (doc as any).autoTable({
       startY: 105,
-      head: [['Tgl Terjual', 'No. Polisi / Unit', 'Merek', 'Kategori', 'Harga Dasar', 'Total Bid', 'Harga Terjual']],
+      head: [['Tgl Terjual', 'No. Polisi / Unit', 'Merek', 'Pemenang', 'Status', 'Harga Dasar', 'Total Bid', 'Harga Terjual']],
       body: soldBody,
     });
 
@@ -254,6 +288,8 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
                 <th className="px-6 py-3 font-semibold">{t('Tgl Terjual')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Aset')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Kategori')}</th>
+                <th className="px-6 py-3 font-semibold">{t('Pemenang')}</th>
+                <th className="px-6 py-3 font-semibold">{t('Status Pembayaran')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Harga Dasar')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Total Bid')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Harga Terjual')}</th>
@@ -263,6 +299,8 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
               {soldAssets.map(asset => {
                 const soldPrice = getAssetSoldPrice(asset);
                 const soldDate = getAssetSoldDate(asset);
+                const winnerName = getAssetWinner(asset);
+                const paymentStatus = asset.paymentStatus || 'Belum Lunas';
                 const bidCount = (asset.bids || []).length;
                 return (
                   <tr key={asset.id} className="hover:bg-slate-50/50 transition-colors">
@@ -279,6 +317,18 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">
                         {asset.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-bold text-slate-800 text-xs">{winnerName}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        paymentStatus === 'Lunas' 
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {paymentStatus === 'Lunas' ? '✓ Lunas' : '⏳ Belum Lunas'}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-600">
@@ -298,7 +348,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
               })}
               {soldAssets.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
                     {t('Belum ada data penjualan')}
                   </td>
                 </tr>
