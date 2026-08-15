@@ -607,12 +607,13 @@ export default function CatalogView({
     ? Math.max(selectedAsset.startingPrice || 0, ...selectedAssetBids, 0)
     : 0;
 
-  const formatIDR = (value: number) => {
+  const formatIDR = (value: number | undefined | null) => {
+    const num = typeof value === 'number' && !isNaN(value) ? value : (Number(value) || 0);
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(num);
   };
 
   const formatNumberWithDots = (numStr: string) => {

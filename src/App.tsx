@@ -239,12 +239,13 @@ export default function App() {
   const registeredUsersLoadedRef = useRef(false);
   const prevRegisteredUsersRef = useRef<RegisteredUser[]>([]);
 
-  const formatIDR = (value: number) => {
+  const formatIDR = (value: number | undefined | null) => {
+    const num = typeof value === 'number' && !isNaN(value) ? value : (Number(value) || 0);
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(num);
   };
 
   const addNotification = (type: 'info' | 'success' | 'warning' | 'bid' | 'sync', title: string, message: string, assetId?: string) => {

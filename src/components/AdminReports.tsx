@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Asset, Bid } from '../types';
-import { FileText, Download, FileSpreadsheet, TrendingUp, Package, DollarSign } from 'lucide-react';
+import { FileText, Download, FileSpreadsheet, TrendingUp, Package, DollarSign, Gavel, Calendar } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -16,37 +16,80 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
   const activeAssets = useMemo(() => assets.filter(a => a.status === 'Open'), [assets]);
   const soldAssets = useMemo(() => assets.filter(a => a.status === 'Sold'), [assets]);
   
+  const totalBidsCount = useMemo(() => {
+    return soldAssets.reduce((sum, a) => sum + (a.bids?.length || 0), 0);
+  }, [soldAssets]);
+
+  const getAssetSoldPrice = (asset: Asset): number => {
+    const assetBids = asset.bids || [];
+    if (assetBids.length > 0) {
+      const prices = assetBids
+        .map(b => Number(b.price !== undefined ? b.price : (b as any).amount))
+        .filter(p => !isNaN(p) && p > 0);
+      if (prices.length > 0) {
+        return Math.max(...prices);
+      }
+    }
+    return Number(asset.highestBid) || Number(asset.startingPrice) || 0;
+  };
+
+  const getAssetSoldDate = (asset: Asset): string => {
+    if (asset.closeBidDate) {
+      try {
+        const d = new Date(asset.closeBidDate);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+      } catch {}
+    }
+    const assetBids = asset.bids || [];
+    if (assetBids.length > 0) {
+      const validBids = assetBids.filter(b => b.timestamp);
+      if (validBids.length > 0) {
+        const sorted = [...validBids].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        try {
+          const d = new Date(sorted[0].timestamp);
+          if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+          }
+        } catch {}
+      }
+    }
+    return '-';
+  };
+
   const totalSoldPrice = useMemo(() => {
     let total = 0;
     soldAssets.forEach(asset => {
-      const assetBids = asset.bids || [];
-      const highestBid = assetBids.length > 0 ? Math.max(...assetBids.map(b => b.amount)) : asset.startingPrice;
-      total += highestBid;
+      total += getAssetSoldPrice(asset);
     });
     return total;
   }, [soldAssets]);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    const num = typeof amount === 'number' && !isNaN(amount) ? amount : (Number(amount) || 0);
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(num);
   };
 
   const generateExcel = () => {
     const soldData = soldAssets.map(asset => {
-      const assetBids = asset.bids || [];
-      const highestBid = assetBids.length > 0 ? Math.max(...assetBids.map(b => b.amount)) : asset.startingPrice;
+      const soldPrice = getAssetSoldPrice(asset);
+      const soldDate = getAssetSoldDate(asset);
       return {
+        'Tgl Terjual': soldDate,
         'ID Aset': asset.id,
         'No. Polisi / Unit': asset.plateNumber || '-',
         'Merek': asset.brand,
         'Kategori': asset.category,
         'Lokasi': asset.location,
-        'Harga Dasar': asset.startingPrice,
-        'Harga Terjual': highestBid
+        'Harga Dasar': Number(asset.startingPrice) || 0,
+        'Total Bid': (asset.bids || []).length,
+        'Harga Terjual': soldPrice
       };
     });
 
@@ -57,7 +100,8 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
         'Merek': asset.brand,
         'Kategori': asset.category,
         'Lokasi': asset.location,
-        'Harga Dasar': asset.startingPrice
+        'Harga Dasar': Number(asset.startingPrice) || 0,
+        'Total Bid': (asset.bids || []).length
       };
     });
 
@@ -80,23 +124,26 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
     
     doc.setFontSize(11);
     doc.text(`Total Aset Terjual: ${soldAssets.length}`, 40, 60);
-    doc.text(`Total Harga Terjual: ${formatCurrency(totalSoldPrice)}`, 40, 75);
+    doc.text(`Total Penawaran Masuk (Bid): ${totalBidsCount}`, 40, 75);
+    doc.text(`Total Harga Terjual: ${formatCurrency(totalSoldPrice)}`, 40, 90);
 
     const soldBody = soldAssets.map(asset => {
-      const assetBids = asset.bids || [];
-      const highestBid = assetBids.length > 0 ? Math.max(...assetBids.map(b => b.amount)) : asset.startingPrice;
+      const soldPrice = getAssetSoldPrice(asset);
+      const soldDate = getAssetSoldDate(asset);
       return [
+        soldDate,
         asset.plateNumber || '-',
         asset.brand,
         asset.category,
-        formatCurrency(asset.startingPrice),
-        formatCurrency(highestBid)
+        formatCurrency(Number(asset.startingPrice) || 0),
+        `${(asset.bids || []).length} Bid`,
+        formatCurrency(soldPrice)
       ];
     });
 
     (doc as any).autoTable({
-      startY: 90,
-      head: [['No. Polisi / Unit', 'Merek', 'Kategori', 'Harga Dasar', 'Harga Terjual']],
+      startY: 105,
+      head: [['Tgl Terjual', 'No. Polisi / Unit', 'Merek', 'Kategori', 'Harga Dasar', 'Total Bid', 'Harga Terjual']],
       body: soldBody,
     });
 
@@ -112,13 +159,14 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
         asset.plateNumber || '-',
         asset.brand,
         asset.category,
-        formatCurrency(asset.startingPrice)
+        formatCurrency(Number(asset.startingPrice) || 0),
+        `${(asset.bids || []).length} Bid`
       ];
     });
 
     (doc as any).autoTable({
       startY: 80,
-      head: [['No. Polisi / Unit', 'Merek', 'Kategori', 'Harga Dasar']],
+      head: [['No. Polisi / Unit', 'Merek', 'Kategori', 'Harga Dasar', 'Total Bid']],
       body: activeBody,
     });
 
@@ -153,7 +201,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
@@ -176,6 +224,16 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
 
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Gavel className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-500">{t('Total Penawaran (Bid)')}</h3>
+          </div>
+          <p className="text-2xl font-bold text-slate-800">{totalBidsCount} <span className="text-sm font-normal text-slate-500">bids</span></p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
               <DollarSign className="w-5 h-5" />
             </div>
@@ -193,18 +251,27 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 bg-slate-50/50 uppercase">
               <tr>
+                <th className="px-6 py-3 font-semibold">{t('Tgl Terjual')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Aset')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Kategori')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Harga Dasar')}</th>
+                <th className="px-6 py-3 font-semibold">{t('Total Bid')}</th>
                 <th className="px-6 py-3 font-semibold">{t('Harga Terjual')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {soldAssets.slice(0, 5).map(asset => {
-                const assetBids = asset.bids || [];
-                const highestBid = assetBids.length > 0 ? Math.max(...assetBids.map(b => b.amount)) : asset.startingPrice;
+              {soldAssets.map(asset => {
+                const soldPrice = getAssetSoldPrice(asset);
+                const soldDate = getAssetSoldDate(asset);
+                const bidCount = (asset.bids || []).length;
                 return (
                   <tr key={asset.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-semibold text-xs whitespace-nowrap">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{soldDate}</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <p className="font-bold text-slate-800">{asset.plateNumber || '-'}</p>
                       <p className="text-xs text-slate-500">{asset.brand}</p>
@@ -215,17 +282,23 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-600">
-                      {formatCurrency(asset.startingPrice)}
+                      {formatCurrency(Number(asset.startingPrice) || 0)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+                        <Gavel className="w-3.5 h-3.5 text-blue-600" />
+                        {bidCount} {t('Bid')}
+                      </span>
                     </td>
                     <td className="px-6 py-4 font-bold text-emerald-600">
-                      {formatCurrency(highestBid)}
+                      {formatCurrency(soldPrice)}
                     </td>
                   </tr>
                 );
               })}
               {soldAssets.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     {t('Belum ada data penjualan')}
                   </td>
                 </tr>

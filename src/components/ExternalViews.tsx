@@ -38,12 +38,13 @@ export function ExternalNotificationsView({ assets, userEmail, userName, userPho
   const { language, t } = useLanguage();
   const [selectedWinnerAsset, setSelectedWinnerAsset] = useState<Asset | null>(null);
 
-  const formatIDR = (value: number) => {
+  const formatIDR = (value: number | undefined | null) => {
+    const num = typeof value === 'number' && !isNaN(value) ? value : (Number(value) || 0);
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(num);
   };
 
   const formatDate = (isoStr: string) => {
@@ -356,12 +357,13 @@ export function ExternalInboxView({ assets, userEmail, userName, userPhone, bidd
     }
   };
 
-  const formatIDR = (value: number) => {
+  const formatIDR = (value: number | undefined | null) => {
+    const num = typeof value === 'number' && !isNaN(value) ? value : (Number(value) || 0);
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(num);
   };
 
   // Find all mails (Winner Letters, Survey Booking Confirmations, Bid Notifications, & Bidding Access Requests)

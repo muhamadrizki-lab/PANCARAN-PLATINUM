@@ -65,7 +65,8 @@ export default function AdminDashboard({
 
   // Highest price calculation (from starting prices or bids)
   const maxPrice = assets.reduce((max, asset) => {
-    const highestVal = Math.max(asset.startingPrice, asset.highestBid, ...(asset.bids || []).map(b => b.price));
+    const validBids = (asset.bids || []).map(b => Number(b.price) || 0);
+    const highestVal = Math.max(Number(asset.startingPrice) || 0, Number(asset.highestBid) || 0, ...validBids, 0);
     return highestVal > max ? highestVal : max;
   }, 0);
 
@@ -150,12 +151,13 @@ export default function AdminDashboard({
   });
 
   // Format currency
-  const formatIDR = (value: number) => {
+  const formatIDR = (value: number | undefined | null) => {
+    const num = typeof value === 'number' && !isNaN(value) ? value : (Number(value) || 0);
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(num);
   };
 
   return (
