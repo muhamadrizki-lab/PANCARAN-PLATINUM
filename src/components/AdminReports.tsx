@@ -43,6 +43,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
   const [activeModal, setActiveModal] = useState<'activeAssets' | 'soldAssets' | 'allBids' | 'soldRevenue' | 'assetBids' | null>(null);
   const [selectedAssetForBids, setSelectedAssetForBids] = useState<Asset | null>(null);
   const [modalSearch, setModalSearch] = useState('');
+  const [revenueFilterTab, setRevenueFilterTab] = useState<'all' | 'lunas' | 'belum_lunas'>('all');
   const [focusedReportBid, setFocusedReportBid] = useState<{ bid: Bid; asset: Asset } | null>(null);
   const [copiedState, setCopiedState] = useState(false);
   
@@ -1098,6 +1099,23 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
       {/* MODAL 5: TOTAL HARGA TERJUAL / REVENUE MODAL (Card 4 Click) */}
       {/* ========================================================= */}
       {activeModal === 'soldRevenue' && (() => {
+        const filteredSoldAssets = soldAssets.filter(asset => {
+          // Tab filter
+          if (revenueFilterTab === 'lunas' && asset.paymentStatus !== 'Lunas') return false;
+          if (revenueFilterTab === 'belum_lunas' && asset.paymentStatus === 'Lunas') return false;
+          
+          // Search query
+          if (!modalSearch) return true;
+          const q = modalSearch.toLowerCase();
+          const winner = getAssetWinner(asset).toLowerCase();
+          const plate = (asset.plateNumber || asset.id || '').toLowerCase();
+          const brand = (asset.brand || '').toLowerCase();
+          const name = (asset.name || '').toLowerCase();
+          return plate.includes(q) || brand.includes(q) || name.includes(q) || winner.includes(q);
+        });
+
+        const filteredTotalNominal = filteredSoldAssets.reduce((sum, a) => sum + getAssetSoldPrice(a), 0);
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
             <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-scale-up">
@@ -1108,69 +1126,269 @@ const AdminReports: React.FC<AdminReportsProps> = ({ assets }) => {
                   </div>
                   <div>
                     <h3 className="font-bold text-base">{t('Rincian Pendapatan Lelang')}</h3>
-                    <p className="text-xs text-amber-100">{t('Total omset dan status pembayaran lelang')}</p>
+                    <p className="text-xs text-amber-100">{t('Klik kotak status untuk memfilter daftar unit')}</p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setActiveModal(null)}
+                  onClick={() => {
+                    setActiveModal(null);
+                    setModalSearch('');
+                  }}
                   className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Financial Snapshot */}
-              <div className="p-5 bg-amber-50/50 border-b border-amber-200/60 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">{t('Total Omset')}</span>
-                  <span className="font-mono font-extrabold text-base text-amber-700">{formatCurrency(totalSoldPrice)}</span>
+              {/* Financial Snapshot - Interactive & Clickable Filter Cards */}
+              <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Filter className="w-3.5 h-3.5 text-amber-600" />
+                    {t('Pilih Status Pembayaran untuk Memfilter')}:
+                  </span>
+                  <span className="text-[10px] text-slate-400 italic">
+                    💡 {t('Klik salah satu kotak')}
+                  </span>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-emerald-200/80 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">{t('Terbayar (Lunas)')}</span>
-                  <span className="font-mono font-bold text-base text-emerald-600">{lunasCount} {t('Unit')}</span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                  {/* Card 1: Total Omset (All) */}
+                  <button
+                    type="button"
+                    onClick={() => setRevenueFilterTab('all')}
+                    className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                      revenueFilterTab === 'all'
+                        ? 'bg-amber-50 border-2 border-amber-500 shadow-md ring-2 ring-amber-400/30 scale-[1.02]'
+                        : 'bg-white border-amber-200/80 hover:border-amber-400 hover:shadow-xs hover:bg-amber-50/40 opacity-90'
+                    }`}
+                    title={t('Klik untuk melihat semua omset dan unit terjual')}
+                  >
+                    {revenueFilterTab === 'all' && (
+                      <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-amber-500 text-white rounded text-[8px] font-extrabold tracking-wider">
+                        ✓ {t('AKTIF')}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">
+                      {t('Total Omset')}
+                    </span>
+                    <span className="font-mono font-extrabold text-base text-amber-700 block">
+                      {formatCurrency(totalSoldPrice)}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-semibold mt-1 block">
+                      {soldAssets.length} {t('Unit Terjual')}
+                    </span>
+                  </button>
+
+                  {/* Card 2: Terbayar (Lunas) */}
+                  <button
+                    type="button"
+                    onClick={() => setRevenueFilterTab('lunas')}
+                    className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                      revenueFilterTab === 'lunas'
+                        ? 'bg-emerald-50 border-2 border-emerald-500 shadow-md ring-2 ring-emerald-400/30 scale-[1.02]'
+                        : 'bg-white border-emerald-200/80 hover:border-emerald-400 hover:shadow-xs hover:bg-emerald-50/40 opacity-90'
+                    }`}
+                    title={t('Klik untuk memfilter hanya unit yang sudah lunas')}
+                  >
+                    {revenueFilterTab === 'lunas' && (
+                      <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-emerald-600 text-white rounded text-[8px] font-extrabold tracking-wider">
+                        ✓ {t('AKTIF')}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">
+                      {t('Terbayar (Lunas)')}
+                    </span>
+                    <span className="font-mono font-extrabold text-base text-emerald-600 block">
+                      {lunasCount} {t('Unit')}
+                    </span>
+                    <span className="text-[10px] text-emerald-700 font-semibold mt-1 block">
+                      {formatCurrency(
+                        soldAssets
+                          .filter(a => a.paymentStatus === 'Lunas')
+                          .reduce((sum, a) => sum + getAssetSoldPrice(a), 0)
+                      )}
+                    </span>
+                  </button>
+
+                  {/* Card 3: Menunggu (Belum Lunas) */}
+                  <button
+                    type="button"
+                    onClick={() => setRevenueFilterTab('belum_lunas')}
+                    className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                      revenueFilterTab === 'belum_lunas'
+                        ? 'bg-amber-50 border-2 border-amber-500 shadow-md ring-2 ring-amber-400/30 scale-[1.02]'
+                        : 'bg-white border-amber-200/80 hover:border-amber-400 hover:shadow-xs hover:bg-amber-50/40 opacity-90'
+                    }`}
+                    title={t('Klik untuk memfilter unit yang masih belum lunas')}
+                  >
+                    {revenueFilterTab === 'belum_lunas' && (
+                      <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-amber-600 text-white rounded text-[8px] font-extrabold tracking-wider">
+                        ✓ {t('AKTIF')}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">
+                      {t('Menunggu (Belum Lunas)')}
+                    </span>
+                    <span className="font-mono font-extrabold text-base text-amber-600 block">
+                      {belumLunasCount} {t('Unit')}
+                    </span>
+                    <span className="text-[10px] text-amber-700 font-semibold mt-1 block">
+                      {formatCurrency(
+                        soldAssets
+                          .filter(a => a.paymentStatus !== 'Lunas')
+                          .reduce((sum, a) => sum + getAssetSoldPrice(a), 0)
+                      )}
+                    </span>
+                  </button>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">{t('Menunggu (Belum Lunas)')}</span>
-                  <span className="font-mono font-bold text-base text-amber-600">{belumLunasCount} {t('Unit')}</span>
+
+                {/* Subheader Filter & Search Bar */}
+                <div className="mt-3.5 pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder={t('Cari no polisi, unit, pemenang...')}
+                      value={modalSearch}
+                      onChange={(e) => setModalSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                    />
+                    {modalSearch && (
+                      <button 
+                        type="button"
+                        onClick={() => setModalSearch('')} 
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs self-start sm:self-auto">
+                    <span className="text-slate-500 font-medium">
+                      {t('Hasil')}: <strong className="text-slate-800 font-bold">{filteredSoldAssets.length}</strong> {t('unit')}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500 font-medium">
+                      {t('Subtotal')}: <strong className="text-amber-700 font-mono font-bold">{formatCurrency(filteredTotalNominal)}</strong>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 max-h-[400px]">
-                <div className="space-y-2">
-                  {soldAssets.map(asset => {
-                    const soldPrice = getAssetSoldPrice(asset);
-                    const startPrice = Number(asset.startingPrice) || 0;
-                    const diff = soldPrice - startPrice;
-                    return (
-                      <div key={asset.id} className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-slate-800 text-xs sm:text-sm">{asset.plateNumber || asset.id}</h4>
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                              asset.paymentStatus === 'Lunas' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                            }`}>
-                              {asset.paymentStatus === 'Lunas' ? 'Lunas' : 'Belum Lunas'}
-                            </span>
+              {/* Filtered Assets List */}
+              <div className="flex-1 overflow-y-auto p-4 max-h-[380px] custom-scrollbar">
+                {filteredSoldAssets.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {filteredSoldAssets.map(asset => {
+                      const soldPrice = getAssetSoldPrice(asset);
+                      const startPrice = Number(asset.startingPrice) || 0;
+                      const diff = soldPrice - startPrice;
+                      const winnerName = getAssetWinner(asset);
+                      const soldDate = asset.closeBidDate 
+                        ? new Date(asset.closeBidDate).toLocaleDateString(language === 'en' ? 'en-US' : 'id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })
+                        : '-';
+
+                      return (
+                        <div 
+                          key={asset.id} 
+                          className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-amber-300 hover:shadow-xs transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group"
+                        >
+                          <div className="flex items-center gap-3">
+                            {asset.images && asset.images[0] ? (
+                              <img 
+                                src={asset.images[0]} 
+                                alt={asset.brand} 
+                                className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0" 
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 text-xs font-bold shrink-0">
+                                {asset.brand?.slice(0, 3) || 'UNIT'}
+                              </div>
+                            )}
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="font-bold text-slate-800 text-xs sm:text-sm">{asset.plateNumber || asset.id}</h4>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  asset.paymentStatus === 'Lunas' 
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
+                                  {asset.paymentStatus === 'Lunas' ? '✓ Lunas' : '⏳ Belum Lunas'}
+                                </span>
+                                <span className="text-[11px] text-slate-400">• {soldDate}</span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                {asset.brand} {asset.name ? `• ${asset.name}` : ''}
+                              </p>
+                              <div className="flex items-center gap-1.5 text-xs text-slate-700 font-semibold mt-1">
+                                <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                <span>{t('Pemenang')}: <strong>{winnerName}</strong></span>
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-xs text-slate-500">{asset.brand} • Dasar: {formatCurrency(startPrice)}</p>
+
+                          <div className="flex items-center gap-3 self-end sm:self-center w-full sm:w-auto justify-between sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            <div className="text-left sm:text-right">
+                              <span className="text-[10px] text-slate-400 font-semibold block uppercase">{t('Harga Terjual')}</span>
+                              <span className="font-mono font-bold text-emerald-600 text-sm block">{formatCurrency(soldPrice)}</span>
+                              {diff > 0 && (
+                                <span className="text-[10px] text-emerald-600 font-semibold font-mono">
+                                  +{formatCurrency(diff)} ({Math.round((diff / (startPrice || 1)) * 100)}%)
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAssetBids(asset)}
+                              className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white text-xs font-bold border border-blue-200 hover:border-blue-600 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                              title={t('Lihat semua penawaran unit ini')}
+                            >
+                              <Gavel className="w-3.5 h-3.5" />
+                              <span>{(asset.bids || []).length} Bids</span>
+                            </button>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-mono font-bold text-emerald-600 text-sm block">{formatCurrency(soldPrice)}</span>
-                          {diff > 0 && (
-                            <span className="text-[10px] text-emerald-600 font-semibold font-mono">
-                              +{formatCurrency(diff)} ({Math.round((diff / (startPrice || 1)) * 100)}%)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-400">
+                    <DollarSign className="w-12 h-12 mx-auto text-slate-300 mb-2 opacity-60" />
+                    <p className="font-semibold text-sm text-slate-600">
+                      {t('Tidak ada unit yang sesuai dengan filter')}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {t('Coba ubah status pembayaran atau kata kunci pencarian.')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRevenueFilterTab('all');
+                        setModalSearch('');
+                      }}
+                      className="mt-3 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                    >
+                      {t('Reset Filter')}
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-medium">
+                  {t('Menampilkan')} {filteredSoldAssets.length} {t('dari')} {soldAssets.length} {t('unit terjual')}
+                </span>
                 <button
-                  onClick={() => setActiveModal(null)}
+                  onClick={() => {
+                    setActiveModal(null);
+                    setModalSearch('');
+                  }}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   {t('Tutup')}

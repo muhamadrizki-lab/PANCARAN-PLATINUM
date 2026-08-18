@@ -38,7 +38,7 @@ export default function AdminDashboard({
   const [filterDate, setFilterDate] = useState('');
   const [selectedSurvey, setSelectedSurvey] = useState<SurveyItem | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeMetricModal, setActiveMetricModal] = useState<'assets' | 'sold' | 'open' | 'bidders' | 'admins' | 'users' | null>(null);
+  const [activeMetricModal, setActiveMetricModal] = useState<'assets' | 'sold' | 'open' | 'bidders' | 'admins' | 'users' | 'omzet' | 'lunas' | 'belum_lunas' | null>(null);
   const [metricSearchQuery, setMetricSearchQuery] = useState('');
   const [selectedWinnerLetterAsset, setSelectedWinnerLetterAsset] = useState<Asset | null>(null);
 
@@ -410,10 +410,17 @@ export default function AdminDashboard({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="stats-financial-grid">
         {/* Total Omzet */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-default hover:border-slate-300 hover:border-l-indigo-500 transition-all duration-300">
+        <div 
+          onClick={() => {
+            setActiveMetricModal('omzet');
+            setMetricSearchQuery('');
+          }}
+          className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-pointer hover:border-slate-300 hover:border-l-indigo-500 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 group"
+          title={t('Klik untuk melihat rincian omzet')}
+        >
           <div className="flex justify-between items-start gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px]">{t('Total Omzet Terjual')}</span>
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px] group-hover:text-indigo-600 transition-colors">{t('Total Omzet Terjual')}</span>
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
@@ -421,15 +428,23 @@ export default function AdminDashboard({
             <p className="text-2xl font-bold text-indigo-600 leading-none">{formatIDR(totalOmzet)}</p>
             <span className="text-xs text-indigo-600 font-medium block mt-1.5 truncate flex items-center gap-1">
               <span>{t('Dari')} {totalSold} {t('Unit Terjual')}</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">&rarr;</span>
             </span>
           </div>
         </div>
 
         {/* Lunas */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-default hover:border-slate-300 hover:border-l-emerald-600 transition-all duration-300">
+        <div 
+          onClick={() => {
+            setActiveMetricModal('lunas');
+            setMetricSearchQuery('');
+          }}
+          className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-pointer hover:border-slate-300 hover:border-l-emerald-600 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 group"
+          title={t('Klik untuk melihat unit yang sudah lunas')}
+        >
           <div className="flex justify-between items-start gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px]">{t('Pembayaran Lunas')}</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px] group-hover:text-emerald-600 transition-colors">{t('Pembayaran Lunas')}</span>
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
               <CheckCircle className="w-5 h-5" />
             </div>
           </div>
@@ -437,15 +452,23 @@ export default function AdminDashboard({
             <p className="text-2xl font-bold text-emerald-600 leading-none">{lunasCount}</p>
             <span className="text-xs text-emerald-600 font-medium block mt-1.5 truncate flex items-center gap-1">
               <span>{t('Unit Terjual (Lunas)')}</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">&rarr;</span>
             </span>
           </div>
         </div>
 
         {/* Belum Lunas */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-default hover:border-slate-300 hover:border-l-amber-500 transition-all duration-300">
+        <div 
+          onClick={() => {
+            setActiveMetricModal('belum_lunas');
+            setMetricSearchQuery('');
+          }}
+          className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-[6px] border-l-slate-300 flex flex-col justify-between h-full min-h-[140px] hover:shadow-md cursor-pointer hover:border-slate-300 hover:border-l-amber-500 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 group"
+          title={t('Klik untuk melihat unit yang belum lunas')}
+        >
           <div className="flex justify-between items-start gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px]">{t('Belum Lunas')}</span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl shrink-0">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider line-clamp-2 min-h-[32px] group-hover:text-amber-600 transition-colors">{t('Belum Lunas')}</span>
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
               <Clock className="w-5 h-5" />
             </div>
           </div>
@@ -453,6 +476,7 @@ export default function AdminDashboard({
             <p className="text-2xl font-bold text-amber-600 leading-none">{belumLunasCount}</p>
             <span className="text-xs text-amber-600 font-medium block mt-1.5 truncate flex items-center gap-1">
               <span>{t('Unit Terjual (Belum Lunas)')}</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">&rarr;</span>
             </span>
           </div>
         </div>
