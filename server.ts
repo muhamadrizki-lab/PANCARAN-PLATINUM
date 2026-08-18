@@ -264,8 +264,8 @@ async function startServer() {
     if (!session.sock && session.waStatus !== 'connecting') {
       connectToWhatsAppForUser(emailKey);
     }
-    const qrStr = await waitForQr(session, emailKey);
-    res.json({ qr: qrStr || null, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: emailKey });
+    // Respond immediately for polling
+    res.json({ qr: session.qrCode || null, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: emailKey });
   });
 
   app.post('/api/wa/refresh-qr', async (req, res) => {
@@ -274,8 +274,8 @@ async function startServer() {
       const emailKey = normalizeEmail(email);
       const session = getSession(emailKey);
       await connectToWhatsAppForUser(emailKey, true);
-      const qrStr = await waitForQr(session, emailKey);
-      res.json({ success: true, qr: qrStr || null, status: session.waStatus, userEmail: emailKey });
+      // Don't block, let frontend polling pick up the new QR when it's ready
+      res.json({ success: true, qr: session.qrCode || null, status: session.waStatus, userEmail: emailKey });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
