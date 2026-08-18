@@ -329,4 +329,17 @@ export const EMPTY_POPUP_CONFIG: PopupConfig = {
   popups: [],
 };
 
+export interface ApprovalLog {
+  id: string;
+  timestamp: string;
+  actionType: 'MARK_SOLD' | 'APPROVE_USER' | 'REJECT_USER' | 'APPROVE_BID' | 'TOGGLE_BIDDING' | string;
+  targetName: string;
+  targetId?: string;
+  adminEmail: string;
+  adminName: string;
+  details: string;
+  previousStatus?: string;
+  newStatus?: string;
+}
+
 

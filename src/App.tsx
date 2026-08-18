@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory, PopupConfig, PopupItem, DEFAULT_POPUP_CONFIG, DEFAULT_SCHEDULE_POPUP_ITEM, EMPTY_POPUP_CONFIG } from './types';
+import { Asset, AssetStatus, Bid, AdminUser, ToastNotification, Brand, Category, Condition, RegisteredUser, Series, VehicleColour, FuelType, AttachmentCategory, AttachmentType, BiddingRequest, RefundRequest, MAIN_CATEGORIES, normalizeCategory, PopupConfig, PopupItem, DEFAULT_POPUP_CONFIG, DEFAULT_SCHEDULE_POPUP_ITEM, EMPTY_POPUP_CONFIG, ApprovalLog } from './types';
 import { INITIAL_ASSETS, INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from './data/mockData';
 import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
@@ -8,6 +8,7 @@ import AdminSettings from './components/AdminSettings';
 import AdminWhatsAppBlasting from './components/AdminWhatsAppBlasting';
 import AdminPopupSettings from './components/AdminPopupSettings';
 import AdminReports from './components/AdminReports';
+import { AdminApprovalMatrix } from './components/AdminApprovalMatrix';
 import CatalogView from './components/CatalogView';
 import LoginModal from './components/LoginModal';
 import { useLanguage } from './components/LanguageContext';
@@ -121,7 +122,41 @@ export default function App() {
   const [popupStepIndex, setPopupStepIndex] = useState(0);
   
   // Navigation inside Admin area
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'popup_settings' | 'settings' | 'whatsapp' | 'reports'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'assets' | 'users' | 'popup_settings' | 'settings' | 'whatsapp' | 'reports' | 'approval_matrix'>('dashboard');
+
+  // Approval Matrix Logs State
+  const [approvalLogs, setApprovalLogs] = useState<ApprovalLog[]>(() => {
+    try {
+      const stored = localStorage.getItem('pancaran_approval_logs_v3');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Failed to load approval logs", e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pancaran_approval_logs_v3', JSON.stringify(approvalLogs));
+    } catch (e) {
+      console.error("Failed to save approval logs", e);
+    }
+  }, [approvalLogs]);
+
+  const addApprovalLog = (actionType: string, targetName: string, details: string) => {
+    const newLog: ApprovalLog = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      actionType,
+      targetName,
+      adminEmail: loggedInAdminEmail || 'muhamad.rizki@pancaran-logistic.id',
+      adminName: loggedInAdminName || loggedInAdminEmail || 'Muhamad Rizki',
+      details
+    };
+    setApprovalLogs(prev => [newLog, ...prev]);
+  };
   
   // Pop-up Config & Preview State
   const [previewPopupItem, setPreviewPopupItem] = useState<PopupItem | null>(null);
@@ -780,8 +815,17 @@ export default function App() {
 
   // Update Asset Status (Open / Sold toggle)
   const handleUpdateAssetStatus = async (assetId: string, status: AssetStatus) => {
+    const asset = assets.find(a => a.id === assetId);
     // Optimistic update
     setAssets(prev => prev.map(a => a.id === assetId ? { ...a, status } : a));
+
+    if (status === 'Sold' && asset) {
+      addApprovalLog(
+        'MARK_SOLD',
+        `${asset.name} (${asset.plateNumber || asset.id})`,
+        `Admin (${loggedInAdminEmail || 'Muhamad Rizki'}) menandai unit aset sebagai Terjual (Sold).`
+      );
+    }
 
     try {
       await updateAssetInDb(assetId, { status });
@@ -827,6 +871,13 @@ export default function App() {
   const handleApproveUser = async (email: string) => {
     try {
       const user = registeredUsers.find(u => u.email === email);
+      if (user) {
+        addApprovalLog(
+          'APPROVE_USER',
+          user.name,
+          `Admin (${loggedInAdminEmail || 'Muhamad Rizki'}) menyetujui akun peserta lelang ${user.email}.`
+        );
+      }
       if (user && user.userType === 'internal') {
         await addAdminToDb({
           email: user.email,
@@ -850,6 +901,14 @@ export default function App() {
 
   const handleRejectUser = async (email: string) => {
     try {
+      const user = registeredUsers.find(u => u.email === email);
+      if (user) {
+        addApprovalLog(
+          'REJECT_USER',
+          user.name,
+          `Admin (${loggedInAdminEmail || 'Muhamad Rizki'}) menolak akun peserta lelang ${user.email}.`
+        );
+      }
       await updateRegisteredUser(email, { 
         status: 'Ditolak',
         approvedBy: loggedInAdminEmail || 'Admin',
@@ -2217,6 +2276,15 @@ export default function App() {
                   <Sliders className="w-4 h-4" />
                   <span>{t('Kelola Pop-up Modal')}</span>
                 </button>
+                <button
+                  onClick={() => { setAdminTab('approval_matrix'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
+                    adminTab === 'approval_matrix' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  <span>{t('Report History Approval Internal')}</span>
+                </button>
               </div>
             )}
 
@@ -2376,6 +2444,18 @@ export default function App() {
                     <Sliders className="w-4 h-4 shrink-0" />
                     <span>{t('Kelola Pop-up Modal')}</span>
                   </button>
+
+                  <button
+                    onClick={() => setAdminTab('approval_matrix')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
+                      adminTab === 'approval_matrix'
+                        ? 'bg-indigo-50 text-indigo-700 font-bold shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-600" />
+                    <span>{t('Report History Approval Internal')}</span>
+                  </button>
                 </nav>
               </div>
             </div>
@@ -2459,6 +2539,15 @@ export default function App() {
               {adminTab === 'reports' && (
                 <AdminReports
                   assets={assets}
+                />
+              )}
+              {adminTab === 'approval_matrix' && (
+                <AdminApprovalMatrix
+                  approvalLogs={approvalLogs}
+                  loggedInAdminEmail={loggedInAdminEmail}
+                  onDeleteLog={(logId) => {
+                    setApprovalLogs(prev => prev.filter(log => log.id !== logId));
+                  }}
                 />
               )}
         {adminTab === 'settings' && (
