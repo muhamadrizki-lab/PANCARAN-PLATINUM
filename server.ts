@@ -34,6 +34,14 @@ function getBaileys() {
   };
 }
 
+// Global error handlers to prevent crash from Baileys unhandled 'error' event on websockets
+process.on('uncaughtException', (err) => {
+  console.error('Caught uncaughtException:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Caught unhandledRejection:', reason);
+});
+
 // Fix for bundled CJS: import.meta.url is not available in CJS
 let __filename: string;
 let __dirname: string;
