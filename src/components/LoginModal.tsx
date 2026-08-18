@@ -901,7 +901,7 @@ export default function LoginModal({
               {/* New Password input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase">
-                  {t('PASSWORD BARU')}
+                  {t('PASSWORD LAMA')}
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
