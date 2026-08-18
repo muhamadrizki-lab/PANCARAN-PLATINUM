@@ -300,6 +300,58 @@ export default function AdminAssets({
   const [focusedBid, setFocusedBid] = useState<Bid | null>(null);
   const [copiedState, setCopiedState] = useState(false);
 
+  // Manual Bid Input State
+  const [showAddBidModal, setShowAddBidModal] = useState(false);
+  const [manualBidName, setManualBidName] = useState('');
+  const [manualBidPrice, setManualBidPrice] = useState<number | ''>('');
+  const [manualBidContact, setManualBidContact] = useState('');
+  const [manualBidEmail, setManualBidEmail] = useState('');
+  const [manualBidDate, setManualBidDate] = useState(new Date().toISOString().split('T')[0]);
+  const [manualBidTime, setManualBidTime] = useState(new Date().toTimeString().slice(0, 5));
+  const [manualBidSurveyDate, setManualBidSurveyDate] = useState('');
+  const [manualBidSurveyTime, setManualBidSurveyTime] = useState('09:00');
+  const [manualBidError, setManualBidError] = useState('');
+
+  const formatBidTimestamp = (timestamp?: string) => {
+    if (!timestamp) return '-';
+    try {
+      const d = new Date(timestamp);
+      if (isNaN(d.getTime())) return timestamp;
+      return d.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }) + ', ' + d.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }) + ' WIB';
+    } catch {
+      return timestamp;
+    }
+  };
+
+  const formatBidTimestampDetail = (timestamp?: string) => {
+    if (!timestamp) return { dateStr: '-', timeStr: '-' };
+    try {
+      const d = new Date(timestamp);
+      if (isNaN(d.getTime())) return { dateStr: timestamp, timeStr: '-' };
+      const dateStr = d.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+      const timeStr = d.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }) + ' WIB';
+      return { dateStr, timeStr };
+    } catch {
+      return { dateStr: timestamp, timeStr: '-' };
+    }
+  };
+
   // States for fullscreen image lightbox
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -1169,11 +1221,16 @@ export default function AdminAssets({
   };
 
   const handleCopyDetails = (bid: Bid, assetName: string) => {
-    const textToCopy = `Detail Penawaran Harga:
+    const formattedDate = bid.timestamp ? new Date(bid.timestamp).toLocaleString('id-ID', {
+      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }) + ' WIB' : 'Waktu tidak tercatat';
+
+    const textToCopy = `Detail Penawaran Harga (Bidding):
 ----------------------------------
 Nama Unit: ${assetName}
 Nama Penawar: ${bid.name}
 Nilai Bid: ${formatIDR(bid.price)}
+Waktu Bidding: ${formattedDate}
 Nomor Telepon: ${bid.contact}
 Email: ${bid.email}
 Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.scheduleSurveyTime || 'N/A'} WIB` : 'Belum dijadwalkan'}`;
@@ -2027,76 +2084,145 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
 
             {/* Bids List ("list bid price" from flowchart) */}
             <div className="space-y-3 pt-2 border-t border-slate-100">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2">
                 <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1">
                   <FileText className="w-4 h-4 text-blue-600" /> {t('Histori Penawaran')} ({selectedAsset.bids.length})
                 </h3>
-                <span className="text-[10px] text-slate-400 font-medium">{t('Bids Tertinggi Pertama')}</span>
+                <div className="flex items-center gap-2">
+                  {selectedAsset.status !== 'Sold' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManualBidName('');
+                        setManualBidPrice('');
+                        setManualBidContact('');
+                        setManualBidEmail('');
+                        setManualBidDate(new Date().toISOString().split('T')[0]);
+                        setManualBidTime(new Date().toTimeString().slice(0, 5));
+                        setManualBidSurveyDate('');
+                        setManualBidSurveyTime('09:00');
+                        setManualBidError('');
+                        setShowAddBidModal(true);
+                      }}
+                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 border border-blue-200/80 cursor-pointer"
+                      title={t('Input Penawaran Manual')}
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>{t('Input Bid')}</span>
+                    </button>
+                  )}
+                  <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">{t('Bids Tertinggi Pertama')}</span>
+                </div>
               </div>
 
-              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                 {selectedAsset.bids
                   .sort((a, b) => b.price - a.price)
-                  .map((bid, i) => (
+                  .map((bid, i) => {
+                    const isTopBid = i === 0;
+                    return (
                     <div 
                       key={bid.id} 
                       onClick={() => setFocusedBid(bid)}
-                      className="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-white transition-all cursor-pointer space-y-1.5 text-xs relative group shadow-xs hover:shadow-md"
+                      className={`p-3 rounded-xl border transition-all cursor-pointer space-y-2 text-xs relative group shadow-xs hover:shadow-md ${
+                        isTopBid 
+                          ? 'bg-amber-50/50 border-amber-200 hover:border-amber-400 hover:bg-amber-50/80 ring-1 ring-amber-300/40' 
+                          : 'bg-slate-50 border-slate-200 hover:border-blue-400 hover:bg-white'
+                      }`}
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <span className="font-bold text-slate-700 block truncate">{bid.name}</span>
-                          <span className="font-mono font-bold text-blue-600 mt-0.5 block">{formatIDR(bid.price)}</span>
-                        </div>
-                        {bidDeleteConfirmId === bid.id ? (
-                          <div className="flex items-center gap-1 bg-rose-50 p-1 rounded-lg border border-rose-100 shrink-0">
-                            <span className="text-[9px] font-bold text-rose-700 shrink-0">{t('Hapus?')}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setBidDeleteConfirmId(null);
-                              }}
-                              className="px-1.5 py-0.5 bg-white text-slate-600 border border-slate-200 rounded text-[9px] font-bold hover:bg-slate-50 cursor-pointer"
-                            >
-                              {t('Batal')}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const updatedBids = selectedAsset.bids.filter(b => b.id !== bid.id);
-                                const highestBid = updatedBids.length > 0
-                                  ? Math.max(...updatedBids.map(b => b.price), selectedAsset.startingPrice)
-                                  : selectedAsset.startingPrice;
-                                onUpdateAsset(selectedAsset.id, { 
-                                  bids: updatedBids,
-                                  highestBid: highestBid
-                                });
-                                setBidDeleteConfirmId(null);
-                              }}
-                              className="px-1.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[9px] font-bold cursor-pointer"
-                            >
-                              {t('Ya')}
-                            </button>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                              isTopBid 
+                                ? 'bg-amber-500 text-white' 
+                                : 'bg-slate-200 text-slate-700'
+                            }`}>
+                              #{i + 1}
+                            </span>
+                            <span className="font-bold text-slate-800 truncate">{bid.name}</span>
+                            {isTopBid && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-800 font-bold rounded border border-amber-200">
+                                👑 {t('Tertinggi')}
+                              </span>
+                            )}
                           </div>
-                        ) : (
+                          <span className="font-mono font-bold text-blue-600 text-sm mt-1 block">{formatIDR(bid.price)}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* Zoom popup button */}
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setBidDeleteConfirmId(bid.id);
+                              setFocusedBid(bid);
                             }}
-                            className="p-1 text-slate-400 hover:text-rose-500 rounded transition-colors cursor-pointer shrink-0"
-                            title={t('Hapus Penawaran')}
+                            className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-300 rounded-lg text-[10px] font-bold transition-all cursor-pointer shadow-2xs"
+                            title={t('Klik untuk Zoom Pop-up Detail Penawaran')}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <ZoomIn className="w-3.5 h-3.5 text-blue-600" />
+                            <span className="hidden sm:inline">{t('Zoom')}</span>
                           </button>
-                        )}
+
+                          {bidDeleteConfirmId === bid.id ? (
+                            <div className="flex items-center gap-1 bg-rose-50 p-1 rounded-lg border border-rose-100 shrink-0">
+                              <span className="text-[9px] font-bold text-rose-700 shrink-0">{t('Hapus?')}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBidDeleteConfirmId(null);
+                                }}
+                                className="px-1.5 py-0.5 bg-white text-slate-600 border border-slate-200 rounded text-[9px] font-bold hover:bg-slate-50 cursor-pointer"
+                              >
+                                {t('Batal')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const updatedBids = selectedAsset.bids.filter(b => b.id !== bid.id);
+                                  const highestBid = updatedBids.length > 0
+                                    ? Math.max(...updatedBids.map(b => b.price), selectedAsset.startingPrice)
+                                    : selectedAsset.startingPrice;
+                                  onUpdateAsset(selectedAsset.id, { 
+                                    bids: updatedBids,
+                                    highestBid: highestBid
+                                  });
+                                  setBidDeleteConfirmId(null);
+                                }}
+                                className="px-1.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[9px] font-bold cursor-pointer"
+                              >
+                                {t('Ya')}
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBidDeleteConfirmId(bid.id);
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-500 rounded transition-colors cursor-pointer shrink-0"
+                              title={t('Hapus Penawaran')}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-slate-500 flex flex-col gap-0.5">
-                        <span>{t('Hubungi')}: {bid.contact}</span>
-                        <span>Email: {bid.email}</span>
+
+                      {/* Waktu Bidding Masuk */}
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-600 bg-white/90 p-1.5 rounded-lg border border-slate-200/70">
+                        <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="font-semibold">{t('Waktu Bidding')}:</span>
+                        <span className="font-mono font-medium text-slate-700">{formatBidTimestamp(bid.timestamp)}</span>
+                      </div>
+
+                      <div className="text-slate-500 flex flex-col gap-0.5 text-[11px]">
+                        <span>{t('Hubungi')}: <strong className="text-slate-700 font-semibold">{bid.contact}</strong></span>
+                        <span>Email: <strong className="text-slate-700 font-semibold">{bid.email}</strong></span>
                       </div>
                       
                       {/* Survey date if requested, or inline rescheduling */}
@@ -2146,7 +2272,6 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Find bid and update it
                                 const updatedBids = selectedAsset.bids.map(b => {
                                   if (b.id === bid.id) {
                                     return {
@@ -2263,7 +2388,8 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
 
                 {selectedAsset.bids.length === 0 && (
                   <div className="text-center py-6 text-slate-400 text-xs">
@@ -3842,35 +3968,57 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
         </div>
       )}
 
-      {/* Immersive Focused Bid Details Modal Overlay */}
-      {focusedBid && selectedAsset && (
+      {/* Immersive Focused Bid Details Modal Overlay (Zoom Detail) */}
+      {focusedBid && selectedAsset && (() => {
+        const sortedBids = [...selectedAsset.bids].sort((a, b) => b.price - a.price);
+        const bidRank = sortedBids.findIndex(b => b.id === focusedBid.id) + 1;
+        const isWinnerCandidate = bidRank === 1;
+        const timeDetail = formatBidTimestampDetail(focusedBid.timestamp);
+        const priceDiff = focusedBid.price - selectedAsset.startingPrice;
+        const diffPercent = selectedAsset.startingPrice > 0 ? ((priceDiff / selectedAsset.startingPrice) * 100).toFixed(1) : '0';
+
+        return (
         <div 
-          className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[120] flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[120] flex items-center justify-center p-3 sm:p-4 animate-fade-in"
           onClick={() => setFocusedBid(null)}
         >
           <div 
-            className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-lg w-full p-6 sm:p-8 relative overflow-hidden transition-all duration-300 animate-zoom-in flex flex-col max-h-[90vh]"
+            className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-xl w-full p-6 sm:p-7 relative overflow-hidden transition-all duration-300 animate-zoom-in flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header Gradient line */}
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-sky-500" />
+            <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${
+              isWinnerCandidate ? 'from-amber-400 via-amber-500 to-yellow-400' : 'from-blue-500 via-indigo-500 to-sky-500'
+            }`} />
             
             {/* Title Bar */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-5 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 text-blue-600">
-                  <FileText className="w-6 h-6 animate-pulse" />
+                <div className={`p-3 rounded-2xl border ${
+                  isWinnerCandidate ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-blue-50 border-blue-100 text-blue-600'
+                }`}>
+                  <ZoomIn className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                    {t('Detail Penawaran')}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                      {t('Detail Penawaran Harga')}
+                    </h3>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                      isWinnerCandidate 
+                        ? 'bg-amber-500 text-white shadow-xs' 
+                        : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      #{bidRank} {isWinnerCandidate ? `👑 ${t('Penawar Tertinggi')}` : `${t('Peringkat')} ${bidRank}`}
+                    </span>
+                  </div>
                   <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                    {selectedAsset.brand} {selectedAsset.name} ({selectedAsset.plateNumber})
+                    {selectedAsset.brand} {selectedAsset.name} • <span className="font-mono text-slate-700 font-bold">{selectedAsset.plateNumber}</span>
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setFocusedBid(null)}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all cursor-pointer"
                 title={t('Tutup')}
@@ -3880,21 +4028,61 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
             </div>
 
             {/* Scrollable details area */}
-            <div className="space-y-6 overflow-y-auto pr-1 flex-1 py-1">
+            <div className="space-y-4 overflow-y-auto pr-1 flex-1 py-1">
+              
               {/* Huge Price Block */}
-              <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-5 text-center shadow-xs">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+              <div className={`border rounded-2xl p-5 text-center shadow-xs relative overflow-hidden ${
+                isWinnerCandidate ? 'bg-amber-50/40 border-amber-200' : 'bg-blue-50/30 border-blue-100'
+              }`}>
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">
                   {t('NILAI PENAWARAN (BID PRICE)')}
                 </span>
-                <span className="text-3xl sm:text-4xl font-extrabold text-blue-600 font-mono tracking-tight block">
+                <span className="text-3xl sm:text-4xl font-extrabold text-blue-700 font-mono tracking-tight block">
                   {formatIDR(focusedBid.price)}
                 </span>
+                <div className="flex items-center justify-center gap-2 mt-2 text-[11px] text-slate-500">
+                  <span>{t('Harga Dasar')}: <strong className="font-mono">{formatIDR(selectedAsset.startingPrice)}</strong></span>
+                  <span>•</span>
+                  <span className={priceDiff >= 0 ? 'text-emerald-600 font-bold' : 'text-slate-500 font-bold'}>
+                    {priceDiff >= 0 ? `+${formatIDR(priceDiff)} (+${diffPercent}%)` : `-${formatIDR(Math.abs(priceDiff))}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* WAKTU BIDDING (TANGGAL & JAM INPUT) HIGHLIGHT CARD */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-md border border-slate-700/60 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-blue-300 font-bold text-xs">
+                    <Clock className="w-4 h-4 text-blue-400" />
+                    <span>{t('WAKTU BIDDING / INPUT PENAWARAN')}</span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
+                    ✓ {t('Tercatat Sistem')}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-700/60">
+                  <div className="flex items-center gap-2 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                    <Calendar className="w-4 h-4 text-sky-400 shrink-0" />
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">{t('Tanggal Penawaran')}</span>
+                      <span className="text-xs font-bold text-white block">{timeDetail.dateStr}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                    <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">{t('Jam Input')}</span>
+                      <span className="text-xs font-mono font-bold text-amber-300 block">{timeDetail.timeStr}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Grid of Key Bidder Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Bidder Name */}
-                <div className="bg-slate-50/40 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                <div className="bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
                     {t('NAMA PENAWAR')}
                   </span>
@@ -3904,7 +4092,7 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                 </div>
 
                 {/* Scheduled Visit / Survey Date */}
-                <div className="bg-slate-50/40 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                <div className="bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
                     {t('JADWAL KUNJUNGAN / SURVEY')}
                   </span>
@@ -3923,18 +4111,18 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                 </div>
 
                 {/* Email address */}
-                <div className="bg-slate-50/40 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                <div className="bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
                     EMAIL
                   </span>
                   <div className="flex items-center justify-between gap-1 mt-1">
                     <span className="text-xs text-slate-700 font-semibold break-all block truncate flex-1" title={focusedBid.email}>
-                      {focusedBid.email}
+                      {focusedBid.email || '-'}
                     </span>
-                    {focusedBid.email && (
+                    {focusedBid.email && focusedBid.email !== '-' && (
                       <a
                         href={`mailto:${focusedBid.email}`}
-                        className="p-1 bg-white hover:bg-blue-50 text-blue-600 border border-slate-200/60 rounded-lg hover:border-blue-200 transition-all shrink-0 ml-1"
+                        className="p-1 bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 rounded-lg hover:border-blue-200 transition-all shrink-0 ml-1"
                         title={t('Kirim Email')}
                       >
                         <Mail className="w-3.5 h-3.5" />
@@ -3944,20 +4132,20 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                 </div>
 
                 {/* Contact/WhatsApp */}
-                <div className="bg-slate-50/40 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                <div className="bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
                     {t('NOMOR HP / WHATSAPP')}
                   </span>
                   <div className="flex items-center justify-between gap-1 mt-1">
                     <span className="text-xs text-slate-700 font-semibold break-words block truncate flex-1">
-                      {focusedBid.contact}
+                      {focusedBid.contact || '-'}
                     </span>
-                    {focusedBid.contact && (
+                    {focusedBid.contact && focusedBid.contact !== '-' && (
                       <a
                         href={`https://wa.me/${focusedBid.contact.replace(/\D/g, '').startsWith('0') ? '62' + focusedBid.contact.replace(/\D/g, '').slice(1) : focusedBid.contact.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1 bg-white hover:bg-emerald-50 text-emerald-600 border border-slate-200/60 rounded-lg hover:border-emerald-200 transition-all shrink-0 ml-1"
+                        className="p-1 bg-white hover:bg-emerald-50 text-emerald-600 border border-slate-200 rounded-lg hover:border-emerald-200 transition-all shrink-0 ml-1"
                         title={t('Hubungi via WhatsApp')}
                       >
                         <Phone className="w-3.5 h-3.5" />
@@ -3967,40 +4155,39 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                 </div>
               </div>
 
-              {/* Timestamp Info */}
-              {focusedBid.timestamp && (
-                <div className="text-right text-[10px] text-slate-400 font-semibold">
-                  {t('Penawaran masuk pada')}: {new Date(focusedBid.timestamp).toLocaleString(language === 'en' ? 'en-US' : 'id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
-                </div>
-              )}
+              {/* Unit Asset Snapshot Summary */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/70 text-[11px] text-slate-600 flex justify-between items-center">
+                <span>{t('Status Unit')}: <strong className="text-slate-800">{selectedAsset.status}</strong></span>
+                <span>{t('Lokasi')}: <strong className="text-slate-800">{selectedAsset.location}</strong></span>
+              </div>
             </div>
 
             {/* Bottom Panel Actions */}
-            <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5 shrink-0">
+            <div className="mt-5 pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-2 shrink-0">
               {/* Copy structured details */}
               <button
                 type="button"
                 onClick={() => handleCopyDetails(focusedBid, `${selectedAsset.brand} ${selectedAsset.name} (${selectedAsset.plateNumber})`)}
-                className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
                   copiedState 
                     ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
                     : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/60"
                 }`}
               >
                 {copiedState ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedState ? t('Berhasil Disalin!') : t('Salin Detail Penawaran')}</span>
+                <span>{copiedState ? t('Berhasil Disalin!') : t('Salin Detail')}</span>
               </button>
 
               {/* WhatsApp direct contact */}
-              {focusedBid.contact && (
+              {focusedBid.contact && focusedBid.contact !== '-' && (
                 <a
                   href={`https://wa.me/${focusedBid.contact.replace(/\D/g, '').startsWith('0') ? '62' + focusedBid.contact.replace(/\D/g, '').slice(1) : focusedBid.contact.replace(/\D/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-emerald-600/10 hover:shadow-emerald-600/20"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-emerald-600/10 hover:shadow-emerald-600/20"
                 >
                   <Phone className="w-4 h-4" />
-                  <span>{t('Hubungi WhatsApp')}</span>
+                  <span>WhatsApp</span>
                 </a>
               )}
 
@@ -4008,11 +4195,195 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
               <button
                 type="button"
                 onClick={() => setFocusedBid(null)}
-                className="py-3 px-5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+                className="py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
               >
                 {t('Tutup')}
               </button>
             </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* Manual Add Bid Modal */}
+      {showAddBidModal && selectedAsset && (
+        <div 
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-[120] flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowAddBidModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl border border-slate-100 shadow-2xl max-w-lg w-full p-6 relative overflow-hidden transition-all duration-300 animate-zoom-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-5 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                    {t('Input Penawaran (Bid) Manual')}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {selectedAsset.brand} {selectedAsset.name} ({selectedAsset.plateNumber})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddBidModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {manualBidError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{manualBidError}</span>
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!manualBidName.trim()) {
+                  setManualBidError(t('Nama penawar wajib diisi.'));
+                  return;
+                }
+                const priceNum = Number(manualBidPrice);
+                if (!priceNum || isNaN(priceNum) || priceNum <= 0) {
+                  setManualBidError(t('Nominal penawaran harus berupa angka valid di atas 0.'));
+                  return;
+                }
+
+                // Combine date and time for timestamp
+                let timestampIso = new Date().toISOString();
+                if (manualBidDate && manualBidTime) {
+                  const combinedDate = new Date(`${manualBidDate}T${manualBidTime}:00`);
+                  if (!isNaN(combinedDate.getTime())) {
+                    timestampIso = combinedDate.toISOString();
+                  }
+                }
+
+                const newBidItem: Bid = {
+                  id: `B-${Math.floor(100 + Math.random() * 900)}`,
+                  name: manualBidName.trim(),
+                  price: priceNum,
+                  contact: manualBidContact.trim() || '-',
+                  email: manualBidEmail.trim() || '-',
+                  timestamp: timestampIso,
+                  scheduleSurveyDate: manualBidSurveyDate || undefined,
+                  scheduleSurveyTime: manualBidSurveyDate ? (manualBidSurveyTime || '09:00') : undefined
+                };
+
+                const updatedBids = [...(selectedAsset.bids || []), newBidItem];
+                const highestBid = Math.max(...updatedBids.map(b => b.price), selectedAsset.startingPrice);
+
+                onUpdateAsset(selectedAsset.id, {
+                  bids: updatedBids,
+                  highestBid: highestBid
+                });
+
+                setShowAddBidModal(false);
+              }}
+              className="space-y-4 text-xs"
+            >
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">{t('Nama Penawar')} *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Ricky Darmawan / PT Logistik"
+                  value={manualBidName}
+                  onChange={(e) => setManualBidName(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">{t('Nominal Penawaran (IDR)')} *</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="Contoh: 425600000"
+                  value={manualBidPrice}
+                  onChange={(e) => setManualBidPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono font-bold text-blue-600"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Harga dasar: {formatIDR(selectedAsset.startingPrice)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">{t('Nomor WhatsApp / HP')}</label>
+                  <input
+                    type="tel"
+                    placeholder="081319000979"
+                    value={manualBidContact}
+                    onChange={(e) => setManualBidContact(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">{t('Email Penawar')}</label>
+                  <input
+                    type="email"
+                    placeholder="info@perusahaan.com"
+                    value={manualBidEmail}
+                    onChange={(e) => setManualBidEmail(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* WAKTU BIDDING (TANGGAL & JAM INPUT) */}
+              <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 space-y-2">
+                <span className="font-bold text-blue-900 text-[11px] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-blue-600" />
+                  {t('Waktu Bidding Masuk (Tanggal & Jam)')}
+                </span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-0.5">{t('Tanggal')}</label>
+                    <input
+                      type="date"
+                      value={manualBidDate}
+                      onChange={(e) => setManualBidDate(e.target.value)}
+                      className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-0.5">{t('Jam (WIB)')}</label>
+                    <input
+                      type="time"
+                      value={manualBidTime}
+                      onChange={(e) => setManualBidTime(e.target.value)}
+                      className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddBidModal(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all cursor-pointer"
+                >
+                  {t('Batal')}
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all cursor-pointer shadow-sm shadow-blue-600/20"
+                >
+                  {t('Simpan Penawaran')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

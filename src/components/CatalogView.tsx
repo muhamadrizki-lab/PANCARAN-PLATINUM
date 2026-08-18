@@ -175,7 +175,7 @@ function CatalogCard({ asset, onSelectAsset, formatIDR, onZoomImage, isUserLogge
   const isExpired = asset.closeBidDate ? new Date() > new Date(asset.closeBidDate) : false;
 
   return (
-    <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 border-l-[6px] border-l-slate-300 hover:border-blue-200 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+    <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 hover:border-blue-200 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
       <div className="relative h-48 bg-slate-50 overflow-hidden group/img-container">
         <img 
           src={images[activeImgIdx] || "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80"} 
@@ -892,7 +892,7 @@ export default function CatalogView({
           )}
 
           {/* Public Filters Header */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 border-l-[6px] border-l-slate-300 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-800">{t('Katalog Armada Tersedia')} ({filteredAssets.length})</h2>
               <p className="text-xs text-slate-500 mt-0.5">{t('Semua armada di bawah siap dilepas dengan penawaran harga terbaik.')}</p>
@@ -1125,7 +1125,7 @@ export default function CatalogView({
                 <div className="lg:col-span-2 space-y-6">
                   
                   {/* Title & Badge card */}
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-l-[6px] border-l-slate-300 shadow-xs space-y-4">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                     <div className="flex flex-wrap gap-2">
                       <span className="bg-amber-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-md shadow-xs tracking-wider uppercase">
                         ⭐ {t('UNIT PILIHAN')}
@@ -1227,7 +1227,7 @@ export default function CatalogView({
                   </div>
 
                   {/* Ikhtisar Card */}
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-l-[6px] border-l-slate-300 shadow-xs space-y-5">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
                     <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2.5">
                       <Info className="w-4 h-4 text-blue-600" />
                       <span>{t('Ikhtisar Spesifikasi')}</span>
@@ -1654,7 +1654,7 @@ export default function CatalogView({
                   </div>
 
                   {/* Deskripsi (OLX-style Truncated preview + "Selengkapnya" modal link) */}
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-l-[6px] border-l-slate-300 shadow-xs space-y-4">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                     <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2.5">
                       <Info className="w-4 h-4 text-blue-600" />
                       <span>{t('Deskripsi Lengkap')}</span>
@@ -1684,7 +1684,7 @@ export default function CatalogView({
                   
                   {/* Price & CTA Trigger Card */}
                   {isUserLoggedIn ? (
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-l-[6px] border-l-slate-300 shadow-xs space-y-4">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                         <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{t('Detail Harga')}</span>
                         <span className="bg-blue-50 text-blue-700 text-[9px] font-extrabold px-2 py-0.5 rounded-md border border-blue-100 uppercase">
@@ -1709,7 +1709,7 @@ export default function CatalogView({
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200/80 border-l-[6px] border-l-slate-300 shadow-xs space-y-4">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                       <div className="space-y-1 pb-2 border-b border-slate-100">
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{t('Harga Awal')}</p>
                         <h2 className="text-xl md:text-2xl font-bold text-slate-400 tracking-tight flex items-center gap-1.5">
@@ -1737,7 +1737,7 @@ export default function CatalogView({
           {/* Interactive Bidding & Survey Scheduler Form */}
                   <div 
                     id="bid-form-card"
-                      className={`bg-white p-6 rounded-2xl border border-l-[6px] border-l-slate-300 transition-all duration-300 space-y-4 cursor-pointer ${
+                      className={`bg-white p-6 rounded-2xl border transition-all duration-300 space-y-4 cursor-pointer ${
                         isFormFocused 
                           ? 'relative z-40 border-blue-500 shadow-2xl ring-2 ring-blue-500/20 scale-[1.02] bg-white cursor-default' 
                           : 'relative z-10 border-slate-200/80 shadow-xs hover:border-blue-300'
