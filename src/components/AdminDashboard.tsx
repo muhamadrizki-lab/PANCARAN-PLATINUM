@@ -321,26 +321,6 @@ export default function AdminDashboard({
 
       {/* Category Filter Action Grid (Vehicle, Used Part, Property, Miscellaneous) */}
       <div className="space-y-3.5" id="category-filter-dashboard">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-1">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <span>{t('Kategori Aset Lelang')}</span>
-              <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 rounded-full lowercase tracking-normal">
-                {displayedAssets.length} {t('unit aktif')}
-              </span>
-            </h2>
-            {selectedCategoryFilter !== 'all' && (
-              <button
-                type="button"
-                onClick={() => setSelectedCategoryFilter('all')}
-                className="text-[11px] text-slate-500 hover:text-blue-600 font-medium underline cursor-pointer"
-              >
-                {t('Tampilkan Semua')} ({totalAllCount})
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* 4 Category Cards matching user screenshot */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* 1. Vehicle */}
