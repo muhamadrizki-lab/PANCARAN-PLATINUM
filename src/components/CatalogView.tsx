@@ -803,10 +803,9 @@ export default function CatalogView({
               {t('Portal Penawaran Umum (External)')}
             </span>
             <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight leading-tight text-white flex flex-col gap-1">
-              <span className="flex items-center gap-2">
-                <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(255,255,255,0.55)] font-black">PLATINUM</span>
+              <span className="text-3xl md:text-4xl xl:text-5xl font-black tracking-wider bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent">
+                PLATINUM
               </span>
-
               <span className="text-xs md:text-sm font-semibold text-slate-300 tracking-wide mt-0.5 opacity-90 leading-normal max-w-lg block">
                 ( Pancaran Lelang Angkutan Truk, Industri, & Niaga Utama Modern )
               </span>

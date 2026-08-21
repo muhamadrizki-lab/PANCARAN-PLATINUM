@@ -1482,22 +1482,17 @@ export default function App() {
             
             {/* Logo & Filter Dropdowns */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 bg-white border border-slate-200 rounded flex items-center justify-center shadow-sm overflow-hidden shrink-0">
-                <img 
-                  src="https://lh3.googleusercontent.com/d/1LmpjB5qAX8ev5_JRzYQDwjM58RxHl18X" 
-                  alt="Pancaran Logo" 
-                  className="w-full h-full object-contain p-0.5"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://drive.google.com/uc?export=download&id=1LmpjB5qAX8ev5_JRzYQDwjM58RxHl18X";
-                  }}
-                />
-              </div>
-              <div className="flex flex-col shrink-0">
+              <div 
+                className="flex items-center gap-2 cursor-pointer group"
+                onClick={() => {
+                  setExternalTab('catalog');
+                }}
+              >
                 <img 
                   src="/platinum-logo.png" 
-                  alt="PLATINUM Logo" 
-                  className="h-6 sm:h-7 md:h-8 object-contain"
+                  alt="PLATINUM" 
+                  className="h-7 sm:h-8 object-contain"
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     e.currentTarget.src = "https://lh3.googleusercontent.com/d/1fY2UR9AXEb7IesE-Qd1K-Xu55wVQE7DY";
                   }}
@@ -2683,22 +2678,12 @@ export default function App() {
               {/* Column 1: Brand & Description */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-white rounded flex items-center justify-center shadow overflow-hidden">
-                    <img 
-                      src="https://lh3.googleusercontent.com/d/1LmpjB5qAX8ev5_JRzYQDwjM58RxHl18X" 
-                      alt="Pancaran Logo" 
-                      className="w-full h-full object-contain p-0.5"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.src = "https://drive.google.com/uc?export=download&id=1LmpjB5qAX8ev5_JRzYQDwjM58RxHl18X";
-                      }}
-                    />
-                  </div>
-                  <div className="shrink-0">
+                  <div className="bg-white/95 px-2.5 py-1 rounded shadow-sm inline-flex items-center">
                     <img 
                       src="/platinum-logo.png" 
                       alt="PLATINUM Logo" 
-                      className="h-6 sm:h-7 object-contain bg-white px-2 py-0.5 rounded shadow-sm"
+                      className="h-6 sm:h-7 object-contain"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.src = "https://lh3.googleusercontent.com/d/1fY2UR9AXEb7IesE-Qd1K-Xu55wVQE7DY";
                       }}
