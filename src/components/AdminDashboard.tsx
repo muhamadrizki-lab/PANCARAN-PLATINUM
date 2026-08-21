@@ -423,29 +423,6 @@ export default function AdminDashboard({
             </div>
           </div>
         </div>
-
-        {/* Notice when Category is Empty */}
-        {totalAssets === 0 && (
-          <div className="p-3.5 bg-amber-50/90 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-center justify-between gap-3 animate-fade-in">
-            <div className="flex items-center gap-2.5">
-              <Info className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>
-                {t('Data aktual untuk kategori')} <strong>{selectedCategoryFilter}</strong> {t('saat ini masih kosong (0 unit lelang di database).')}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setDetailedCategoryModal(selectedCategoryFilter);
-                setDetailCategorySearch('');
-                setDetailCategoryStatus('all');
-              }}
-              className="text-amber-800 hover:text-amber-950 font-bold underline shrink-0 cursor-pointer"
-            >
-              {t('Lihat Analisa & Format Kategori')}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Stats Grid */}
