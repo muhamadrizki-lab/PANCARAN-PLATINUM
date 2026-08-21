@@ -1,0 +1,78 @@
+{
+  "id": "/",
+  "name": "PLATINUM - Pancaran Lelang Asset",
+  "short_name": "PancaranLelang",
+  "description": "Platform Lelang Asset Pancaran Logistics untuk Admin Internal dan Bidder Eksternal.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "window-controls-overlay",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Pancaran Lelang Desktop View"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Pancaran Lelang Mobile View"
+    }
+  ],
+  "categories": [
+    "business",
+    "utilities",
+    "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "Katalog Lelang",
+      "short_name": "Katalog",
+      "description": "Cek unit lelang aktif",
+      "url": "/#assets"
+    },
+    {
+      "name": "WhatsApp Marketing",
+      "short_name": "WA Blast",
+      "description": "Buka Marketing Hub",
+      "url": "/#whatsapp"
+    }
+  ]
+}

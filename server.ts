@@ -8,6 +8,15 @@ import QRCode from 'qrcode';
 import pino from 'pino';
 import fs from 'fs';
 
+// Process-level Error Guards to prevent container crashes on WebSocket network errors
+process.on('uncaughtException', (err: any) => {
+  console.warn('🛡️ [Process Guard] Caught uncaughtException:', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('🛡️ [Process Guard] Caught unhandledRejection:', reason?.message || reason);
+});
+
 // Safely extract Baileys functions across ESM / CJS bundlers
 function getBaileys() {
   const mod: any = BaileysModule;
@@ -33,14 +42,6 @@ function getBaileys() {
     delay
   };
 }
-
-// Global error handlers to prevent crash from Baileys unhandled 'error' event on websockets
-process.on('uncaughtException', (err) => {
-  console.error('Caught uncaughtException:', err);
-});
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Caught unhandledRejection:', reason);
-});
 
 // Fix for bundled CJS: import.meta.url is not available in CJS
 let __filename: string;
@@ -83,6 +84,14 @@ function getSession(email?: string): WASession {
       waStatus: 'disconnected',
       connectedPhone: ''
     };
+
+    // Auto-trigger connection if auth folder exists
+    const safeFolderName = 'wa_auth_' + key.replace(/[^a-z0-9]/g, '_');
+    const authDir = path.join(process.cwd(), safeFolderName);
+    if (fs.existsSync(authDir)) {
+      console.log(`[INIT] Auto-connecting WhatsApp session for ${key}...`);
+      connectToWhatsAppForUser(key);
+    }
   }
   return userSessions[key];
 }
@@ -100,6 +109,12 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
 
     const safeFolderName = 'wa_auth_' + emailKey.replace(/[^a-z0-9]/g, '_');
     const authDir = path.join(process.cwd(), safeFolderName);
+
+    // Guard: Prevent redundant connections if already connected/connecting
+    if (!forceFresh && session.sock && (session.waStatus === 'connected' || session.waStatus === 'connecting')) {
+      console.log(`[DEBUG] Reusing existing connection for ${emailKey}`);
+      return;
+    }
 
     if (forceFresh && fs.existsSync(authDir)) {
       try {
@@ -149,6 +164,24 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
       keepAliveIntervalMs: 25000,
     });
 
+    // Safely attach error listeners to underlying WebSocket / EventEmitters to prevent Node crashes
+    if (session.sock) {
+      if (session.sock.ws && typeof session.sock.ws.on === 'function') {
+        try {
+          session.sock.ws.on('error', (wsErr: any) => {
+            console.warn(`🛡️ [WS Guard] Handled Baileys WebSocket error for ${emailKey}:`, wsErr?.message || wsErr);
+          });
+        } catch (e) {}
+      }
+      if (session.sock.ev && typeof session.sock.ev.on === 'function') {
+        try {
+          session.sock.ev.on('error', (evErr: any) => {
+            console.warn(`🛡️ [EV Guard] Handled Baileys event error for ${emailKey}:`, evErr?.message || evErr);
+          });
+        } catch (e) {}
+      }
+    }
+
     session.sock.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
       console.log(`[DEBUG] WA connection.update for ${emailKey}:`, { connection, hasQr: !!qr });
@@ -174,14 +207,14 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
 
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason?.loggedOut;
-        console.log(`WA Connection closed for ${emailKey}, statusCode:`, statusCode, 'reconnecting:', shouldReconnect);
+        const isLoggedOut = statusCode === DisconnectReason?.loggedOut || statusCode === 401 || statusCode === 403;
+        console.log(`WA Connection closed for ${emailKey}, statusCode:`, statusCode, 'loggedOut:', isLoggedOut);
 
         session.waStatus = 'disconnected';
         session.qrCode = null;
         session.sock = null;
 
-        if (statusCode === DisconnectReason?.loggedOut) {
+        if (isLoggedOut) {
           if (fs.existsSync(authDir)) {
             try { fs.rmSync(authDir, { recursive: true, force: true }); } catch (e) {}
           }
@@ -191,7 +224,7 @@ async function connectToWhatsAppForUser(userEmail?: string, forceFresh = false) 
             if (session.waStatus !== 'connected') {
               connectToWhatsAppForUser(emailKey);
             }
-          }, 3000);
+          }, 5000);
         }
       } else if (connection === 'open') {
         console.log(`🎉 WhatsApp connection verified and opened for ${emailKey}!`);
@@ -293,8 +326,14 @@ async function startServer() {
   app.post('/api/wa/quick-connect', async (req, res) => {
     const { phone, email } = req.body || {};
     const userEmail = email || (req.query.email as string) || (req.headers['x-user-email'] as string);
-    const session = getSession(userEmail);
-    session.waStatus = 'connected';
+    const emailKey = normalizeEmail(userEmail);
+    const session = getSession(emailKey);
+    
+    // Ensure we trigger real connection logic
+    if (!session.sock || session.waStatus === 'disconnected') {
+      connectToWhatsAppForUser(emailKey);
+    }
+
     if (phone) {
       let clean = phone.replace(/[^0-9]/g, '');
       if (clean.startsWith('0')) clean = '62' + clean.slice(1);
@@ -302,8 +341,8 @@ async function startServer() {
     } else if (!session.connectedPhone) {
       session.connectedPhone = '+6281317469744';
     }
-    session.qrCode = null;
-    res.json({ success: true, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: normalizeEmail(userEmail) });
+    
+    res.json({ success: true, status: session.waStatus, connectedPhone: session.connectedPhone, userEmail: emailKey });
   });
 
   // Request Pairing Code using Baileys socket if available
@@ -450,6 +489,7 @@ async function startServer() {
       const { 
         recipients: rawRecipients, 
         message, 
+        imageUrl,
         apiKey = process.env.WA_API_KEY || 'YOUR_WA_GATEWAY_API_KEY', 
         gatewayUrl = process.env.WA_GATEWAY_URL || 'https://api.wagateway.com/v1/send-message',
         delayMs = 3000,
@@ -465,7 +505,6 @@ async function startServer() {
       if (typeof rawRecipients === 'string') {
         const lines = rawRecipients.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
         recipientList = lines.map((item, idx) => {
-          // If formatted as "Name:081234..." or "081234..."
           if (item.includes(':')) {
             const [n, p] = item.split(':');
             return { name: n.trim(), phone: p.trim() };
@@ -493,7 +532,6 @@ async function startServer() {
       let successCount = 0;
       let failedCount = 0;
 
-      // Async process sending each message with specified delay (e.g., 3000ms delay to prevent anti-spam)
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
       for (let i = 0; i < recipientList.length; i++) {
@@ -510,15 +548,23 @@ async function startServer() {
         if (session.sock && session.waStatus === 'connected' && typeof session.sock.sendMessage === 'function') {
           try {
             const jid = cleanPhone.includes('@s.whatsapp.net') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
-            await session.sock.sendMessage(jid, { text: personalizedMessage });
+            if (imageUrl) {
+              await session.sock.sendMessage(jid, { 
+                image: { url: imageUrl }, 
+                caption: personalizedMessage 
+              });
+            } else {
+              await session.sock.sendMessage(jid, { text: personalizedMessage });
+            }
             sentSuccess = true;
           } catch (err: any) {
+            console.error(`Baileys send error for ${cleanPhone}:`, err);
             errMessage = err.message || 'Baileys send error';
           }
         }
 
         // 2. Fallback or external REST Gateway call
-        if (!sentSuccess && gatewayUrl && !gatewayUrl.includes('placeholder')) {
+        if (!sentSuccess && gatewayUrl && !gatewayUrl.includes('placeholder') && !gatewayUrl.includes('wagateway.com')) {
           try {
             const fetchRes = await fetch(gatewayUrl, {
               method: 'POST',
@@ -530,6 +576,7 @@ async function startServer() {
               body: JSON.stringify({
                 phone: cleanPhone,
                 message: personalizedMessage,
+                imageUrl,
                 apiKey
               })
             });
@@ -544,20 +591,14 @@ async function startServer() {
           }
         }
 
-        // 3. Fallback mock success if offline/development
-        if (!sentSuccess && (!gatewayUrl || gatewayUrl.includes('wagateway.com'))) {
-          sentSuccess = true; // Simulated success for Vercel/Static test environment
-        }
-
         if (sentSuccess) {
           successCount++;
           results.push({ phone: cleanPhone, name: item.name, status: 'sent' });
         } else {
           failedCount++;
-          results.push({ phone: cleanPhone, name: item.name, status: 'failed', error: errMessage });
+          results.push({ phone: cleanPhone, name: item.name, status: 'failed', error: errMessage || 'Disconnected' });
         }
 
-        // Add async delay (e.g. 3000ms) between sends except after the last item
         if (i < recipientList.length - 1) {
           await delay(Number(delayMs) || 3000);
         }
@@ -602,7 +643,7 @@ async function startServer() {
       Gunakan bahasa Indonesia yang sopan. Gunakan placeholder {name} di awal untuk menyapa pelanggan. Fokus pada "Penawaran Terbatas" dan "Harga Menarik". Sertakan ajakan untuk cek di website Pancaran Lelang. Jangan gunakan emoji berlebihan.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-3.7-flash',
         contents: prompt,
       });
 

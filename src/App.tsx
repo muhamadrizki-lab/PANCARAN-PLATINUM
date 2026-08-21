@@ -110,6 +110,7 @@ export default function App() {
   const [role, setRole] = useState<'external' | 'internal'>('external');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [loggedInAdminEmail, setLoggedInAdminEmail] = useState('');
+  const [loggedInAdminName, setLoggedInAdminName] = useState('');
   
   // External registered user states
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
@@ -745,6 +746,8 @@ export default function App() {
       } else {
         setIsAdminLoggedIn(true);
         setLoggedInAdminEmail(storedSession);
+        const storedAdminName = localStorage.getItem('pancaran_session_admin_name') || '';
+        setLoggedInAdminName(storedAdminName);
       }
       
       // Auto-show popup AFTER login if an active popup exists
@@ -1233,10 +1236,13 @@ export default function App() {
   };
 
   // 4. Session & Authentication handlers
-  const handleLoginSuccess = (email: string) => {
+  const handleLoginSuccess = (email: string, name?: string) => {
     setIsAdminLoggedIn(true);
     setLoggedInAdminEmail(email);
+    const adminName = name || (email.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '));
+    setLoggedInAdminName(adminName);
     localStorage.setItem('pancaran_session_email', email);
+    localStorage.setItem('pancaran_session_admin_name', adminName);
     localStorage.setItem('pancaran_session_type', 'admin');
     setRole('internal'); // Switch to internal dashboard on login
     setAdminTab('dashboard');
@@ -1488,9 +1494,14 @@ export default function App() {
                 />
               </div>
               <div className="flex flex-col shrink-0">
-                <span className="text-slate-900 font-bold text-lg tracking-tight">
-                  <span className="bg-gradient-to-r from-blue-900 via-blue-700 to-slate-900 bg-clip-text text-transparent font-black">PLATINUM</span>
-                </span>
+                <img 
+                  src="/platinum-logo.png" 
+                  alt="PLATINUM Logo" 
+                  className="h-6 sm:h-7 md:h-8 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://lh3.googleusercontent.com/d/1fY2UR9AXEb7IesE-Qd1K-Xu55wVQE7DY";
+                  }}
+                />
               </div>
 
               {/* Top Filter Dropdowns (Right next to PLATINUM text - visible only when logged in on external catalog tab) */}
@@ -2683,9 +2694,16 @@ export default function App() {
                       }}
                     />
                   </div>
-                  <span className="text-white font-bold text-lg tracking-tight">
-                    <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent font-extrabold drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">PLATINUM</span>
-                  </span>
+                  <div className="shrink-0">
+                    <img 
+                      src="/platinum-logo.png" 
+                      alt="PLATINUM Logo" 
+                      className="h-6 sm:h-7 object-contain bg-white px-2 py-0.5 rounded shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://lh3.googleusercontent.com/d/1fY2UR9AXEb7IesE-Qd1K-Xu55wVQE7DY";
+                      }}
+                    />
+                  </div>
                 </div>
                 <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
                   {t('Portal resmi likuidasi armada aktif dan alat berat dari ekosistem operasional Pancaran Group. Transparan, tepercaya, dan terintegrasi.')}

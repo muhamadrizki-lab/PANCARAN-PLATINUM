@@ -806,6 +806,7 @@ export default function CatalogView({
               <span className="flex items-center gap-2">
                 <span className="bg-gradient-to-r from-slate-100 via-slate-300 to-slate-100 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(255,255,255,0.55)] font-black">PLATINUM</span>
               </span>
+
               <span className="text-xs md:text-sm font-semibold text-slate-300 tracking-wide mt-0.5 opacity-90 leading-normal max-w-lg block">
                 ( Pancaran Lelang Angkutan Truk, Industri, & Niaga Utama Modern )
               </span>

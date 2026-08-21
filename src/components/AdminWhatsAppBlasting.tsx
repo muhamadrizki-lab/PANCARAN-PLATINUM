@@ -118,23 +118,6 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successInfo, setSuccessInfo] = useState<{ count: number; preview: string; time: string; hasImage: boolean } | null>(null);
 
-  // Custom Users State
-  const [customUsers, setCustomUsers] = useState<User[]>(() => {
-    try {
-      const saved = localStorage.getItem('pancaran_wa_custom_users');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('pancaran_wa_custom_users', JSON.stringify(customUsers));
-  }, [customUsers]);
-
-  const [showAddCustomUserModal, setShowAddCustomUserModal] = useState(false);
-  const [customUserName, setCustomUserName] = useState('');
-  const [customUserPhone, setCustomUserPhone] = useState('');
-
   // Bulk Paste & REST WA Gateway Settings State
   const [recipientInputMode, setRecipientInputMode] = useState<'list' | 'paste'>('paste');
   const [pastedNumbers, setPastedNumbers] = useState<string>('081234567890, 081398765432, 081299887766');
@@ -495,9 +478,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     );
   };
 
-  const allUsers = [...registeredUsers, ...customUsers];
-
-  const filteredUsers = allUsers.filter(u => 
+  const filteredUsers = registeredUsers.filter(u => 
     u.phone && (
       u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -582,7 +563,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
       }
     }
     const recipients = targetUsers.map(email => {
-      const user = allUsers.find(u => u.email === email);
+      const user = registeredUsers.find(u => u.email === email);
       return { phone: user?.phone || '', name: user?.name || '' };
     }).filter(r => r.phone);
 
@@ -622,6 +603,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
 
     const delayMs = sendDelaySeconds * 1000;
     let sentSuccessCount = 0;
+    let failedCount = 0;
 
     // Sequential loop with live UI progress status (e.g. 5/100 terkirim) and anti-spam delay
     for (let i = 0; i < recipients.length; i++) {
@@ -648,11 +630,12 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
         if (res.ok) {
           sentSuccessCount++;
         } else {
-          sentSuccessCount++; // Count as processed
+          failedCount++;
+          console.error(`Failed to send to ${rec.phone}:`, res.statusText);
         }
       } catch (e) {
-        console.warn('API send-blast warning, proceeding with progress tracking:', e);
-        sentSuccessCount++;
+        console.error(`Error sending to ${rec.phone}:`, e);
+        failedCount++;
       }
 
       // Wait anti-spam delay (3 seconds default) before next recipient except after last
@@ -665,7 +648,7 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
     setCurrentSendingTarget('');
 
     setSuccessInfo({
-      count: recipients.length,
+      count: sentSuccessCount,
       preview: messageContent.slice(0, 120) + (messageContent.length > 120 ? '...' : ''),
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       hasImage: Boolean(selectedImageUrl)
@@ -676,8 +659,8 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
       id: Date.now().toString(),
       date: new Date().toLocaleString('id-ID'),
       total: recipients.length,
-      success: recipients.length,
-      failed: 0,
+      success: sentSuccessCount,
+      failed: failedCount,
       preview: messageContent.slice(0, 50) + '...',
       hasImage: Boolean(selectedImageUrl)
     };
@@ -778,31 +761,6 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
       }
       return <span key={idx}>{part}</span>;
     });
-  };
-
-  const handleAddCustomUser = () => {
-    if (!customUserName.trim() || !customUserPhone.trim()) {
-      alert("Nama dan Nomor Handphone wajib diisi");
-      return;
-    }
-    const newUser: User = {
-      id: `custom-${Date.now()}`,
-      name: customUserName,
-      phone: customUserPhone.replace(/[^0-9+]/g, ''),
-      email: `custom_${Date.now()}@pancaran.local`,
-      role: 'user',
-      status: 'approved',
-      ktpUrl: '',
-      npwpUrl: '',
-      photoUrl: '',
-      createdAt: new Date().toISOString()
-    };
-    setCustomUsers(prev => [newUser, ...prev]);
-    setSelectedUsers(prev => [newUser.email, ...prev]);
-    setCustomUserName('');
-    setCustomUserPhone('');
-    setShowAddCustomUserModal(false);
-    showToast(`✅ Berhasil menambahkan kontak manual: ${newUser.name}`);
   };
 
   return (
@@ -1620,18 +1578,9 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
               >
                 {selectedUsers.length === filteredUsers.length ? 'Batalkan Semua' : 'Pilih Semua'}
               </button>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                  {filteredUsers.length} Kontak Memiliki HP
-                </span>
-                <button
-                  onClick={() => setShowAddCustomUserModal(true)}
-                  className="bg-slate-900 text-white hover:bg-slate-800 text-[10px] font-bold px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
-                  title="Tambah Kontak Manual"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Kontak
-                </button>
-              </div>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                {filteredUsers.length} Kontak Memiliki HP
+              </span>
             </div>
           </div>
 
@@ -1674,24 +1623,11 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
 
-                <div className="flex items-center gap-1 ml-1">
-                  {user.id.startsWith('custom-') && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCustomUsers(prev => prev.filter(cu => cu.id !== user.id));
-                        setSelectedUsers(prev => prev.filter(em => em !== user.email));
-                      }}
-                      className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                      title="Hapus Kontak Manual"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  {selectedUsers.includes(user.email) && (
+                {selectedUsers.includes(user.email) && (
+                  <div className="ml-1">
                     <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
             
@@ -1704,64 +1640,6 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
           </div>
         </div>
       </div>
-
-      {/* MODAL: TAMBAH KONTAK MANUAL */}
-      {showAddCustomUserModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-slate-100 space-y-5 relative">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-emerald-600" />
-                Tambah Kontak Manual
-              </h3>
-              <button 
-                onClick={() => setShowAddCustomUserModal(false)}
-                className="p-2 bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                <X className="w-4 h-4 font-bold" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="font-bold text-xs block mb-1">Nama Penerima</label>
-                <input 
-                  type="text" 
-                  value={customUserName}
-                  onChange={(e) => setCustomUserName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-800"
-                  placeholder="Contoh: Pak Budi"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-xs block mb-1">Nomor WhatsApp</label>
-                <input 
-                  type="text" 
-                  value={customUserPhone}
-                  onChange={(e) => setCustomUserPhone(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-800"
-                  placeholder="Contoh: 081234567890"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button 
-                onClick={() => setShowAddCustomUserModal(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleAddCustomUser}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all"
-              >
-                Tambah Kontak
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL: TAMBAH TEMPLATE PESAN BARU */}
       {showAddTemplateModal && (
