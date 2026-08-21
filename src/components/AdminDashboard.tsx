@@ -339,21 +339,6 @@ export default function AdminDashboard({
               </button>
             )}
           </div>
-          
-          <button
-            type="button"
-            onClick={() => {
-              setDetailedCategoryModal(selectedCategoryFilter);
-              setDetailCategorySearch('');
-              setDetailCategoryStatus('all');
-            }}
-            className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-blue-700 border border-slate-200/90 hover:border-blue-300 rounded-xl text-xs font-bold shadow-2xs hover:shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer group ml-auto"
-            title={t('Buka Analisa Detail Kategori')}
-          >
-            <BarChart3 className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-            <span>{t('Buka Detail Dashboard Kategori')}</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-blue-400" />
-          </button>
         </div>
 
         {/* 4 Category Cards matching user screenshot */}
