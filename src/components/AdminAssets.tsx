@@ -3003,18 +3003,6 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                   <span>{t('A. Spesifikasi Lelang Ban (Tyre)')}</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                  {/* Merek Ban */}
-                                  <div className="space-y-1">
-                                    <label className="font-bold text-slate-700 uppercase">{t('Merek Ban')}</label>
-                                    <input
-                                      type="text"
-                                      placeholder={t('Contoh: Bridgestone, Michelin, Giti, GT Radial')}
-                                      value={formData.tireBrand}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, tireBrand: e.target.value }))}
-                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
-                                    />
-                                  </div>
-
                                   {/* Ukuran Ban */}
                                   <div className="space-y-1">
                                     <label className="font-bold text-slate-700 uppercase">{t('Ukuran Ban')}</label>
@@ -3043,7 +3031,7 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                   </div>
 
                                   {/* Estimasi Ketebalan Kembang (%) */}
-                                  <div className="space-y-1">
+                                  <div className="space-y-1 md:col-span-2">
                                     <label className="font-bold text-slate-700 uppercase">{t('Estimasi Ketebalan Kembang (%)')}</label>
                                     <input
                                       type="text"
@@ -3051,32 +3039,6 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                       value={formData.tireTreadDepth}
                                       onChange={(e) => setFormData(prev => ({ ...prev, tireTreadDepth: e.target.value }))}
                                       className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
-                                    />
-                                  </div>
-
-                                  {/* Kondisi Ban */}
-                                  <div className="space-y-1">
-                                    <label className="font-bold text-slate-700 uppercase">{t('Kondisi Ban')}</label>
-                                    <select
-                                      value={formData.tireCondition || 'Masih Layak Pakai (Tubeless/Pakai Ban Dalam)'}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, tireCondition: e.target.value }))}
-                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
-                                    >
-                                      <option value="Masih Layak Pakai (Tubeless/Pakai Ban Dalam)">{t('Masih Layak Pakai (Tubeless/Pakai Ban Dalam)')}</option>
-                                      <option value="Perlu Vulkanisir">{t('Perlu Vulkanisir')}</option>
-                                      <option value="Rusak / Avaf (Hanya untuk Olahan Karet)">{t('Rusak / Avaf (Hanya untuk Olahan Karet)')}</option>
-                                    </select>
-                                  </div>
-
-                                  {/* Tahun Pembuatan (DOT Code) */}
-                                  <div className="space-y-1">
-                                    <label className="font-bold text-slate-700 uppercase">{t('Tahun Pembuatan (DOT Code)')}</label>
-                                    <input
-                                      type="text"
-                                      placeholder={t('Contoh: 2422 / 2022')}
-                                      value={formData.tireDotCode}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, tireDotCode: e.target.value }))}
-                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm font-mono"
                                     />
                                   </div>
                                 </div>
@@ -3327,31 +3289,33 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                         )}
 
                         {/* Condition */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-slate-600 uppercase">{t('Kondisi Fisik Unit *')}</label>
-                            <button
-                              type="button"
-                              onClick={() => setIsConditionMasterOpen(true)}
-                              className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold transition"
-                              title={t('Kelola Master Kondisi')}
+                        {!isUsedPart && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-slate-600 uppercase">{t('Kondisi Fisik Unit *')}</label>
+                              <button
+                                type="button"
+                                onClick={() => setIsConditionMasterOpen(true)}
+                                className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold transition"
+                                title={t('Kelola Master Kondisi')}
+                              >
+                                <Settings className="w-3.5 h-3.5 animate-spin-hover" />
+                              </button>
+                            </div>
+                            <select
+                              value={formData.condition}
+                              onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
+                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             >
-                              <Settings className="w-3.5 h-3.5 animate-spin-hover" />
-                            </button>
+                              {displayConditionsList.map(condName => (
+                                <option key={condName} value={condName}>{condName}</option>
+                              ))}
+                              {formData.condition && !displayConditionsList.includes(formData.condition) && (
+                                <option value={formData.condition}>{formData.condition}</option>
+                              )}
+                            </select>
                           </div>
-                          <select
-                            value={formData.condition}
-                            onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
-                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                          >
-                            {displayConditionsList.map(condName => (
-                              <option key={condName} value={condName}>{condName}</option>
-                            ))}
-                            {formData.condition && !displayConditionsList.includes(formData.condition) && (
-                              <option value={formData.condition}>{formData.condition}</option>
-                            )}
-                          </select>
-                        </div>
+                        )}
 
                         {/* Starting Price */}
                         <div className="space-y-1.5">

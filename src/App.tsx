@@ -2257,16 +2257,13 @@ export default function App() {
                   )}
                 </button>
                 <button
-                  type="button"
-                  disabled
-                  className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-400 bg-slate-100/70 cursor-not-allowed select-none flex items-center justify-between opacity-60"
-                  title={t('Fitur WA Blasting sedang dinonaktifkan')}
+                  onClick={() => { setAdminTab('whatsapp'); setIsMobileMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
+                    adminTab === 'whatsapp' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'
+                  }`}
                 >
-                  <span className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-slate-400" />
-                    <span>WA Blasting</span>
-                  </span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded uppercase">Off</span>
+                  <Phone className="w-4 h-4" />
+                  <span>WA Blasting</span>
                 </button>
                 <button
                   onClick={() => { setAdminTab('reports'); setIsMobileMenuOpen(false); }}
@@ -2420,16 +2417,15 @@ export default function App() {
                   </button>
 
                   <button
-                    type="button"
-                    disabled
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold text-left transition-all bg-slate-100/70 text-slate-400 cursor-not-allowed opacity-60 select-none"
-                    title={t('Fitur WA Blasting sedang dinonaktifkan')}
+                    onClick={() => setAdminTab('whatsapp')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
+                      adminTab === 'whatsapp'
+                        ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 shrink-0 text-slate-400" />
-                      <span>WA Blasting</span>
-                    </div>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded uppercase">Off</span>
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <span>WA Blasting</span>
                   </button>
 
                   <button
