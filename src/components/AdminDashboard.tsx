@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Asset, Bid, AdminUser, RegisteredUser } from '../types';
+import { Asset, Bid, AdminUser, RegisteredUser, normalizeCategory } from '../types';
 import AssetTypeGuide from './AssetTypeGuide';
 import { 
   Truck, 
@@ -14,7 +14,22 @@ import {
   Filter,
   Shield,
   Globe,
-  FileText
+  FileText,
+  Layers,
+  Wrench,
+  Building2,
+  Package,
+  Info,
+  BarChart3,
+  PieChart,
+  ArrowUpRight,
+  ExternalLink,
+  Eye,
+  X,
+  Printer,
+  Sparkles,
+  Tag,
+  Sliders
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { OfficialWinnerLetterModal } from './OfficialWinnerLetterModal';
@@ -33,6 +48,10 @@ export default function AdminDashboard({
   registeredUsers = []
 }: AdminDashboardProps) {
   const { t, language } = useLanguage();
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | 'Vehicle' | 'Used part' | 'Property' | 'Miscellaneous'>('Vehicle');
+  const [detailedCategoryModal, setDetailedCategoryModal] = useState<'all' | 'Vehicle' | 'Used part' | 'Property' | 'Miscellaneous' | null>(null);
+  const [detailCategorySearch, setDetailCategorySearch] = useState('');
+  const [detailCategoryStatus, setDetailCategoryStatus] = useState<'all' | 'Sold' | 'Open' | 'Lunas' | 'Belum Lunas'>('all');
   const [surveyFilter, setSurveyFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -49,11 +68,25 @@ export default function AdminDashboard({
     return () => clearInterval(timer);
   }, []);
 
-  // 1. Metric calculations
-  const totalAssets = assets.length;
-  const soldAssets = assets.filter(a => a.status === 'Sold');
+  // Category counts from full asset database
+  const totalAllCount = assets.length;
+  const vehicleCount = assets.filter(a => normalizeCategory(a.category) === 'Vehicle').length;
+  const usedPartCount = assets.filter(a => normalizeCategory(a.category) === 'Used part').length;
+  const propertyCount = assets.filter(a => normalizeCategory(a.category) === 'Property').length;
+  const miscCount = assets.filter(a => normalizeCategory(a.category) === 'Miscellaneous').length;
+
+  // Filter assets dynamically based on selected category
+  const displayedAssets = assets.filter(asset => {
+    if (selectedCategoryFilter === 'all') return true;
+    const norm = normalizeCategory(asset.category);
+    return norm === selectedCategoryFilter;
+  });
+
+  // 1. Metric calculations based on filtered displayedAssets
+  const totalAssets = displayedAssets.length;
+  const soldAssets = displayedAssets.filter(a => a.status === 'Sold');
   const totalSold = soldAssets.length;
-  const totalOpen = assets.filter(a => a.status === 'Open').length;
+  const totalOpen = displayedAssets.filter(a => a.status === 'Open').length;
 
   const totalOmzet = soldAssets.reduce((sum, asset) => {
     const highestVal = asset.bids && asset.bids.length > 0 ? Math.max(...asset.bids.map(b => Number(b.price) || 0)) : (Number(asset.startingPrice) || 0);
@@ -64,34 +97,35 @@ export default function AdminDashboard({
   const belumLunasCount = soldAssets.filter(a => a.paymentStatus !== 'Lunas').length;
 
   // Highest price calculation (from starting prices or bids)
-  const maxPrice = assets.reduce((max, asset) => {
+  const maxPrice = displayedAssets.reduce((max, asset) => {
     const validBids = (asset.bids || []).map(b => Number(b.price) || 0);
     const highestVal = Math.max(Number(asset.startingPrice) || 0, Number(asset.highestBid) || 0, ...validBids, 0);
     return highestVal > max ? highestVal : max;
   }, 0);
 
-  // Total unique bidders based on emails/names across all bids
+  // Total unique bidders based on emails/names across filtered bids
   const uniqueBidders = new Set<string>();
-  assets.forEach(asset => {
-    asset.bids.forEach(bid => {
+  displayedAssets.forEach(asset => {
+    (asset.bids || []).forEach(bid => {
       uniqueBidders.add(bid.email.toLowerCase());
     });
   });
   const totalBidders = uniqueBidders.size;
 
-  // 2. Total assets per brand calculations
+  // 2. Total assets per brand calculations for displayed category
   const brandCounts: { [key: string]: number } = {};
-  assets.forEach(asset => {
-    brandCounts[asset.brand] = (brandCounts[asset.brand] || 0) + 1;
+  displayedAssets.forEach(asset => {
+    const brandKey = asset.brand || 'Lainnya';
+    brandCounts[brandKey] = (brandCounts[brandKey] || 0) + 1;
   });
 
   const brandData = Object.entries(brandCounts).map(([brand, count]) => ({
     brand,
     count,
-    percentage: Math.round((count / totalAssets) * 100)
+    percentage: totalAssets > 0 ? Math.round((count / totalAssets) * 100) : 0
   })).sort((a, b) => b.count - a.count);
 
-  // 3. Extract all scheduled surveys
+  // 3. Extract all scheduled surveys for displayed category
   interface SurveyItem {
     assetId: string;
     assetName: string;
@@ -104,8 +138,8 @@ export default function AdminDashboard({
   }
 
   const allSurveys: SurveyItem[] = [];
-  assets.forEach(asset => {
-    asset.bids.forEach(bid => {
+  displayedAssets.forEach(asset => {
+    (asset.bids || []).forEach(bid => {
       if (bid.scheduleSurveyDate) {
         allSurveys.push({
           assetId: asset.id,
@@ -283,6 +317,170 @@ export default function AdminDashboard({
             {currentTime.toLocaleTimeString(language === 'id' ? 'id-ID' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} WIB
           </p>
         </div>
+      </div>
+
+      {/* Category Filter Action Grid (Vehicle, Used Part, Property, Miscellaneous) */}
+      <div className="space-y-3.5" id="category-filter-dashboard">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <span>{t('Kategori Aset Lelang')}</span>
+              <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 rounded-full lowercase tracking-normal">
+                {displayedAssets.length} {t('unit aktif')}
+              </span>
+            </h2>
+            {selectedCategoryFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryFilter('all')}
+                className="text-[11px] text-slate-500 hover:text-blue-600 font-medium underline cursor-pointer"
+              >
+                {t('Tampilkan Semua')} ({totalAllCount})
+              </button>
+            )}
+          </div>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setDetailedCategoryModal(selectedCategoryFilter);
+              setDetailCategorySearch('');
+              setDetailCategoryStatus('all');
+            }}
+            className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-blue-700 border border-slate-200/90 hover:border-blue-300 rounded-xl text-xs font-bold shadow-2xs hover:shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer group ml-auto"
+            title={t('Buka Analisa Detail Kategori')}
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+            <span>{t('Buka Detail Dashboard Kategori')}</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-blue-400" />
+          </button>
+        </div>
+
+        {/* 4 Category Cards matching user screenshot */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* 1. Vehicle */}
+          <div
+            onClick={() => setSelectedCategoryFilter(selectedCategoryFilter === 'Vehicle' ? 'all' : 'Vehicle')}
+            className={`rounded-2xl p-4 sm:p-5 transition-all cursor-pointer select-none relative flex flex-col justify-between ${
+              selectedCategoryFilter === 'Vehicle'
+                ? 'bg-white border-2 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
+                : 'bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                selectedCategoryFilter === 'Vehicle' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+              }`}>
+                <Truck className="w-5 h-5" />
+              </div>
+              {selectedCategoryFilter === 'Vehicle' && (
+                <span className="w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100 shrink-0"></span>
+              )}
+            </div>
+            <div className="mt-3.5">
+              <h3 className="text-base font-bold text-slate-900 leading-snug">Vehicle</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">{t('Kendaraan & Armada')}</p>
+            </div>
+          </div>
+
+          {/* 2. Used Part */}
+          <div
+            onClick={() => setSelectedCategoryFilter(selectedCategoryFilter === 'Used part' ? 'all' : 'Used part')}
+            className={`rounded-2xl p-4 sm:p-5 transition-all cursor-pointer select-none relative flex flex-col justify-between ${
+              selectedCategoryFilter === 'Used part'
+                ? 'bg-white border-2 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
+                : 'bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                selectedCategoryFilter === 'Used part' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+              }`}>
+                <Wrench className="w-5 h-5" />
+              </div>
+              {selectedCategoryFilter === 'Used part' && (
+                <span className="w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100 shrink-0"></span>
+              )}
+            </div>
+            <div className="mt-3.5">
+              <h3 className="text-base font-bold text-slate-900 leading-snug">Used Part</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">{t('Suku Cadang / Sparepart')}</p>
+            </div>
+          </div>
+
+          {/* 3. Property */}
+          <div
+            onClick={() => setSelectedCategoryFilter(selectedCategoryFilter === 'Property' ? 'all' : 'Property')}
+            className={`rounded-2xl p-4 sm:p-5 transition-all cursor-pointer select-none relative flex flex-col justify-between ${
+              selectedCategoryFilter === 'Property'
+                ? 'bg-white border-2 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
+                : 'bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                selectedCategoryFilter === 'Property' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+              }`}>
+                <Building2 className="w-5 h-5" />
+              </div>
+              {selectedCategoryFilter === 'Property' && (
+                <span className="w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100 shrink-0"></span>
+              )}
+            </div>
+            <div className="mt-3.5">
+              <h3 className="text-base font-bold text-slate-900 leading-snug">Property</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">{t('Tanah & Properti')}</p>
+            </div>
+          </div>
+
+          {/* 4. Miscellaneous */}
+          <div
+            onClick={() => setSelectedCategoryFilter(selectedCategoryFilter === 'Miscellaneous' ? 'all' : 'Miscellaneous')}
+            className={`rounded-2xl p-4 sm:p-5 transition-all cursor-pointer select-none relative flex flex-col justify-between ${
+              selectedCategoryFilter === 'Miscellaneous'
+                ? 'bg-white border-2 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
+                : 'bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                selectedCategoryFilter === 'Miscellaneous' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+              }`}>
+                <Package className="w-5 h-5" />
+              </div>
+              {selectedCategoryFilter === 'Miscellaneous' && (
+                <span className="w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100 shrink-0"></span>
+              )}
+            </div>
+            <div className="mt-3.5">
+              <h3 className="text-base font-bold text-slate-900 leading-snug">Miscellaneous</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">{t('Aset Lain-lain / Peralatan')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Notice when Category is Empty */}
+        {totalAssets === 0 && (
+          <div className="p-3.5 bg-amber-50/90 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-2.5">
+              <Info className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                {t('Data aktual untuk kategori')} <strong>{selectedCategoryFilter}</strong> {t('saat ini masih kosong (0 unit lelang di database).')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDetailedCategoryModal(selectedCategoryFilter);
+                setDetailCategorySearch('');
+                setDetailCategoryStatus('all');
+              }}
+              className="text-amber-800 hover:text-amber-950 font-bold underline shrink-0 cursor-pointer"
+            >
+              {t('Lihat Analisa & Format Kategori')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -574,15 +772,39 @@ export default function AdminDashboard({
 
           {/* Search bar & Date filter inside surveys */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-            <div className="relative md:col-span-7">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <input
-                type="text"
-                placeholder={t('Cari nama bidder, brand, atau armada...')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              />
+            <div className="md:col-span-7 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t('Cari nama bidder, brand, atau armada...')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 cursor-pointer"
+                    title={t('Hapus')}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-extrabold rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                onClick={() => {
+                  const inputEl = document.querySelector('input[placeholder="Cari nama bidder, brand, atau armada..."]') as HTMLInputElement;
+                  if (inputEl) inputEl.focus();
+                }}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>{t('Cari')}</span>
+              </button>
             </div>
             <div className="relative md:col-span-5 flex items-center gap-2">
               <div className="relative flex-1">
@@ -664,7 +886,7 @@ export default function AdminDashboard({
         </div>
       </div>
 
-      <AssetTypeGuide assets={assets} />
+      <AssetTypeGuide assets={displayedAssets} />
 
       {/* Detail Survey Modal - Large & Focused */}
       {selectedSurvey && (
@@ -765,7 +987,7 @@ export default function AdminDashboard({
 
       {/* Interactive Metric Detail Popups */}
       {activeMetricModal && (() => {
-        // Prepare bidders data
+        // Prepare bidders data from displayedAssets
         const uniqueBiddersMap: { 
           [email: string]: { 
             name: string; 
@@ -777,7 +999,7 @@ export default function AdminDashboard({
           } 
         } = {};
 
-        assets.forEach(asset => {
+        displayedAssets.forEach(asset => {
           (asset.bids || []).forEach(bid => {
             const emailLower = bid.email.toLowerCase();
             if (!uniqueBiddersMap[emailLower]) {
@@ -821,7 +1043,7 @@ export default function AdminDashboard({
           modalTitle = t('Daftar Seluruh Aset');
           modalColorClass = 'bg-blue-600';
           modalIcon = <Truck className="w-5 h-5 text-blue-100" />;
-          contentList = assets.filter(asset => 
+          contentList = displayedAssets.filter(asset => 
             asset.name.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
             asset.brand.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
             asset.category.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
@@ -831,7 +1053,7 @@ export default function AdminDashboard({
           modalTitle = t('Daftar Aset Terjual');
           modalColorClass = 'bg-emerald-600';
           modalIcon = <CheckCircle className="w-5 h-5 text-emerald-100" />;
-          contentList = assets.filter(asset => asset.status === 'Sold').filter(asset => 
+          contentList = displayedAssets.filter(asset => asset.status === 'Sold').filter(asset => 
             asset.name.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
             asset.brand.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
             asset.category.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
@@ -841,7 +1063,37 @@ export default function AdminDashboard({
           modalTitle = t('Daftar Aset Aktif');
           modalColorClass = 'bg-blue-500';
           modalIcon = <Clock className="w-5 h-5 text-blue-100" />;
-          contentList = assets.filter(asset => asset.status === 'Open').filter(asset => 
+          contentList = displayedAssets.filter(asset => asset.status === 'Open').filter(asset => 
+            asset.name.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            asset.brand.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            asset.category.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            (asset.plateNumber || '').toLowerCase().includes(metricSearchQuery.toLowerCase())
+          );
+        } else if (activeMetricModal === 'omzet') {
+          modalTitle = t('Rincian Omzet Penjualan');
+          modalColorClass = 'bg-indigo-600';
+          modalIcon = <DollarSign className="w-5 h-5 text-indigo-100" />;
+          contentList = displayedAssets.filter(asset => asset.status === 'Sold').filter(asset => 
+            asset.name.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            asset.brand.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            asset.category.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            (asset.plateNumber || '').toLowerCase().includes(metricSearchQuery.toLowerCase())
+          );
+        } else if (activeMetricModal === 'lunas') {
+          modalTitle = t('Daftar Unit Terjual (Lunas)');
+          modalColorClass = 'bg-emerald-600';
+          modalIcon = <CheckCircle className="w-5 h-5 text-emerald-100" />;
+          contentList = displayedAssets.filter(asset => asset.status === 'Sold' && asset.paymentStatus === 'Lunas').filter(asset => 
+            asset.name.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            asset.brand.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            asset.category.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
+            (asset.plateNumber || '').toLowerCase().includes(metricSearchQuery.toLowerCase())
+          );
+        } else if (activeMetricModal === 'belum_lunas') {
+          modalTitle = t('Daftar Unit Terjual (Belum Lunas)');
+          modalColorClass = 'bg-amber-600';
+          modalIcon = <Clock className="w-5 h-5 text-amber-100" />;
+          contentList = displayedAssets.filter(asset => asset.status === 'Sold' && asset.paymentStatus !== 'Lunas').filter(asset => 
             asset.name.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
             asset.brand.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
             asset.category.toLowerCase().includes(metricSearchQuery.toLowerCase()) ||
@@ -1158,6 +1410,581 @@ export default function AdminDashboard({
           formatIDR={formatIDR}
         />
       )}
+
+      {/* Comprehensive Category Detailed Analytics Dashboard Modal */}
+      {detailedCategoryModal && (() => {
+        const activeCat = detailedCategoryModal;
+        const catTitle = activeCat === 'all' ? t('Semua Kategori Aset Lelang') :
+                         activeCat === 'Vehicle' ? 'Kategori: Vehicle (Armada Komersial)' :
+                         activeCat === 'Used part' ? 'Kategori: Used Part (Suku Cadang & Scrap)' :
+                         activeCat === 'Property' ? 'Kategori: Property (Lahan & Bangunan Gudang)' :
+                         'Kategori: Miscellaneous (Aset Lain-lain & Peralatan)';
+        
+        const catDescription = activeCat === 'all' ? t('Konsolidasi data analitik seluruh armada, suku cadang, dan properti lelang') :
+                               activeCat === 'Vehicle' ? t('Data performa lelang armada truk, head trailer, wingbox, tronton, dan kendaraan komersial') :
+                               activeCat === 'Used part' ? t('Data analitik lelang komponen bekas: ban luar/dalam, aki basah/kering, besi scrap, dan oli pelumas') :
+                               activeCat === 'Property' ? t('Data analitik lelang properti komersial: lahan industri, pergudangan, dan bangunan operasional') :
+                               t('Data analitik lelang inventaris logistik, genset, forklift, perlengkapan bengkel, dan peralatan lainnya');
+
+        const catIcon = activeCat === 'all' ? <Layers className="w-6 h-6 text-white" /> :
+                        activeCat === 'Vehicle' ? <Truck className="w-6 h-6 text-white" /> :
+                        activeCat === 'Used part' ? <Wrench className="w-6 h-6 text-white" /> :
+                        activeCat === 'Property' ? <Building2 className="w-6 h-6 text-white" /> :
+                        <Package className="w-6 h-6 text-white" />;
+
+        const catThemeBg = activeCat === 'all' ? 'from-slate-900 via-blue-900 to-indigo-900' :
+                           activeCat === 'Vehicle' ? 'from-blue-900 via-blue-800 to-indigo-950' :
+                           activeCat === 'Used part' ? 'from-amber-900 via-amber-800 to-slate-950' :
+                           activeCat === 'Property' ? 'from-emerald-900 via-emerald-800 to-slate-950' :
+                           'from-slate-900 via-slate-800 to-indigo-950';
+
+        const catBadgeColor = activeCat === 'all' ? 'bg-blue-500/30 text-blue-200 border-blue-400/40' :
+                              activeCat === 'Vehicle' ? 'bg-blue-500/30 text-blue-200 border-blue-400/40' :
+                              activeCat === 'Used part' ? 'bg-amber-500/30 text-amber-200 border-amber-400/40' :
+                              activeCat === 'Property' ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40' :
+                              'bg-purple-500/30 text-purple-200 border-purple-400/40';
+
+        const catAssets = assets.filter(a => {
+          if (activeCat === 'all') return true;
+          return normalizeCategory(a.category) === activeCat;
+        });
+
+        const totalCatCount = catAssets.length;
+        const soldCatList = catAssets.filter(a => a.status === 'Sold');
+        const openCatList = catAssets.filter(a => a.status === 'Open');
+        const totalSoldCat = soldCatList.length;
+        const totalOpenCat = openCatList.length;
+
+        const catOmzetVal = soldCatList.reduce((sum, a) => {
+          const highestVal = a.bids && a.bids.length > 0 ? Math.max(...a.bids.map(b => Number(b.price) || 0)) : (Number(a.startingPrice) || 0);
+          return sum + (Number(highestVal) || 0);
+        }, 0);
+
+        const catLunasVal = soldCatList.filter(a => a.paymentStatus === 'Lunas').length;
+        const catBelumLunasVal = soldCatList.filter(a => a.paymentStatus !== 'Lunas').length;
+
+        const catMaxPriceVal = catAssets.reduce((max, a) => {
+          const validBids = (a.bids || []).map(b => Number(b.price) || 0);
+          const val = Math.max(Number(a.startingPrice) || 0, Number(a.highestBid) || 0, ...validBids, 0);
+          return val > max ? val : max;
+        }, 0);
+
+        const catAvgPriceVal = totalSoldCat > 0 ? Math.round(catOmzetVal / totalSoldCat) : 0;
+        const catSuccessPct = totalCatCount > 0 ? Math.round((totalSoldCat / totalCatCount) * 100) : 0;
+
+        // Unique bidders in this category
+        const catBidders = new Set<string>();
+        let catTotalBidCount = 0;
+        catAssets.forEach(a => {
+          (a.bids || []).forEach(b => {
+            catBidders.add(b.email.toLowerCase());
+            catTotalBidCount += 1;
+          });
+        });
+
+        // Brand / Subcategory distribution
+        const catSubBreakdown: { [key: string]: number } = {};
+        catAssets.forEach(a => {
+          let label = a.brand || 'Umum';
+          if (activeCat === 'Used part' && a.usedPartCategory) {
+            label = `${a.usedPartCategory} (${a.brand || 'Scrap'})`;
+          } else if (activeCat === 'Property' && a.propertyType) {
+            label = `${a.propertyType} (${a.location || 'Area'})`;
+          }
+          catSubBreakdown[label] = (catSubBreakdown[label] || 0) + 1;
+        });
+
+        const catSubList = Object.entries(catSubBreakdown).map(([label, count]) => ({
+          label,
+          count,
+          pct: totalCatCount > 0 ? Math.round((count / totalCatCount) * 100) : 0
+        })).sort((a, b) => b.count - a.count);
+
+        // Filtered Asset List for Table/Cards
+        const filteredModalAssets = catAssets.filter(asset => {
+          const matchesSearch = 
+            asset.name.toLowerCase().includes(detailCategorySearch.toLowerCase()) ||
+            asset.brand.toLowerCase().includes(detailCategorySearch.toLowerCase()) ||
+            asset.category.toLowerCase().includes(detailCategorySearch.toLowerCase()) ||
+            (asset.plateNumber || '').toLowerCase().includes(detailCategorySearch.toLowerCase()) ||
+            (asset.location || '').toLowerCase().includes(detailCategorySearch.toLowerCase());
+
+          if (!matchesSearch) return false;
+
+          if (detailCategoryStatus === 'Sold') return asset.status === 'Sold';
+          if (detailCategoryStatus === 'Open') return asset.status === 'Open';
+          if (detailCategoryStatus === 'Lunas') return asset.status === 'Sold' && asset.paymentStatus === 'Lunas';
+          if (detailCategoryStatus === 'Belum Lunas') return asset.status === 'Sold' && asset.paymentStatus !== 'Lunas';
+          return true;
+        });
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
+              
+              {/* Header with Visual Banner */}
+              <div className={`relative p-5 sm:p-7 bg-gradient-to-r ${catThemeBg} text-white shrink-0 overflow-hidden`}>
+                <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none"></div>
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="p-3 bg-white/15 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
+                      {catIcon}
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`text-[10px] uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full border ${catBadgeColor}`}>
+                          {activeCat === 'all' ? 'Multi-Category' : activeCat}
+                        </span>
+                        <span className="text-xs text-white/80 font-mono">
+                          {totalCatCount} {t('Unit Terdaftar')}
+                        </span>
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
+                        {catTitle}
+                      </h3>
+                      <p className="text-white/70 text-xs sm:text-sm mt-0.5 max-w-2xl leading-relaxed">
+                        {catDescription}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      title={t('Cetak / Simpan PDF')}
+                    >
+                      <Printer className="w-4 h-4" />
+                      <span className="hidden sm:inline">{t('Cetak')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDetailedCategoryModal(null)}
+                      className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 transition-all cursor-pointer"
+                      title={t('Tutup')}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub Category Quick Switcher inside Modal */}
+                <div className="relative z-10 flex items-center gap-2 mt-5 pt-4 border-t border-white/15 overflow-x-auto pb-1 scrollbar-none">
+                  <span className="text-xs text-white/70 font-semibold shrink-0 mr-1">{t('Pilih Kategori')}:</span>
+                  <button
+                    type="button"
+                    onClick={() => { setDetailedCategoryModal('all'); setDetailCategorySearch(''); setDetailCategoryStatus('all'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      activeCat === 'all' ? 'bg-white text-blue-900 shadow-md ring-2 ring-white/50' : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Semua ({assets.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDetailedCategoryModal('Vehicle'); setDetailCategorySearch(''); setDetailCategoryStatus('all'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      activeCat === 'Vehicle' ? 'bg-white text-blue-900 shadow-md ring-2 ring-white/50' : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Vehicle ({vehicleCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDetailedCategoryModal('Used part'); setDetailCategorySearch(''); setDetailCategoryStatus('all'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      activeCat === 'Used part' ? 'bg-white text-amber-900 shadow-md ring-2 ring-white/50' : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Used Part ({usedPartCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDetailedCategoryModal('Property'); setDetailCategorySearch(''); setDetailCategoryStatus('all'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      activeCat === 'Property' ? 'bg-white text-emerald-900 shadow-md ring-2 ring-white/50' : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Property ({propertyCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDetailedCategoryModal('Miscellaneous'); setDetailCategorySearch(''); setDetailCategoryStatus('all'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      activeCat === 'Miscellaneous' ? 'bg-white text-purple-900 shadow-md ring-2 ring-white/50' : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Miscellaneous ({miscCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body - Scrollable Content */}
+              <div className="p-4 sm:p-6 space-y-6 overflow-y-auto max-h-[calc(92vh-180px)] bg-slate-50/50">
+                
+                {/* 1. Category KPI Cards Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                  {/* Total Unit */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('Total Unit')}</span>
+                    <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{totalCatCount}</p>
+                    <span className="text-[11px] text-slate-500 font-medium mt-0.5 block">{t('Unit di Database')}</span>
+                  </div>
+
+                  {/* Sukses Terjual */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">{t('Sukses Terjual')}</span>
+                    <p className="text-2xl font-black text-emerald-700 mt-1 font-mono">{totalSoldCat}</p>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">{catSuccessPct}% {t('Keberhasilan')}</span>
+                  </div>
+
+                  {/* Aset Aktif */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">{t('Aset Aktif')}</span>
+                    <p className="text-2xl font-black text-blue-700 mt-1 font-mono">{totalOpenCat}</p>
+                    <span className="text-[11px] text-blue-600 font-medium mt-0.5 block">{t('Menerima Penawaran')}</span>
+                  </div>
+
+                  {/* Total Omzet */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs sm:col-span-2 lg:col-span-2">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">{t('Total Omzet Terjual')}</span>
+                    <p className="text-xl sm:text-2xl font-black text-indigo-700 mt-1 font-mono truncate">{formatIDR(catOmzetVal)}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                      <span className="text-emerald-700 font-bold">{catLunasVal} Lunas</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-amber-700 font-bold">{catBelumLunasVal} Belum Lunas</span>
+                    </div>
+                  </div>
+
+                  {/* Total Partisipan */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider block">{t('Partisipan')}</span>
+                    <p className="text-2xl font-black text-purple-700 mt-1 font-mono">{catBidders.size}</p>
+                    <span className="text-[11px] text-purple-600 font-medium mt-0.5 block">{catTotalBidCount} {t('Total Bid')}</span>
+                  </div>
+                </div>
+
+                {/* 2. Sub-Category Distribution & Analytic Summary */}
+                {totalCatCount > 0 && catSubList.length > 0 && (
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <PieChart className="w-4 h-4 text-blue-600" />
+                        <span>
+                          {activeCat === 'Vehicle' ? t('Distribusi Brand Armada Truk') :
+                           activeCat === 'Used part' ? t('Distribusi Komponen Suku Cadang') :
+                           activeCat === 'Property' ? t('Distribusi Jenis Properti') :
+                           t('Distribusi Komposisi Aset')}
+                        </span>
+                      </h4>
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        {catSubList.length} {t('varian/klasifikasi')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {catSubList.map(item => (
+                        <div key={item.label} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between gap-1">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-800 truncate" title={item.label}>{item.label}</span>
+                            <span className="font-mono font-extrabold text-blue-700 ml-2">{item.count} unit</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden mt-1.5">
+                            <div className="bg-blue-600 h-full rounded-full" style={{ width: `${item.pct}%` }}></div>
+                          </div>
+                          <span className="text-[10px] text-slate-500 text-right">{item.pct}% dari total</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Empty State Explanation (Used Part & Property = 0) */}
+                {totalCatCount === 0 && (
+                  <div className="bg-white p-8 sm:p-10 rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-4 shadow-xs">
+                    <div className="w-16 h-16 mx-auto bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center border border-amber-200 shadow-inner">
+                      {activeCat === 'Used part' ? <Wrench className="w-8 h-8" /> :
+                       activeCat === 'Property' ? <Building2 className="w-8 h-8" /> :
+                       <Package className="w-8 h-8" />}
+                    </div>
+                    <div className="max-w-md mx-auto space-y-1.5">
+                      <h4 className="text-base sm:text-lg font-bold text-slate-800">
+                        {t('Belum Ada Data Lelang Aktual untuk')} {activeCat}
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                        {activeCat === 'Used part' 
+                          ? t('Suku cadang seperti Ban Luar/Dalam, Aki Basah/Kering, Besi Scrap, dan Oli Drum saat ini belum ada yang dilelang.')
+                          : activeCat === 'Property'
+                          ? t('Listing properti seperti Lahan Industri, Pergudangan, dan Bangunan Operasional saat ini belum tersedia.')
+                          : t('Tidak ada unit terdaftar pada kategori ini.')}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 max-w-lg mx-auto flex flex-wrap items-center justify-center gap-2">
+                      <span className="text-xs text-slate-500 font-semibold">{t('Spesifikasi yang Didukung')}:</span>
+                      {activeCat === 'Used part' ? (
+                        <>
+                          <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold rounded-lg">Ban Bekas & Tread Depth</span>
+                          <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold rounded-lg">Aki & Air Aki</span>
+                          <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold rounded-lg">Besi Scrap Penimbangan</span>
+                          <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold rounded-lg">Oli & Pelumas Drum</span>
+                        </>
+                      ) : activeCat === 'Property' ? (
+                        <>
+                          <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold rounded-lg">Luas Tanah (m²)</span>
+                          <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold rounded-lg">Luas Bangunan (m²)</span>
+                          <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold rounded-lg">Jual / Sewa</span>
+                          <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold rounded-lg">Jadwal Open House</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Filter and Data Table for Category Assets */}
+                {totalCatCount > 0 && (
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
+                    {/* Filter Bar */}
+                    <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-blue-600" />
+                        <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                          {t('Daftar Aset Aktual')} ({filteredModalAssets.length} / {totalCatCount})
+                        </h4>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Search Input */}
+                        <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={detailCategorySearch}
+                            onChange={(e) => setDetailCategorySearch(e.target.value)}
+                            placeholder={t('Cari nama, plat, brand...')}
+                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                          {detailCategorySearch && (
+                            <button
+                              type="button"
+                              onClick={() => setDetailCategorySearch('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Status Filter */}
+                        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-300">
+                          <button
+                            type="button"
+                            onClick={() => setDetailCategoryStatus('all')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                              detailCategoryStatus === 'all' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Semua
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDetailCategoryStatus('Sold')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                              detailCategoryStatus === 'Sold' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Terjual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDetailCategoryStatus('Open')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                              detailCategoryStatus === 'Open' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Aktif
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDetailCategoryStatus('Lunas')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                              detailCategoryStatus === 'Lunas' ? 'bg-emerald-700 text-white' : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Lunas
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDetailCategoryStatus('Belum Lunas')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                              detailCategoryStatus === 'Belum Lunas' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Belum Lunas
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Table / Card List */}
+                    <div className="divide-y divide-slate-100 overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-100/60 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                            <th className="py-3 px-4">{t('Unit & Spesifikasi')}</th>
+                            <th className="py-3 px-4">{t('Kategori / Brand')}</th>
+                            <th className="py-3 px-4">{t('Harga Awal')}</th>
+                            <th className="py-3 px-4">{t('Penawaran Tertinggi / Pemenang')}</th>
+                            <th className="py-3 px-4">{t('Status Lelang')}</th>
+                            <th className="py-3 px-4">{t('Status Bayar')}</th>
+                            <th className="py-3 px-4 text-right">{t('Aksi')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-sans">
+                          {filteredModalAssets.map(asset => {
+                            const validBids = (asset.bids || []).map(b => Number(b.price) || 0);
+                            const topBidPrice = validBids.length > 0 ? Math.max(...validBids) : Number(asset.startingPrice) || 0;
+                            const topBid = (asset.bids || []).find(b => Number(b.price) === topBidPrice);
+
+                            return (
+                              <tr key={asset.id} className="hover:bg-blue-50/40 transition-colors">
+                                <td className="py-3.5 px-4 min-w-[220px]">
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={asset.imageUrl || 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=300&q=80'}
+                                      alt={asset.name}
+                                      className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0 shadow-2xs"
+                                    />
+                                    <div>
+                                      <p className="font-extrabold text-slate-900 leading-snug line-clamp-1">{asset.name}</p>
+                                      <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                        {asset.plateNumber || asset.id} {asset.modelYear ? `• ${asset.modelYear}` : ''}
+                                      </p>
+                                      {asset.location && (
+                                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">{asset.location}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td className="py-3.5 px-4 whitespace-nowrap">
+                                  <span className="font-bold text-slate-800 block">{asset.brand}</span>
+                                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                                    {asset.category}
+                                  </span>
+                                </td>
+
+                                <td className="py-3.5 px-4 whitespace-nowrap font-mono text-slate-600 font-bold">
+                                  {formatIDR(asset.startingPrice)}
+                                </td>
+
+                                <td className="py-3.5 px-4 min-w-[180px]">
+                                  <span className="font-mono font-black text-emerald-700 block text-sm">
+                                    {formatIDR(topBidPrice)}
+                                  </span>
+                                  {topBid ? (
+                                    <div className="flex items-center gap-1.5 text-[11px] text-slate-600 mt-0.5">
+                                      <span className="font-bold text-slate-800 truncate">{topBid.name}</span>
+                                      <span className="text-[10px] text-slate-400 font-mono">({(asset.bids || []).length} bid)</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 italic">{t('Belum ada bid')}</span>
+                                  )}
+                                </td>
+
+                                <td className="py-3.5 px-4 whitespace-nowrap">
+                                  {asset.status === 'Sold' ? (
+                                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-extrabold rounded-full text-[10px] uppercase tracking-wider inline-flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3" />
+                                      {t('Terjual')}
+                                    </span>
+                                  ) : asset.status === 'Open' ? (
+                                    <span className="px-2.5 py-1 bg-blue-100 text-blue-800 font-extrabold rounded-full text-[10px] uppercase tracking-wider inline-flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {t('Aktif')}
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-extrabold rounded-full text-[10px] uppercase tracking-wider">
+                                      {asset.status}
+                                    </span>
+                                  )}
+                                </td>
+
+                                <td className="py-3.5 px-4 whitespace-nowrap">
+                                  {asset.status === 'Sold' ? (
+                                    asset.paymentStatus === 'Lunas' ? (
+                                      <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold rounded-lg text-[11px]">
+                                        Lunas
+                                      </span>
+                                    ) : (
+                                      <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 font-bold rounded-lg text-[11px]">
+                                        Belum Lunas
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="text-slate-400 text-[11px]">-</span>
+                                  )}
+                                </td>
+
+                                <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {asset.status === 'Sold' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedWinnerLetterAsset(asset)}
+                                        className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                        title={t('Lihat Surat Keputusan')}
+                                      >
+                                        <FileText className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        onSelectAsset(asset.id);
+                                        setDetailedCategoryModal(null);
+                                      }}
+                                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                                    >
+                                      <span>{t('Detail')}</span>
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+
+                      {filteredModalAssets.length === 0 && (
+                        <div className="text-center py-10 text-slate-400 text-xs">
+                          {t('Tidak ada unit yang cocok dengan filter atau kata kunci pencarian.')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-slate-200 bg-white flex justify-between items-center shrink-0">
+                <div className="text-xs text-slate-500">
+                  {t('Menampilkan')} <strong className="text-slate-800">{catAssets.length}</strong> {t('unit total pada kategori')} <span className="font-bold text-blue-700">{activeCat === 'all' ? 'Semua' : activeCat}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailedCategoryModal(null)}
+                  className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition-colors border border-slate-300/40 cursor-pointer"
+                >
+                  {t('Tutup')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

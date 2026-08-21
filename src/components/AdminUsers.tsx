@@ -551,15 +551,39 @@ export default function AdminUsers({
             </div>
 
             {/* Search inputs */}
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="text"
-                placeholder={t('Cari nama, email, status...')}
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-              />
+            <div className="flex items-center gap-2 w-full md:w-96 shrink-0">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder={t('Cari nama, email, status...')}
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                />
+                {userSearch && (
+                  <button
+                    onClick={() => setUserSearch('')}
+                    className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 cursor-pointer"
+                    title={t('Hapus')}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-extrabold rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer shrink-0 h-[34px]"
+                onClick={() => {
+                  const inputEl = document.querySelector('input[placeholder="Cari nama, email, status..."]') as HTMLInputElement;
+                  if (inputEl) inputEl.focus();
+                }}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>{t('Cari')}</span>
+              </button>
             </div>
           </div>
 

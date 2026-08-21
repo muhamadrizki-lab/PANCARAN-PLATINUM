@@ -47,6 +47,7 @@ export interface Asset {
   status: AssetStatus;
   imageUrl: string;
   imageUrls?: string[];
+  images?: string[];
   bids: Bid[];
   paymentStatus?: 'Lunas' | 'Belum Lunas';
   dimensions?: string;

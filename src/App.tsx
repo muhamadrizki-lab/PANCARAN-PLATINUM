@@ -1309,7 +1309,7 @@ export default function App() {
   const activeUserEmail = (getLoggedInUserEmail() || '').toLowerCase();
 
   const currentUserObj = (registeredUsers || []).find(u => u && u.email && (loggedInUserEmail || '').toLowerCase() === (u.email || '').toLowerCase());
-  const isUserCanBid = isAdminLoggedIn || (isUserLoggedIn && (currentUserObj ? ((currentUserObj.status === 'Disetujui' || currentUserObj.status === 'Approved') && currentUserObj.canBid !== false) : true));
+  const isUserCanBid = isAdminLoggedIn || (isUserLoggedIn && (currentUserObj ? (currentUserObj.status === 'Disetujui' && currentUserObj.canBid !== false) : true));
 
   // Helper to get won assets
   const winningAssets = activeUserEmail ? (assets || []).filter(asset => {
@@ -1359,7 +1359,7 @@ export default function App() {
             (u) => u && u.email && u.email.toLowerCase() === loggedInUserEmail.toLowerCase()
           );
           if (!user) return true;
-          const isApproved = user.status === 'Disetujui' || user.status === 'Approved';
+          const isApproved = user.status === 'Disetujui';
           return isApproved && user.canBid !== false;
         })();
 
@@ -2257,12 +2257,16 @@ export default function App() {
                   )}
                 </button>
                 <button
-                  onClick={() => { setAdminTab('whatsapp'); setIsMobileMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold ${
-                    adminTab === 'whatsapp' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600'
-                  }`}
+                  type="button"
+                  disabled
+                  className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-slate-400 bg-slate-100/70 cursor-not-allowed select-none flex items-center justify-between opacity-60"
+                  title={t('Fitur WA Blasting sedang dinonaktifkan')}
                 >
-                  WA Blasting
+                  <span className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-slate-400" />
+                    <span>WA Blasting</span>
+                  </span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded uppercase">Off</span>
                 </button>
                 <button
                   onClick={() => { setAdminTab('reports'); setIsMobileMenuOpen(false); }}
@@ -2416,15 +2420,16 @@ export default function App() {
                   </button>
 
                   <button
-                    onClick={() => setAdminTab('whatsapp')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-left transition-all ${
-                      adminTab === 'whatsapp'
-                        ? 'bg-emerald-50 text-emerald-600 font-bold shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
+                    type="button"
+                    disabled
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold text-left transition-all bg-slate-100/70 text-slate-400 cursor-not-allowed opacity-60 select-none"
+                    title={t('Fitur WA Blasting sedang dinonaktifkan')}
                   >
-                    <Phone className="w-4 h-4 shrink-0" />
-                    <span>WA Blasting</span>
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 shrink-0 text-slate-400" />
+                      <span>WA Blasting</span>
+                    </div>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded uppercase">Off</span>
                   </button>
 
                   <button
@@ -2536,8 +2541,8 @@ export default function App() {
                     const mappedType = type === 'error' ? 'warning' : type;
                     addNotification(mappedType, type === 'success' ? t('Berhasil') : t('Info'), msg);
                   }}
-                  onPreviewPopup={(cfg) => {
-                    setPopupConfig(cfg);
+                  onPreviewPopup={(item) => {
+                    setPopupConfig({ popups: [item] });
                     setSelectedGuideModal('ikut');
                   }}
                 />

@@ -1165,7 +1165,7 @@ export default function AdminAssets({
     setFormData({
       name: '',
       brand: 'Hino',
-      category: '',
+      category: 'Vehicle',
       modelYear: 2022,
       plateNumber: '',
       condition: 'Baik',
@@ -1176,6 +1176,35 @@ export default function AdminAssets({
       imageUrl: '',
       imageUrls: [],
       dimensions: '',
+      propertyType: 'Gudang',
+      auctionType: 'Jual',
+      landArea: '',
+      buildingArea: '',
+      usedPartCategory: 'Ban',
+      quantity: '',
+      salesSystem: 'Satuan',
+      openHouseSchedule: '',
+      tireBrand: '',
+      tireSize: '',
+      tireType: 'Ban Luar',
+      tireTreadDepth: '',
+      tireCondition: 'Masih Layak Pakai (Tubeless/Pakai Ban Dalam)',
+      tireDotCode: '',
+      batteryBrand: '',
+      batteryTypeCode: '',
+      batteryCapacity: '',
+      batteryType: 'Aki Basah',
+      batteryCondition: 'Masih Fungsi (Hanya Perlu Cas)',
+      batteryElectrolyteStatus: 'Masih Terisi Air Aki',
+      metalType: 'Besi Berat / H-Beam / I-Beam / Plate',
+      metalSalesMethod: 'Penimbangan',
+      metalEstimatedWeight: '',
+      metalCondition: '',
+      metalHandlingFacility: 'Pemenang Lelang wajib potong dan angkut sendiri',
+      oilBrand: '',
+      oilType: '',
+      oilVolume: '',
+      oilCondition: 'Baru (Dalam Kemasan Segel)',
       model: '',
       series: '440',
       axels: '',
@@ -1277,15 +1306,39 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
             
             {/* Search and Filters */}
             <div className="flex flex-col xl:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder={t('Cari berdasarkan nama aset, plat, kategori...')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                />
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t('Cari berdasarkan nama aset, plat, kategori...')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-8 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-3 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 cursor-pointer"
+                      title={t('Hapus')}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-extrabold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer shrink-0 h-[42px]"
+                  onClick={() => {
+                    const inputEl = document.querySelector('input[placeholder="Cari berdasarkan nama aset, plat, kategori..."]') as HTMLInputElement;
+                    if (inputEl) inputEl.focus();
+                  }}
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>{t('Cari')}</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full xl:w-auto xl:min-w-[520px]">

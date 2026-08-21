@@ -657,12 +657,10 @@ export default function AdminWhatsAppBlasting({ registeredUsers, assets, current
 
     const newLog = {
       id: Date.now().toString(),
-      date: new Date().toLocaleString('id-ID'),
-      total: recipients.length,
-      success: sentSuccessCount,
-      failed: failedCount,
-      preview: messageContent.slice(0, 50) + '...',
-      hasImage: Boolean(selectedImageUrl)
+      time: new Date().toLocaleString('id-ID'),
+      recipientCount: recipients.length,
+      messagePreview: messageContent.slice(0, 50) + (messageContent.length > 50 ? '...' : ''),
+      status: `Selesai (${sentSuccessCount}/${recipients.length})`
     };
     setBlastLogs(prev => [newLog, ...prev]);
   };
