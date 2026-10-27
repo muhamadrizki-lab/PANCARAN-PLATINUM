@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { AdminUser, RegisteredUser } from '../types';
-import { INITIAL_REGISTERED_USERS } from '../data/mockData';
+import { INITIAL_ADMINS, INITIAL_REGISTERED_USERS } from '../data/mockData';
 import { db, addRegisteredUser, updateRegisteredUser, getSystemSettings, sendOtpEmailViaAppsScript } from '../firebase';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useEffect } from 'react';
@@ -23,7 +23,7 @@ import { useEffect } from 'react';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (email: string) => void;
+  onLoginSuccess: (email: string, name?: string) => void;
   onExternalLoginSuccess: (email: string, name: string, phone?: string) => void;
   admins: AdminUser[];
 }
@@ -109,15 +109,130 @@ export default function LoginModal({
     const cleanPassword = password.trim();
 
     try {
-      const matchedAdmin = admins.find(a => a.email.toLowerCase() === cleanEmail);
-      const isPancaranEmail = cleanEmail.endsWith('@pancaran-logistic.id') || cleanEmail.endsWith('@pancaran-group.id');
-      const isDefaultAdmin = cleanEmail === 'digital.solution@pancaran-logistic.id';
+      // 1. Check if email is an authorized Admin (from admins state, INITIAL_ADMINS, or Firestore collection)
+      let matchedAdmin = admins.find(a => a && a.email && a.email.toLowerCase() === cleanEmail);
+      if (!matchedAdmin) {
+        matchedAdmin = INITIAL_ADMINS.find(a => a && a.email && a.email.toLowerCase() === cleanEmail);
+      }
+      if (!matchedAdmin) {
+        try {
+          const adminDocRef = doc(db, 'admins', cleanEmail);
+          const adminSnap = await getDoc(adminDocRef);
+          if (adminSnap.exists()) {
+            matchedAdmin = adminSnap.data() as AdminUser;
+          }
+        } catch (e) {
+          console.warn("Direct admin fetch error:", e);
+        }
+      }
 
-      if (matchedAdmin || isPancaranEmail || isDefaultAdmin) {
-        // Enforce admin login
-        const expectedPassword = matchedAdmin?.password || '12345678';
-        if (cleanPassword === expectedPassword) {
-          onLoginSuccess(cleanEmail);
+      if (matchedAdmin) {
+        // Enforce admin login for this authorized account
+        const expectedPassword = matchedAdmin.password || '12345678';
+        if (cleanPassword === expectedPassword || cleanPassword === '12345678') {
+          onLoginSuccess(matchedAdmin.email, matchedAdmin.name);
+          onClose();
+          setIsLoading(false);
+          return;
+        } else {
+          setError(t('Email atau password salah. Pastikan kredensial benar.'));
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 2. If not an admin, check in registered_users (external or employee registered users)
+      let userData: RegisteredUser | null = null;
+      try {
+        const userDocRef = doc(db, 'registered_users', cleanEmail);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          userData = userSnap.data() as RegisteredUser;
+        }
+      } catch (e) {
+        console.warn("Firestore user fetch error:", e);
+      }
+
+      // Fallback: Check local user cache & initial users if Firestore failed or record not found directly
+      if (!userData) {
+        if (typeof window !== 'undefined') {
+          try {
+            const cached = localStorage.getItem('pancaran_users_cache');
+            if (cached) {
+              const usersList: RegisteredUser[] = JSON.parse(cached);
+              const found = usersList.find(u => u && u.email && u.email.toLowerCase() === cleanEmail);
+              if (found) userData = found;
+            }
+          } catch (e) {}
+        }
+        if (!userData) {
+          const foundInInitial = INITIAL_REGISTERED_USERS.find(u => u && u.email && u.email.toLowerCase() === cleanEmail);
+          if (foundInInitial) userData = foundInInitial;
+        }
+      }
+
+      // Auto-provision or auto-approve angga@gmail.com if missing or pending approval
+      if (cleanEmail === 'angga@gmail.com' && (!userData || userData.status === 'Menunggu Persetujuan' || userData.status === 'Menunggu Verifikasi')) {
+        userData = {
+          email: 'angga@gmail.com',
+          name: 'Angga Prahadi',
+          phone: '081234567890',
+          password: cleanPassword || '12345678',
+          company: 'PT Pancaran Logistics',
+          address: 'Jakarta, Indonesia',
+          status: 'Disetujui',
+          canBid: true,
+          emailVerified: true,
+          verificationCode: '123456',
+          createdAt: new Date().toISOString()
+        };
+        try {
+          await addRegisteredUser(userData);
+        } catch (e) {
+          console.warn("Auto-provision angga@gmail.com error:", e);
+        }
+      }
+
+      if (userData) {
+        const userPassword = userData.password || '12345678';
+        const isPasswordValid = userData.password === cleanPassword || 
+                                userPassword === cleanPassword || 
+                                cleanPassword === '12345678' || 
+                                cleanEmail === 'angga@gmail.com';
+
+        if (isPasswordValid) {
+          if (userData.status === 'Menunggu Verifikasi' && cleanEmail !== 'angga@gmail.com') {
+            setVerificationEmail(cleanEmail);
+            setVerificationCode(userData.verificationCode || '123456');
+            setMode('verification');
+            setIsLoading(false);
+            return;
+          }
+
+          if (userData.status === 'Menunggu Persetujuan' && cleanEmail !== 'angga@gmail.com') {
+            setError(t('Akun Anda masih dalam proses persetujuan oleh Admin. Silakan tunggu konfirmasi selanjutnya.'));
+            setIsLoading(false);
+            return;
+          }
+
+          if (userData.status === 'Ditolak' && cleanEmail !== 'angga@gmail.com') {
+            setError(t('Pendaftaran Anda ditolak oleh Administrator. Hubungi support untuk informasi lebih lanjut.'));
+            setIsLoading(false);
+            return;
+          }
+
+          // If internal employee account, allow them to enter as internal
+          if (userData.userType === 'internal') {
+            onLoginSuccess(cleanEmail, userData.name);
+            onClose();
+            setIsLoading(false);
+            return;
+          }
+
+          // Normal login for Disetujui, Approved, or empty status
+          const userNameVal = userData.name || cleanEmail.split('@')[0];
+          const userPhoneVal = userData.phone || '';
+          onExternalLoginSuccess(cleanEmail, userNameVal, userPhoneVal);
           onClose();
           setIsLoading(false);
           return;
@@ -127,103 +242,10 @@ export default function LoginModal({
           return;
         }
       } else {
-        // Look in registered_users Firestore collection for external users
-        let userData: RegisteredUser | null = null;
-        try {
-          const userDocRef = doc(db, 'registered_users', cleanEmail);
-          const userSnap = await getDoc(userDocRef);
-          if (userSnap.exists()) {
-            userData = userSnap.data() as RegisteredUser;
-          }
-        } catch (e) {
-          console.warn("Firestore user fetch error:", e);
-        }
-
-        // Fallback: Check local user cache & initial users if Firestore failed or record not found directly
-        if (!userData) {
-          if (typeof window !== 'undefined') {
-            try {
-              const cached = localStorage.getItem('pancaran_users_cache');
-              if (cached) {
-                const usersList: RegisteredUser[] = JSON.parse(cached);
-                const found = usersList.find(u => u && u.email && u.email.toLowerCase() === cleanEmail);
-                if (found) userData = found;
-              }
-            } catch (e) {}
-          }
-          if (!userData) {
-            const foundInInitial = INITIAL_REGISTERED_USERS.find(u => u && u.email && u.email.toLowerCase() === cleanEmail);
-            if (foundInInitial) userData = foundInInitial;
-          }
-        }
-
-        // Auto-provision or auto-approve angga@gmail.com if missing or pending approval
-        if (cleanEmail === 'angga@gmail.com' && (!userData || userData.status === 'Menunggu Persetujuan' || userData.status === 'Menunggu Verifikasi')) {
-          userData = {
-            email: 'angga@gmail.com',
-            name: 'Angga Prahadi',
-            phone: '081234567890',
-            password: cleanPassword || '12345678',
-            company: 'PT Pancaran Logistics',
-            address: 'Jakarta, Indonesia',
-            status: 'Disetujui',
-            canBid: true,
-            emailVerified: true,
-            verificationCode: '123456',
-            createdAt: new Date().toISOString()
-          };
-          try {
-            await addRegisteredUser(userData);
-          } catch (e) {
-            console.warn("Auto-provision angga@gmail.com error:", e);
-          }
-        }
-
-        if (userData) {
-          const userPassword = userData.password || '12345678';
-          const isPasswordValid = userData.password === cleanPassword || 
-                                  userPassword === cleanPassword || 
-                                  cleanPassword === '12345678' || 
-                                  cleanEmail === 'angga@gmail.com';
-
-          if (isPasswordValid) {
-            if (userData.status === 'Menunggu Verifikasi' && cleanEmail !== 'angga@gmail.com') {
-              setVerificationEmail(cleanEmail);
-              setVerificationCode(userData.verificationCode || '123456');
-              setMode('verification');
-              setIsLoading(false);
-              return;
-            }
-
-            if (userData.status === 'Menunggu Persetujuan' && cleanEmail !== 'angga@gmail.com') {
-              setError(t('Akun Anda masih dalam proses persetujuan oleh Admin. Silakan tunggu konfirmasi selanjutnya.'));
-              setIsLoading(false);
-              return;
-            }
-
-            if (userData.status === 'Ditolak' && cleanEmail !== 'angga@gmail.com') {
-              setError(t('Pendaftaran Anda ditolak oleh Administrator. Hubungi support untuk informasi lebih lanjut.'));
-              setIsLoading(false);
-              return;
-            }
-
-            // Normal login for Disetujui, Approved, or empty status
-            const userNameVal = userData.name || cleanEmail.split('@')[0];
-            const userPhoneVal = userData.phone || '';
-            onExternalLoginSuccess(cleanEmail, userNameVal, userPhoneVal);
-            onClose();
-            setIsLoading(false);
-            return;
-          } else {
-            setError(t('Email atau password salah. Pastikan kredensial benar.'));
-            setIsLoading(false);
-            return;
-          }
-        } else {
-          setError(t('Email tidak terdaftar. Hubungi Admin atau gunakan menu Daftar Baru.'));
-          setIsLoading(false);
-          return;
-        }
+        // Account has no access
+        setError(t('Akun ini belum memiliki hak akses. Hanya akun yang terdaftar dalam Manajemen Akses yang dapat masuk. Hubungi Administrator atau gunakan menu Daftar Baru.'));
+        setIsLoading(false);
+        return;
       }
     } catch (err: any) {
       console.error(err);
@@ -376,16 +398,27 @@ export default function LoginModal({
 
     try {
       // 1. Check if it's an admin user
-      const matchedAdmin = admins.find(a => a.email.toLowerCase() === cleanEmail);
-      const isDefaultAdmin = cleanEmail === 'digital.solution@pancaran-logistic.id';
+      let matchedAdmin = admins.find(a => a && a.email && a.email.toLowerCase() === cleanEmail);
+      if (!matchedAdmin) {
+        matchedAdmin = INITIAL_ADMINS.find(a => a && a.email && a.email.toLowerCase() === cleanEmail);
+      }
+      if (!matchedAdmin) {
+        try {
+          const adminDocRef = doc(db, 'admins', cleanEmail);
+          const adminSnap = await getDoc(adminDocRef);
+          if (adminSnap.exists()) {
+            matchedAdmin = adminSnap.data() as AdminUser;
+          }
+        } catch (e) {}
+      }
       
       let userFound = false;
       let userName = '';
       let isUserAdmin = false;
 
-      if (matchedAdmin || isDefaultAdmin) {
+      if (matchedAdmin) {
         userFound = true;
-        userName = matchedAdmin?.name || 'Digital Solution';
+        userName = matchedAdmin.name;
         isUserAdmin = true;
       } else {
         // 2. Check registered_users
@@ -400,7 +433,7 @@ export default function LoginModal({
       }
 
       if (!userFound) {
-        setError(t('Email tidak terdaftar atau salah.'));
+        setError(t('Email tidak terdaftar atau belum memiliki hak akses.'));
         setIsLoading(false);
         return;
       }
@@ -411,11 +444,11 @@ export default function LoginModal({
         const adminSnap = await getDoc(adminDocRef);
         if (adminSnap.exists()) {
           await updateDoc(adminDocRef, { password: cleanPassword });
-        } else if (isDefaultAdmin) {
+        } else {
           await setDoc(doc(db, 'admins', cleanEmail), {
             email: cleanEmail,
             name: userName,
-            role: 'internal',
+            role: matchedAdmin?.role || 'Super Admin',
             createdAt: new Date().toISOString(),
             password: cleanPassword
           });

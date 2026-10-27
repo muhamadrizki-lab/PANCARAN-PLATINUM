@@ -2,16 +2,46 @@ import { Asset, AdminUser, RegisteredUser } from '../types';
 
 export const INITIAL_ADMINS: AdminUser[] = [
   {
+    email: 'muhamad.rizki@pancaran-logistic.id',
+    name: 'Muhamad Rizki',
+    role: 'Super Admin',
+    createdAt: '2026-01-01',
+    password: '12345678'
+  },
+  {
     email: 'digital.solution@pancaran-logistic.id',
     name: 'Digital Solution Admin',
     role: 'Super Admin',
-    createdAt: '2026-01-15'
+    createdAt: '2026-01-15',
+    password: '12345678'
+  },
+  {
+    email: 'angga.prahadi@pancaran-logistic.id',
+    name: 'Angga Prahadi',
+    role: 'Admin Operasional',
+    createdAt: '2026-01-20',
+    password: '12345678'
+  },
+  {
+    email: 'maskur@pancaran-logistic.id',
+    name: 'Maskur',
+    role: 'Admin Operasional',
+    createdAt: '2026-02-01',
+    password: '12345678'
+  },
+  {
+    email: 'thomas@pancaran-logistic.id',
+    name: 'Pak Thomas',
+    role: 'Admin Approval',
+    createdAt: '2026-02-05',
+    password: '12345678'
   },
   {
     email: 'admin.lelang@pancaran-logistic.id',
     name: 'Budi Hartono',
     role: 'Admin Keuangan',
-    createdAt: '2026-02-10'
+    createdAt: '2026-02-10',
+    password: '12345678'
   }
 ];
 

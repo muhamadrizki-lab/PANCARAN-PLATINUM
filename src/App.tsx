@@ -1239,7 +1239,9 @@ export default function App() {
   const handleLoginSuccess = (email: string, name?: string) => {
     setIsAdminLoggedIn(true);
     setLoggedInAdminEmail(email);
-    const adminName = name || (email.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '));
+    const matched = (admins || []).find(a => a && a.email && a.email.toLowerCase() === email.toLowerCase())
+      || INITIAL_ADMINS.find(a => a && a.email && a.email.toLowerCase() === email.toLowerCase());
+    const adminName = name || (matched ? matched.name : (email.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')));
     setLoggedInAdminName(adminName);
     localStorage.setItem('pancaran_session_email', email);
     localStorage.setItem('pancaran_session_admin_name', adminName);
@@ -1299,8 +1301,9 @@ export default function App() {
     setAdminTab('assets');
   };
 
-  const matchedAdmin = (admins || []).find(a => a && a.email && loggedInAdminEmail && a.email.toLowerCase() === loggedInAdminEmail.toLowerCase());
-  const adminName = matchedAdmin ? matchedAdmin.name : 'Admin Digital Solution';
+  const matchedAdmin = (admins || []).find(a => a && a.email && loggedInAdminEmail && a.email.toLowerCase() === loggedInAdminEmail.toLowerCase())
+    || INITIAL_ADMINS.find(a => a && a.email && loggedInAdminEmail && a.email.toLowerCase() === loggedInAdminEmail.toLowerCase());
+  const adminName = matchedAdmin ? matchedAdmin.name : (loggedInAdminName || 'Muhamad Rizki');
   const adminRole = matchedAdmin ? matchedAdmin.role : 'Super Admin';
 
   const getLoggedInUserEmail = () => {

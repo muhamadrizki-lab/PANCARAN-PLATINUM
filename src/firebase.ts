@@ -165,19 +165,19 @@ function sanitizeData<T>(obj: T): T {
  * Uses local and remote seed status check to avoid repeating collection scans on every load.
  */
 export async function seedDatabaseIfEmpty() {
-  if (typeof window !== 'undefined' && localStorage.getItem('pancaran_db_seeded_v1') === 'true') {
+  if (typeof window !== 'undefined' && localStorage.getItem('pancaran_db_seeded_v2') === 'true') {
     return;
   }
 
   // Set seed status in localStorage immediately to avoid spamming Firestore reads if quota is exceeded
   if (typeof window !== 'undefined') {
-    localStorage.setItem('pancaran_db_seeded_v1', 'true');
+    localStorage.setItem('pancaran_db_seeded_v2', 'true');
   }
 
   const seedDocRef = doc(db, CONFIG_COLLECTION, 'seed_status');
   try {
     const seedSnap = await getDoc(seedDocRef);
-    if (seedSnap.exists() && seedSnap.data()?.seeded) {
+    if (seedSnap.exists() && seedSnap.data()?.seededV2) {
       return;
     }
   } catch (e) {
@@ -190,9 +190,20 @@ export async function seedDatabaseIfEmpty() {
     if (adminsSnapshot.empty) {
       console.log('Seeding initial admins to Firestore...');
       for (const adminUser of INITIAL_ADMINS) {
-        await setDoc(doc(db, ADMINS_COLLECTION, adminUser.email), adminUser);
+        await setDoc(doc(db, ADMINS_COLLECTION, adminUser.email), sanitizeData(adminUser));
       }
       console.log('Admins successfully seeded.');
+    } else {
+      // Ensure any missing initial admin (such as muhamad.rizki@pancaran-logistic.id) is inserted
+      for (const adminUser of INITIAL_ADMINS) {
+        try {
+          const aDocRef = doc(db, ADMINS_COLLECTION, adminUser.email);
+          const aSnap = await getDoc(aDocRef);
+          if (!aSnap.exists()) {
+            await setDoc(aDocRef, sanitizeData(adminUser));
+          }
+        } catch (e) {}
+      }
     }
 
     const brandsSnapshot = await getDocs(collection(db, BRANDS_COLLECTION));
@@ -382,7 +393,14 @@ export async function fetchAdmins(): Promise<AdminUser[]> {
     querySnapshot.forEach((docSnap) => {
       admins.push(docSnap.data() as AdminUser);
     });
-    return admins.length > 0 ? admins : INITIAL_ADMINS;
+    // Merge with INITIAL_ADMINS so all authorized accounts are present
+    const merged = [...admins];
+    INITIAL_ADMINS.forEach(init => {
+      if (!merged.some(m => m.email.toLowerCase() === init.email.toLowerCase())) {
+        merged.push(init);
+      }
+    });
+    return merged.length > 0 ? merged : INITIAL_ADMINS;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, ADMINS_COLLECTION);
     let fallback = INITIAL_ADMINS;
@@ -538,10 +556,17 @@ export function subscribeToAdmins(callback: (admins: AdminUser[]) => void) {
       snapshot.forEach((docSnap) => {
         admins.push(docSnap.data() as AdminUser);
       });
+      // Merge with INITIAL_ADMINS so all authorized accounts are present
+      const merged = [...admins];
+      INITIAL_ADMINS.forEach(init => {
+        if (!merged.some(m => m.email.toLowerCase() === init.email.toLowerCase())) {
+          merged.push(init);
+        }
+      });
       if (typeof window !== 'undefined') {
-        try { localStorage.setItem('pancaran_admins_cache', JSON.stringify(admins)); } catch (e) {}
+        try { localStorage.setItem('pancaran_admins_cache', JSON.stringify(merged)); } catch (e) {}
       }
-      callback(admins);
+      callback(merged);
     },
     (error) => {
       handleFirestoreError(error, OperationType.LIST, ADMINS_COLLECTION);

@@ -2883,23 +2883,7 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                           />
                         </div>
 
-                        {/* Model Year */}
-                        {!isProperty && !isUsedPart && !isMisc && (
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-600 uppercase">
-                              {t('Tahun Produksi / Pembuatan *')}
-                            </label>
-                            <input
-                              type="number"
-                              min="1950"
-                              max="2027"
-                              required
-                              value={formData.modelYear}
-                              onChange={(e) => setFormData(prev => ({ ...prev, modelYear: e.target.value ? Number(e.target.value) : '' }))}
-                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 bg-white"
-                            />
-                          </div>
-                        )}
+
 
                         {/* Plate / Reg Number */}
                         {!isProperty && !isUsedPart && !isMisc && (
@@ -3044,7 +3028,6 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                 </div>
                               </div>
                             )}
-
                             {/* B. AKI (BATTERY) */}
                             {formData.usedPartCategory === 'Aki' && (
                               <div className="bg-white/90 rounded-xl p-3.5 border border-amber-200/80 space-y-3.5">
@@ -3054,18 +3037,6 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                                   {/* Merek Aki */}
-                                  <div className="space-y-1">
-                                    <label className="font-bold text-slate-700 uppercase">{t('Merek Aki')}</label>
-                                    <input
-                                      type="text"
-                                      placeholder={t('Contoh: GS Astra, Yuasa, Incoe, Rocket')}
-                                      value={formData.batteryBrand}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryBrand: e.target.value }))}
-                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
-                                    />
-                                  </div>
-
-                                  {/* Tipe / Kode Aki */}
                                   <div className="space-y-1">
                                     <label className="font-bold text-slate-700 uppercase">{t('Tipe / Kode Aki')}</label>
                                     <input
@@ -3103,36 +3074,9 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                                     </select>
                                   </div>
 
-                                  {/* Kondisi Fisik & Fungsi */}
-                                  <div className="space-y-1">
-                                    <label className="font-bold text-slate-700 uppercase">{t('Kondisi Fisik & Fungsi')}</label>
-                                    <select
-                                      value={formData.batteryCondition || 'Masih Fungsi (Hanya Perlu Cas)'}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryCondition: e.target.value }))}
-                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
-                                    >
-                                      <option value="Masih Fungsi (Hanya Perlu Cas)">Masih Fungsi (Hanya Perlu Cas)</option>
-                                      <option value="Soak / Mati Total (Scrap)">Soak / Mati Total (Scrap)</option>
-                                      <option value="Fisik Utuh (Tidak Bocor/Retak)">Fisik Utuh (Tidak Bocor/Retak)</option>
-                                      <option value="Fisik Bocor / Pecah">Fisik Bocor / Pecah</option>
-                                    </select>
-                                  </div>
-
-                                  {/* Keberadaan Air Aki */}
-                                  <div className="space-y-1">
-                                    <label className="font-bold text-slate-700 uppercase">{t('Keberadaan Air Aki')}</label>
-                                    <select
-                                      value={formData.batteryElectrolyteStatus || 'Masih Terisi Air Aki'}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, batteryElectrolyteStatus: e.target.value }))}
-                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-sm"
-                                    >
-                                      <option value="Masih Terisi Air Aki">Masih Terisi Air Aki</option>
-                                      <option value="Sudah Dikosongkan">Sudah Dikosongkan</option>
-                                    </select>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                                 </div>
+                               </div>
+                             )}
 
                             {/* C. BESI (SCRAP METAL) */}
                             {formData.usedPartCategory === 'Besi' && (
@@ -3272,50 +3216,34 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                           </div>
                         )}
 
-                        {/* Dimensi Unit / Catatan Luas Opsional */}
-                        {!isProperty && !isUsedPart && (
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-600 uppercase">
-                              {t('Dimensi Unit (Opsional)')}
-                            </label>
-                            <input
-                              type="text"
-                              placeholder={t('Contoh: 12.0 x 2.5 x 3.7 m')}
-                              value={formData.dimensions}
-                              onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
-                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                            />
-                          </div>
-                        )}
+
 
                         {/* Condition */}
-                        {!isUsedPart && (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs font-bold text-slate-600 uppercase">{t('Kondisi Fisik Unit *')}</label>
-                              <button
-                                type="button"
-                                onClick={() => setIsConditionMasterOpen(true)}
-                                className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold transition"
-                                title={t('Kelola Master Kondisi')}
-                              >
-                                <Settings className="w-3.5 h-3.5 animate-spin-hover" />
-                              </button>
-                            </div>
-                            <select
-                              value={formData.condition}
-                              onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
-                              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-600 uppercase">{t('Kondisi Fisik Unit *')}</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsConditionMasterOpen(true)}
+                              className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold transition"
+                              title={t('Kelola Master Kondisi')}
                             >
-                              {displayConditionsList.map(condName => (
-                                <option key={condName} value={condName}>{condName}</option>
-                              ))}
-                              {formData.condition && !displayConditionsList.includes(formData.condition) && (
-                                <option value={formData.condition}>{formData.condition}</option>
-                              )}
-                            </select>
+                              <Settings className="w-3.5 h-3.5 animate-spin-hover" />
+                            </button>
                           </div>
-                        )}
+                          <select
+                            value={formData.condition}
+                            onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
+                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          >
+                            {displayConditionsList.map(condName => (
+                              <option key={condName} value={condName}>{condName}</option>
+                            ))}
+                            {formData.condition && !displayConditionsList.includes(formData.condition) && (
+                              <option value={formData.condition}>{formData.condition}</option>
+                            )}
+                          </select>
+                        </div>
 
                         {/* Starting Price */}
                         <div className="space-y-1.5">
@@ -3391,7 +3319,6 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                     {/* VEHICLE SPECIFIC GROUPS (Shown ONLY if Category is Vehicle) */}
                     {isVehicle && (
                       <>
-
               {/* GROUP 2: VEHICLE SPECIFICATION DETAILS */}
               <div className="space-y-4">
                 <div className="border-b border-slate-100 pb-2">
@@ -3825,11 +3752,11 @@ Jadwal Survei: ${bid.scheduleSurveyDate ? `${bid.scheduleSurveyDate} @ ${bid.sch
                   </div>
                 )}
               </div>
-                      </>
-                    )}
-                  </>
-                );
-              })()}
+            </>
+          )}
+        </>
+      );
+    })()}
 
               {/* Description */}
               <div className="space-y-1.5">
